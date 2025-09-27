@@ -61,7 +61,7 @@ export default function Home() {
       links: [
         {
           name: "Portfolio",
-          url: "https://llewellyn-portfolio.vercel.app/",
+          url: "http://llewellyn.is-a.dev/",
           icon: <FaGlobe />,
         },
         {
