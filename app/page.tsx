@@ -12,7 +12,7 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 import { FaX, FaXTwitter } from "react-icons/fa6";
-import ProfileImage  from "/LAP-Logo.png"
+import ProfileImage from "../public/LAP-Logo.png";
 
 export default function Home() {
   const sections = [
@@ -77,7 +77,9 @@ export default function Home() {
         {
           name: "LAP Docs",
           url: "https://lap.onl",
-          icon: <img src={ProfileImage.src} alt="Profile" className="w-9 h-9" />,
+          icon: (
+            <img src={ProfileImage.src} alt="Profile" className="w-9 h-9" />
+          ),
         },
         {
           name: "GitHub",
