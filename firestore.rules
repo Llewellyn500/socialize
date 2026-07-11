@@ -1,0 +1,112 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validHandle(handle) {
+      return handle is string
+        && handle.size() >= 3
+        && handle.size() <= 30
+        && handle.matches('^[a-z0-9]+(-[a-z0-9]+)*$')
+        && !(handle in [
+          'acceptable-use', 'api', 'auth', 'cookies', 'dashboard', 'docs',
+          'forgot-password', 'legal', 'login', 'onboarding', 'privacy',
+          'report', 'security', 'self-host', 'settings', 'sign-in', 'sign-up',
+          'sponsor', 'support', 'terms'
+        ]);
+    }
+
+    function validProfile(uid) {
+      return request.resource.data.keys().hasOnly([
+          'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
+          'location', 'availability', 'theme', 'accent', 'published',
+          'socials', 'links', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'ownerUid', 'handle', 'displayName', 'role', 'bio', 'theme',
+          'accent', 'published', 'socials', 'links', 'updatedAt'
+        ])
+        && request.resource.data.ownerUid == uid
+        && validHandle(request.resource.data.handle)
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.role is string
+        && request.resource.data.role.size() <= 100
+        && request.resource.data.bio is string
+        && request.resource.data.bio.size() <= 240
+        && (!('avatarUrl' in request.resource.data)
+          || (request.resource.data.avatarUrl is string
+            && request.resource.data.avatarUrl.size() <= 2048))
+        && (!('location' in request.resource.data)
+          || (request.resource.data.location is string
+            && request.resource.data.location.size() <= 80))
+        && (!('availability' in request.resource.data)
+          || (request.resource.data.availability is string
+            && request.resource.data.availability.size() <= 90))
+        && request.resource.data.theme in ['terminal', 'paper', 'midnight', 'mono']
+        && request.resource.data.accent is string
+        && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}$')
+        && request.resource.data.published is bool
+        && request.resource.data.socials is map
+        && request.resource.data.socials.keys().hasOnly([
+          'github', 'gitlab', 'linkedin', 'x', 'email', 'website'
+        ])
+        && request.resource.data.links is list
+        && request.resource.data.links.size() <= 50
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow read, create, update, delete: if owns(uid);
+    }
+
+    match /profiles/{uid} {
+      allow read: if resource.data.published == true || owns(uid);
+      allow create, update: if owns(uid) && validProfile(uid);
+      allow delete: if owns(uid);
+    }
+
+    match /handles/{handle} {
+      allow read: if true;
+      allow create: if signedIn()
+        && validHandle(handle)
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && validHandle(handle);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /reports/{reportId} {
+      allow create: if request.resource.data.keys().hasOnly([
+          'handle', 'reason', 'details', 'contactEmail', 'createdAt', 'status'
+        ])
+        && request.resource.data.handle is string
+        && request.resource.data.handle.size() <= 64
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 100
+        && request.resource.data.details is string
+        && request.resource.data.details.size() >= 20
+        && request.resource.data.details.size() <= 1000
+        && (request.resource.data.contactEmail == null
+          || (request.resource.data.contactEmail is string
+            && request.resource.data.contactEmail.size() <= 254))
+        && request.resource.data.status == 'new'
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

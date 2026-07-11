@@ -1,0 +1,125 @@
+import type { CSSProperties } from "react";
+import {
+  FaEnvelope,
+  FaGithub,
+  FaGitlab,
+  FaLinkedinIn,
+} from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
+import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
+import { isSafeExternalUrl, type ProfileConfig, type SocialKey } from "@/lib/profile";
+
+const socialIcons: Record<SocialKey, React.ReactNode> = {
+  github: <FaGithub />,
+  gitlab: <FaGitlab />,
+  linkedin: <FaLinkedinIn />,
+  x: <FaXTwitter />,
+  email: <FaEnvelope />,
+  website: <FiGlobe />,
+};
+
+type ProfilePreviewProps = {
+  profile: ProfileConfig;
+  className?: string;
+  interactive?: boolean;
+  branded?: boolean;
+};
+
+export function ProfilePreview({
+  profile,
+  className = "",
+  interactive = false,
+  branded = true,
+}: ProfilePreviewProps) {
+  const style = {
+    "--profile-accent": profile.accent,
+  } as CSSProperties;
+  const initials = profile.displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2);
+  const avatarUrl =
+    profile.avatarUrl?.startsWith("/") || profile.avatarUrl?.startsWith("https://")
+      ? profile.avatarUrl
+      : undefined;
+
+  return (
+    <article
+      className={`profile-preview profile-preview--${profile.theme} ${className}`}
+      style={style}
+    >
+      <div className="profile-preview__topline">
+        <span>@{profile.handle}</span>
+        <span className="profile-preview__status">
+          <i aria-hidden="true" /> {profile.availability || "Available to build"}
+        </span>
+      </div>
+
+      <header className="profile-preview__identity">
+        <div className="profile-preview__avatar">
+          {avatarUrl ? (
+            // User-provided avatar URLs cannot be known at build time.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt={`${profile.displayName} portrait`} />
+          ) : (
+            <span>{initials}</span>
+          )}
+        </div>
+        <div>
+          <h1>{profile.displayName}</h1>
+          <p className="profile-preview__role">{profile.role}</p>
+        </div>
+      </header>
+
+      <p className="profile-preview__bio">{profile.bio}</p>
+
+      <div className="profile-preview__socials" aria-label="Social profiles">
+        {(Object.entries(profile.socials) as [SocialKey, string][]).filter(([, url]) => isSafeExternalUrl(url)).map(
+          ([key, url]) => (
+            <a
+              key={key}
+              href={url}
+              target={url.startsWith("mailto:") ? undefined : "_blank"}
+              rel="noreferrer"
+              aria-label={key}
+              tabIndex={interactive ? undefined : -1}
+            >
+              {socialIcons[key]}
+            </a>
+          ),
+        )}
+      </div>
+
+      <div className="profile-preview__links">
+        {profile.links
+          .filter((link) => link.enabled && isSafeExternalUrl(link.url))
+          .map((link, index) => (
+            <a
+              href={link.url}
+              key={link.id}
+              target="_blank"
+              rel="noreferrer"
+              tabIndex={interactive ? undefined : -1}
+              className="profile-link"
+            >
+              <span className="profile-link__number">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="profile-link__copy">
+                <strong>{link.title}</strong>
+                {link.description ? <small>{link.description}</small> : null}
+              </span>
+              <FiArrowUpRight aria-hidden="true" />
+            </a>
+          ))}
+      </div>
+
+      {branded ? (
+        <a className="profile-preview__credit" href="/" tabIndex={interactive ? undefined : -1}>
+          made with <strong>socialize</strong>
+        </a>
+      ) : null}
+    </article>
+  );
+}

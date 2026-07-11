@@ -1,0 +1,997 @@
+.page {
+  min-width: 320px;
+  background: var(--cream);
+  color: var(--ink);
+}
+
+.authMain {
+  display: grid;
+  min-height: max(760px, 100svh);
+  grid-template-columns: minmax(0, 0.88fr) minmax(430px, 1.12fr);
+  padding-top: 76px;
+}
+
+.introPane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 4.75rem clamp(2rem, 5vw, 5.5rem) 3.5rem;
+  background: var(--signal);
+  color: var(--cream);
+}
+
+.introPane::before,
+.introPane::after {
+  position: absolute;
+  border: 1px solid rgba(244, 241, 247, 0.22);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.introPane::before {
+  top: -10rem;
+  right: -12rem;
+  width: 34rem;
+  height: 34rem;
+}
+
+.introPane::after {
+  bottom: -17rem;
+  left: -12rem;
+  width: 38rem;
+  height: 38rem;
+}
+
+.introContent,
+.introFoot {
+  position: relative;
+  z-index: 1;
+}
+
+.contextLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 2rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.contextLabel::before {
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 50%;
+  background: var(--cream);
+  content: "";
+}
+
+.introTitle {
+  max-width: 9.5ch;
+  margin: 0;
+  font-size: 4.15rem;
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.introDescription {
+  max-width: 34rem;
+  margin: 1.75rem 0 0;
+  color: rgba(244, 241, 247, 0.78);
+  font-size: 1rem;
+  line-height: 1.68;
+  text-wrap: pretty;
+}
+
+.benefitList {
+  display: grid;
+  max-width: 35rem;
+  gap: 0;
+  margin-top: 4.5rem;
+}
+
+.benefit {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(244, 241, 247, 0.22);
+}
+
+.benefit svg {
+  margin-top: 0.18rem;
+  color: var(--cream);
+}
+
+.benefit strong,
+.benefit span {
+  display: block;
+}
+
+.benefit strong {
+  margin-bottom: 0.22rem;
+  font-size: 0.84rem;
+}
+
+.benefit span {
+  color: rgba(244, 241, 247, 0.7);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.introFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(244, 241, 247, 0.22);
+  color: rgba(244, 241, 247, 0.68);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+}
+
+.introFoot code {
+  color: var(--cream);
+  font: inherit;
+}
+
+.formPane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 4.75rem clamp(1.5rem, 5vw, 6.5rem) 4rem;
+  background: var(--paper);
+}
+
+.formToolbar {
+  position: absolute;
+  z-index: 2;
+  top: 6.25rem;
+  right: clamp(1.5rem, 5vw, 6.5rem);
+}
+
+.formWrap {
+  width: min(100%, 31rem);
+  animation: formEnter 420ms var(--ease-out) both;
+}
+
+.wide .formWrap {
+  width: min(100%, 52rem);
+}
+
+.formHeading {
+  margin-bottom: 2rem;
+}
+
+.formHeading h2 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.formHeading p {
+  max-width: 52ch;
+  margin: 0.75rem 0 0;
+  color: rgba(24, 25, 23, 0.66);
+  font-size: 0.91rem;
+  line-height: 1.6;
+}
+
+.providerGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.providerButton,
+.primaryButton,
+.secondaryButton,
+.textButton {
+  display: inline-flex;
+  min-height: 3.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border: 0;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 750;
+  line-height: 1.1;
+  transition: color 180ms ease, background-color 180ms ease,
+    border-color 180ms ease, transform 180ms var(--ease-out);
+}
+
+.providerButton {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(24, 25, 23, 0.3);
+  background: transparent;
+  color: var(--ink);
+}
+
+.providerButton:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.providerButton svg {
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+}
+
+.primaryButton {
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--signal);
+  color: var(--cream);
+}
+
+.secondaryButton {
+  padding: 0.78rem 1rem;
+  border: 1px solid rgba(24, 25, 23, 0.34);
+  background: transparent;
+  color: var(--ink);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: rgba(24, 25, 23, 0.06);
+}
+
+.textButton {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  color: rgba(24, 25, 23, 0.68);
+  font-size: 0.79rem;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.textButton:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.providerButton:active:not(:disabled),
+.primaryButton:active:not(:disabled),
+.secondaryButton:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.providerButton:disabled,
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.textButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1.45rem 0;
+  color: rgba(24, 25, 23, 0.5);
+  font-size: 0.72rem;
+}
+
+.divider::before,
+.divider::after {
+  height: 1px;
+  flex: 1;
+  background: rgba(24, 25, 23, 0.17);
+  content: "";
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.field {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.labelLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.label,
+.labelLine label {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.labelLine a {
+  color: rgba(24, 25, 23, 0.66);
+  font-size: 0.73rem;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.labelLine a:hover {
+  color: var(--ink);
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border: 1px solid rgba(24, 25, 23, 0.31);
+  background: rgba(255, 255, 255, 0.42);
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.input,
+.textArea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.input {
+  min-height: 3.2rem;
+  padding: 0.82rem 0.9rem;
+}
+
+.textArea {
+  min-height: 7rem;
+  resize: vertical;
+  padding: 0.9rem;
+  line-height: 1.55;
+}
+
+.input::placeholder,
+.textArea::placeholder {
+  color: rgba(24, 25, 23, 0.54);
+}
+
+.prefix {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-left: 0.9rem;
+  color: rgba(24, 25, 23, 0.58);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.prefixedInput {
+  padding-left: 0.35rem;
+}
+
+.passwordToggle {
+  align-self: stretch;
+  display: grid;
+  width: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: rgba(24, 25, 23, 0.62);
+  cursor: pointer;
+}
+
+.passwordToggle:hover {
+  color: var(--ink);
+}
+
+.hint,
+.characterCount {
+  margin: 0;
+  color: rgba(24, 25, 23, 0.58);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.characterCount {
+  text-align: right;
+}
+
+.checkboxLabel {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  color: rgba(24, 25, 23, 0.7);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.checkboxLabel input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.14rem 0 0;
+  accent-color: var(--signal-dark);
+}
+
+.checkboxLabel a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(24, 25, 23, 0.27);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.notice svg {
+  margin-top: 0.12rem;
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
+.notice p {
+  margin: 0;
+}
+
+.noticeError {
+  border-color: rgba(173, 48, 31, 0.55);
+  background: rgba(239, 91, 63, 0.1);
+  color: #7e2517;
+}
+
+.noticeSuccess {
+  border-color: rgba(56, 91, 44, 0.48);
+  background: rgba(175, 192, 157, 0.24);
+  color: #2f5128;
+}
+
+.noticeInfo {
+  background: rgba(24, 25, 23, 0.045);
+  color: rgba(24, 25, 23, 0.75);
+}
+
+.noticeSpaced {
+  margin-top: 1rem;
+}
+
+.authMeta {
+  margin: 1.6rem 0 0;
+  color: rgba(24, 25, 23, 0.63);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.authMeta a,
+.inlineLink {
+  color: var(--ink);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.spinner {
+  width: 0.92rem;
+  height: 0.92rem;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+.confirmation {
+  display: grid;
+  justify-items: start;
+  gap: 1.15rem;
+}
+
+.confirmationIcon {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--moss);
+  color: var(--ink);
+  font-size: 1.35rem;
+}
+
+.confirmation h2 {
+  margin: 0;
+  font-size: 1.85rem;
+  letter-spacing: -0.035em;
+}
+
+.confirmation > p {
+  max-width: 46ch;
+  margin: -0.4rem 0 0;
+  color: rgba(24, 25, 23, 0.67);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.confirmation .primaryButton {
+  width: auto;
+  padding-inline: 1.25rem;
+}
+
+.emailBadge {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  background: rgba(24, 25, 23, 0.07);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.73rem;
+  overflow-wrap: anywhere;
+}
+
+.inlineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.actionsSpaced {
+  margin-top: 1.5rem;
+}
+
+.textButtonSpaced {
+  margin-top: 1.25rem;
+}
+
+.inlineActions .primaryButton {
+  width: auto;
+}
+
+.loadingBlock {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.skeletonLine {
+  height: 0.85rem;
+  overflow: hidden;
+  background: rgba(24, 25, 23, 0.1);
+}
+
+.skeletonLine:first-child {
+  width: 45%;
+  height: 1.8rem;
+}
+
+.skeletonLine:nth-child(2) {
+  width: 82%;
+}
+
+.skeletonLine:nth-child(3) {
+  width: 67%;
+}
+
+.onboardingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(250px, 0.82fr);
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.onboardingFields {
+  display: grid;
+  gap: 1rem;
+}
+
+.preview {
+  position: sticky;
+  top: 7rem;
+  min-height: 25rem;
+  padding: 1.35rem;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.preview::after {
+  position: absolute;
+  right: -6rem;
+  bottom: -8rem;
+  width: 17rem;
+  height: 17rem;
+  border: 1px solid rgba(238, 234, 221, 0.18);
+  border-radius: 50%;
+  content: "";
+}
+
+.previewTop {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(238, 234, 221, 0.18);
+  color: rgba(238, 234, 221, 0.55);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.63rem;
+}
+
+.previewDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--signal);
+}
+
+.previewBody {
+  position: relative;
+  z-index: 1;
+  padding-top: 3.25rem;
+}
+
+.previewAvatar {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--moss);
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.previewHandle {
+  margin: 1.5rem 0 0.25rem;
+  color: var(--signal);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.7rem;
+}
+
+.previewName {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.previewRole {
+  margin: 0.5rem 0 0;
+  color: rgba(238, 234, 221, 0.65);
+  font-size: 0.78rem;
+}
+
+.previewBio {
+  max-width: 30ch;
+  margin: 1.4rem 0 0;
+  color: rgba(238, 234, 221, 0.75);
+  font-size: 0.79rem;
+  line-height: 1.6;
+}
+
+.previewPlaceholder {
+  margin-top: 2.4rem;
+  padding: 0.9rem;
+  border: 1px dashed rgba(238, 234, 221, 0.28);
+  color: rgba(238, 234, 221, 0.48);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+@keyframes formEnter {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:global(html:not([data-app-theme="light"])) .formPane {
+  background: #111014;
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .formHeading p,
+:global(html:not([data-app-theme="light"])) .confirmation > p,
+:global(html:not([data-app-theme="light"])) .authMeta,
+:global(html:not([data-app-theme="light"])) .hint,
+:global(html:not([data-app-theme="light"])) .characterCount,
+:global(html:not([data-app-theme="light"])) .fieldHint,
+:global(html:not([data-app-theme="light"])) .checkboxLabel {
+  color: rgba(247, 243, 251, 0.68);
+}
+
+:global(html:not([data-app-theme="light"])) .label,
+:global(html:not([data-app-theme="light"])) .labelLine label {
+  color: rgba(247, 243, 251, 0.88);
+}
+
+:global(html:not([data-app-theme="light"])) .labelLine a,
+:global(html:not([data-app-theme="light"])) .textButton {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .labelLine a:hover,
+:global(html:not([data-app-theme="light"])) .textButton:hover:not(:disabled),
+:global(html:not([data-app-theme="light"])) .authMeta a,
+:global(html:not([data-app-theme="light"])) .inlineLink,
+:global(html:not([data-app-theme="light"])) .checkboxLabel a {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .providerButton,
+:global(html:not([data-app-theme="light"])) .secondaryButton {
+  border-color: rgba(247, 243, 251, 0.26);
+  background: rgba(247, 243, 251, 0.04);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .providerButton:hover:not(:disabled),
+:global(html:not([data-app-theme="light"])) .secondaryButton:hover:not(:disabled) {
+  border-color: rgba(247, 243, 251, 0.52);
+  background: rgba(247, 243, 251, 0.1);
+}
+
+:global(html:not([data-app-theme="light"])) .primaryButton {
+  background: var(--signal);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .primaryButton:hover:not(:disabled) {
+  background: var(--signal-hover);
+}
+
+:global(html:not([data-app-theme="light"])) .divider {
+  color: rgba(247, 243, 251, 0.5);
+}
+
+:global(html:not([data-app-theme="light"])) .divider::before,
+:global(html:not([data-app-theme="light"])) .divider::after {
+  background: rgba(247, 243, 251, 0.16);
+}
+
+:global(html:not([data-app-theme="light"])) .inputWrap {
+  border-color: rgba(247, 243, 251, 0.24);
+  background: #1b1720;
+}
+
+:global(html:not([data-app-theme="light"])) .inputWrap:focus-within {
+  border-color: var(--signal);
+  background: #211a28;
+}
+
+:global(html:not([data-app-theme="light"])) .input,
+:global(html:not([data-app-theme="light"])) .textArea {
+  color: #f7f3fb;
+  caret-color: var(--signal);
+}
+
+:global(html:not([data-app-theme="light"])) .input::placeholder,
+:global(html:not([data-app-theme="light"])) .textArea::placeholder,
+:global(html:not([data-app-theme="light"])) .prefix,
+:global(html:not([data-app-theme="light"])) .passwordToggle {
+  color: rgba(247, 243, 251, 0.56);
+}
+
+:global(html:not([data-app-theme="light"])) .passwordToggle:hover {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .notice {
+  border-color: rgba(247, 243, 251, 0.22);
+}
+
+:global(html:not([data-app-theme="light"])) .noticeInfo {
+  background: rgba(247, 243, 251, 0.06);
+  color: rgba(247, 243, 251, 0.78);
+}
+
+:global(html:not([data-app-theme="light"])) .noticeError {
+  border-color: rgba(255, 135, 160, 0.5);
+  background: rgba(122, 24, 48, 0.24);
+  color: #ffb3c2;
+}
+
+:global(html:not([data-app-theme="light"])) .noticeSuccess {
+  border-color: rgba(115, 222, 151, 0.42);
+  background: rgba(34, 108, 60, 0.22);
+  color: #a8edbf;
+}
+
+:global(html:not([data-app-theme="light"])) .emailBadge,
+:global(html:not([data-app-theme="light"])) .skeletonLine {
+  background: rgba(247, 243, 251, 0.08);
+}
+
+@media (max-width: 980px) {
+  .authMain {
+    grid-template-columns: minmax(280px, 0.75fr) minmax(430px, 1.25fr);
+  }
+
+  .introPane {
+    padding-inline: 2rem;
+  }
+
+  .introTitle {
+    font-size: 3.2rem;
+  }
+
+  .benefitList {
+    margin-top: 3rem;
+  }
+
+  .wide {
+    grid-template-columns: 1fr;
+  }
+
+  .wide .introPane {
+    min-height: 440px;
+  }
+
+  .wide .benefitList {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .wide .benefit {
+    display: block;
+  }
+
+  .wide .benefit svg {
+    margin-bottom: 0.65rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .authMain {
+    grid-template-columns: 1fr;
+  }
+
+  .introPane {
+    min-height: auto;
+    padding: 4rem 1.25rem 3rem;
+  }
+
+  .introTitle {
+    max-width: 12ch;
+    font-size: 3rem;
+  }
+
+  .benefitList {
+    margin-top: 3rem;
+  }
+
+  .introFoot {
+    display: none;
+  }
+
+  .formPane {
+    padding: 3.5rem 1.25rem 4rem;
+  }
+
+  .formToolbar {
+    top: 1rem;
+    right: 1.25rem;
+  }
+
+  .wide .introPane {
+    min-height: auto;
+  }
+
+  .wide .benefitList {
+    display: none;
+  }
+
+  .onboardingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    position: relative;
+    top: auto;
+    min-height: 22rem;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .introPane {
+    padding-inline: 1rem;
+  }
+
+  .introTitle {
+    font-size: 2.65rem;
+  }
+
+  .introDescription {
+    font-size: 0.91rem;
+  }
+
+  .benefit:nth-child(3) {
+    display: none;
+  }
+
+  .formPane {
+    padding: 4.75rem 1rem 4rem;
+  }
+
+  .formToolbar { right: 1rem; }
+
+  .providerGrid,
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .inlineActions .primaryButton,
+  .inlineActions .secondaryButton {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formWrap,
+  .spinner {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
