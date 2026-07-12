@@ -14,9 +14,11 @@ import {
   FiEye,
   FiEyeOff,
   FiFolder,
+  FiGrid,
   FiImage,
   FiMoreHorizontal,
   FiPlus,
+  FiSearch,
   FiTrash2,
   FiUpload,
   FiX,
@@ -32,10 +34,13 @@ import {
   type ProfileSection,
 } from "@/lib/profile";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { MediaIcon } from "@/components/media-icon";
+import { getMediaIcon, isMediaIconId, searchMediaIcons } from "@/lib/media-icons";
 import styles from "./dashboard-app.module.css";
 
 type MediaPatch = {
   mediaUrl?: string;
+  mediaIcon?: string;
   mediaType?: ProfileMediaType;
   hideTitle?: boolean;
 };
@@ -331,6 +336,7 @@ function LinkSectionBlock({
               label={`Heading image for ${section.title || "section"}`}
               mediaType={section.mediaType}
               mediaUrl={section.mediaUrl}
+              mediaIcon={section.mediaIcon}
               onPatch={(patch) => onUpdateSection(section.id, patch)}
               onUpload={(file) => onUploadSectionMedia(section.id, file)}
               supportsMediaOnly
@@ -570,6 +576,7 @@ function LinkCard({
             label={`Image for ${label}`}
             mediaType={link.mediaType}
             mediaUrl={link.mediaUrl}
+            mediaIcon={link.mediaIcon}
             onPatch={onUpdate}
             onUpload={onUploadMedia}
           />
@@ -605,6 +612,7 @@ function LinkCard({
 function MediaControls({
   label,
   mediaUrl,
+  mediaIcon,
   mediaType,
   hideTitle,
   supportsMediaOnly = false,
@@ -615,6 +623,7 @@ function MediaControls({
 }: {
   label: string;
   mediaUrl?: string;
+  mediaIcon?: string;
   mediaType?: ProfileMediaType;
   hideTitle?: boolean;
   supportsMediaOnly?: boolean;
@@ -626,7 +635,23 @@ function MediaControls({
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  const hasMedia = Boolean(mediaUrl?.trim());
+  const [iconQuery, setIconQuery] = useState("");
+  const hasImage = Boolean(mediaUrl?.trim());
+  const hasIcon = Boolean(mediaIcon && isMediaIconId(mediaIcon));
+  const hasMedia = hasImage || hasIcon;
+  const [sourceMode, setSourceMode] = useState<"image" | "icon">(() =>
+    hasIcon ? "icon" : "image",
+  );
+  const iconResults = searchMediaIcons(iconQuery);
+  const selectedIcon = mediaIcon ? getMediaIcon(mediaIcon) : undefined;
+
+  useEffect(() => {
+    if (mediaIcon && isMediaIconId(mediaIcon)) {
+      setSourceMode("icon");
+    } else if (mediaUrl?.trim()) {
+      setSourceMode("image");
+    }
+  }, [mediaIcon, mediaUrl]);
 
   async function handleUpload(file?: File) {
     if (!file) return;
@@ -642,15 +667,40 @@ function MediaControls({
     }
   }
 
+  function clearMedia() {
+    onPatch({ mediaUrl: undefined, mediaIcon: undefined, hideTitle: false });
+    setMessage("");
+    setIconQuery("");
+  }
+
+  function switchSource(next: "image" | "icon") {
+    if (next === sourceMode) return;
+    setSourceMode(next);
+    if (next === "icon") {
+      onPatch({ mediaUrl: undefined, hideTitle: false });
+    } else {
+      onPatch({ mediaIcon: undefined, hideTitle: false });
+      setIconQuery("");
+    }
+  }
+
   return (
     <details className={styles.linkMediaEditor} data-compact={compact ? "true" : undefined}>
       <summary>
-        <span><FiImage aria-hidden="true" /> {hasMedia ? "Custom image" : "Add image"}</span>
+        <span>
+          <FiImage aria-hidden="true" />{" "}
+          {hasMedia ? "Custom image / icon" : "Add image or icon"}
+        </span>
         <small>{hasMedia ? "On" : "Optional"}</small>
       </summary>
       <div className={styles.linkMediaEditorBody}>
-        <div className={styles.linkMediaPreview} data-type={mediaType ?? "icon"}>
-          {hasMedia && isSafeProfileMediaUrl(mediaUrl) ? (
+        <div
+          className={styles.linkMediaPreview}
+          data-type={hasIcon ? "icon" : mediaType ?? "icon"}
+        >
+          {hasIcon && mediaIcon ? (
+            <MediaIcon id={mediaIcon} />
+          ) : hasImage && isSafeProfileMediaUrl(mediaUrl) ? (
             // User-provided media URLs are rendered as decorative link imagery.
             // eslint-disable-next-line @next/next/no-img-element
             <img src={coerceProfileMediaUrl(mediaUrl!)} alt="" />
@@ -659,81 +709,171 @@ function MediaControls({
           )}
         </div>
         <div className={styles.linkMediaFields}>
-          <label className={styles.linkField} htmlFor={`${inputId}-url`}>
-            <span>Image URL</span>
-            <input
-              id={`${inputId}-url`}
-              inputMode="url"
-              placeholder="https://…/image.svg or /image.png"
-              value={mediaUrl || ""}
-              onChange={(event) => {
-                const value = event.target.value;
-                onPatch(value ? { mediaUrl: value } : { mediaUrl: undefined, hideTitle: false });
-                setMessage("");
-              }}
-              onBlur={(event) => {
-                const value = event.target.value.trim();
-                if (!value) return;
-                const coerced = value.startsWith("/")
-                  ? value
-                  : value.match(/^https?:\/\//i)
-                    ? value.replace(/^http:\/\//i, "https://")
-                    : /^[a-z][a-z0-9+.-]*:/i.test(value)
-                      ? value
-                      : `https://${value}`;
-                if (coerced !== mediaUrl) {
-                  onPatch({ mediaUrl: coerced });
-                }
-              }}
-            />
-          </label>
           <div className={styles.linkField}>
-            <span id={`${inputId}-type-label`}>Display</span>
-            <CustomSelect
-              aria-label="Display"
-              id={`${inputId}-type`}
-              options={[
-                { value: "icon", label: "Compact icon" },
-                { value: "thumbnail", label: "Wide thumbnail" },
-              ]}
-              value={mediaType ?? "icon"}
-              onChange={(next) =>
-                onPatch({
-                  mediaType: next === "thumbnail" ? "thumbnail" : "icon",
-                })
-              }
-            />
-          </div>
-        </div>
-        <div className={styles.linkMediaActions}>
-          <label className={styles.linkMediaUpload}>
-            <input
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
-              disabled={!canUpload || uploading}
-              id={inputId}
-              type="file"
-              onChange={(event) => {
-                void handleUpload(event.target.files?.[0]);
-                event.currentTarget.value = "";
-              }}
-            />
-            <FiUpload aria-hidden="true" />
-            {uploading ? "Uploading" : "Upload image"}
-          </label>
-          {hasMedia ? (
-            <button
-              className={styles.linkMediaClear}
-              type="button"
-              onClick={() => {
-                onPatch({ mediaUrl: undefined, hideTitle: false });
-                setMessage("");
-              }}
+            <span id={`${inputId}-source-label`}>Source</span>
+            <div
+              aria-labelledby={`${inputId}-source-label`}
+              className={styles.linkMediaSourceToggle}
+              role="group"
             >
+              <button
+                aria-pressed={sourceMode === "image"}
+                type="button"
+                onClick={() => switchSource("image")}
+              >
+                <FiImage aria-hidden="true" /> Image
+              </button>
+              <button
+                aria-pressed={sourceMode === "icon"}
+                type="button"
+                onClick={() => switchSource("icon")}
+              >
+                <FiGrid aria-hidden="true" /> Icon
+              </button>
+            </div>
+          </div>
+
+          {sourceMode === "image" ? (
+            <>
+              <label className={styles.linkField} htmlFor={`${inputId}-url`}>
+                <span>Image URL</span>
+                <input
+                  id={`${inputId}-url`}
+                  inputMode="url"
+                  placeholder="https://…/image.svg or /image.png"
+                  value={mediaUrl || ""}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    onPatch(
+                      value
+                        ? { mediaUrl: value, mediaIcon: undefined }
+                        : { mediaUrl: undefined, mediaIcon: undefined, hideTitle: false },
+                    );
+                    setMessage("");
+                  }}
+                  onBlur={(event) => {
+                    const value = event.target.value.trim();
+                    if (!value) return;
+                    const coerced = value.startsWith("/")
+                      ? value
+                      : value.match(/^https?:\/\//i)
+                        ? value.replace(/^http:\/\//i, "https://")
+                        : /^[a-z][a-z0-9+.-]*:/i.test(value)
+                          ? value
+                          : `https://${value}`;
+                    if (coerced !== mediaUrl) {
+                      onPatch({ mediaUrl: coerced, mediaIcon: undefined });
+                    }
+                  }}
+                />
+              </label>
+              <div className={styles.linkField}>
+                <span id={`${inputId}-type-label`}>Display</span>
+                <CustomSelect
+                  aria-label="Display"
+                  id={`${inputId}-type`}
+                  options={[
+                    { value: "icon", label: "Compact icon" },
+                    { value: "thumbnail", label: "Wide thumbnail" },
+                  ]}
+                  value={mediaType ?? "icon"}
+                  onChange={(next) =>
+                    onPatch({
+                      mediaType: next === "thumbnail" ? "thumbnail" : "icon",
+                    })
+                  }
+                />
+              </div>
+            </>
+          ) : (
+            <div className={styles.linkField}>
+              <span id={`${inputId}-icon-label`}>Pick an icon</span>
+              <label className={styles.linkMediaIconSearch} htmlFor={`${inputId}-icon-search`}>
+                <FiSearch aria-hidden="true" />
+                <input
+                  aria-labelledby={`${inputId}-icon-label`}
+                  id={`${inputId}-icon-search`}
+                  placeholder="Search brands and icons…"
+                  type="search"
+                  value={iconQuery}
+                  onChange={(event) => setIconQuery(event.target.value)}
+                />
+              </label>
+              <div
+                aria-labelledby={`${inputId}-icon-label`}
+                className={styles.linkMediaIconGrid}
+                role="listbox"
+              >
+                {iconResults.length === 0 ? (
+                  <p className={styles.linkMediaIconEmpty}>No icons match that search.</p>
+                ) : (
+                  iconResults.map((entry) => {
+                    const Icon = entry.Icon;
+                    const selected = mediaIcon === entry.id;
+                    return (
+                      <button
+                        aria-label={entry.label}
+                        aria-selected={selected}
+                        className={styles.linkMediaIconOption}
+                        data-selected={selected ? "true" : undefined}
+                        key={entry.id}
+                        role="option"
+                        title={entry.label}
+                        type="button"
+                        onClick={() => {
+                          onPatch({
+                            mediaIcon: entry.id,
+                            mediaUrl: undefined,
+                            mediaType: "icon",
+                          });
+                          setMessage("");
+                        }}
+                      >
+                        <Icon aria-hidden="true" />
+                        {selected ? (
+                          <FiCheck aria-hidden="true" className={styles.linkMediaIconCheck} />
+                        ) : null}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              {selectedIcon ? (
+                <p className={styles.linkMediaIconSelected}>Selected: {selectedIcon.label}</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+        {sourceMode === "image" ? (
+          <div className={styles.linkMediaActions}>
+            <label className={styles.linkMediaUpload}>
+              <input
+                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
+                disabled={!canUpload || uploading}
+                id={inputId}
+                type="file"
+                onChange={(event) => {
+                  void handleUpload(event.target.files?.[0]);
+                  event.currentTarget.value = "";
+                }}
+              />
+              <FiUpload aria-hidden="true" />
+              {uploading ? "Uploading" : "Upload image"}
+            </label>
+            {hasMedia ? (
+              <button className={styles.linkMediaClear} type="button" onClick={clearMedia}>
+                <FiX aria-hidden="true" /> Clear
+              </button>
+            ) : null}
+          </div>
+        ) : hasMedia ? (
+          <div className={styles.linkMediaActions}>
+            <button className={styles.linkMediaClear} type="button" onClick={clearMedia}>
               <FiX aria-hidden="true" /> Clear
             </button>
-          ) : null}
-        </div>
-        {!canUpload ? (
+          </div>
+        ) : null}
+        {sourceMode === "image" && !canUpload ? (
           <p className={styles.linkMediaHint}>Sign in to upload, or paste an image URL.</p>
         ) : null}
         {supportsMediaOnly ? (
@@ -744,7 +884,7 @@ function MediaControls({
               type="checkbox"
               onChange={(event) => onPatch({ hideTitle: event.target.checked })}
             />
-            Use the image as the visible heading
+            Use the {sourceMode === "icon" ? "icon" : "image"} as the visible heading
           </label>
         ) : null}
         {message ? <p className={styles.linkMediaMessage} role="status">{message}</p> : null}

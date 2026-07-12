@@ -12,7 +12,9 @@ import {
 } from "@/lib/profile";
 import { recordProfileClick } from "@/lib/profile-stats";
 import { DeveloperActivity } from "@/components/developer-activity";
+import { MediaIcon } from "@/components/media-icon";
 import { socialIcons } from "@/components/social-icons";
+import { isMediaIconId } from "@/lib/media-icons";
 
 type ProfilePreviewProps = {
   profile: ProfileConfig;
@@ -122,11 +124,18 @@ export function ProfilePreview({
           const sectionMediaUrl = isSafeProfileMediaUrl(group.section?.mediaUrl)
             ? coerceProfileMediaUrl(group.section!.mediaUrl!)
             : undefined;
-          const sectionMediaType = group.section?.mediaType === "thumbnail"
-            ? "thumbnail"
-            : "icon";
+          const sectionMediaIcon =
+            group.section?.mediaIcon && isMediaIconId(group.section.mediaIcon)
+              ? group.section.mediaIcon
+              : undefined;
+          const sectionHasMedia = Boolean(sectionMediaUrl || sectionMediaIcon);
+          const sectionMediaType = sectionMediaIcon
+            ? "icon"
+            : group.section?.mediaType === "thumbnail"
+              ? "thumbnail"
+              : "icon";
           const mediaOnlyHeading = Boolean(
-            sectionMediaUrl && group.section?.hideTitle,
+            sectionHasMedia && group.section?.hideTitle,
           );
 
           return [
@@ -137,10 +146,12 @@ export function ProfilePreview({
               {group.section ? (
                 <h2
                   className="profile-link-section__title"
-                  data-media={sectionMediaUrl ? sectionMediaType : undefined}
+                  data-media={sectionHasMedia ? sectionMediaType : undefined}
                   data-media-only={mediaOnlyHeading ? "true" : undefined}
                 >
-                  {sectionMediaUrl ? (
+                  {sectionMediaIcon ? (
+                    <MediaIcon id={sectionMediaIcon} />
+                  ) : sectionMediaUrl ? (
                     // User-provided heading media is decorative; the text remains the accessible name.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={sectionMediaUrl} alt="" />
@@ -155,7 +166,14 @@ export function ProfilePreview({
                   const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
                     ? coerceProfileMediaUrl(link.mediaUrl!)
                     : undefined;
-                  const mediaType = link.mediaType === "thumbnail" ? "thumbnail" : "icon";
+                  const mediaIcon =
+                    link.mediaIcon && isMediaIconId(link.mediaIcon) ? link.mediaIcon : undefined;
+                  const hasMedia = Boolean(mediaUrl || mediaIcon);
+                  const mediaType = mediaIcon
+                    ? "icon"
+                    : link.mediaType === "thumbnail"
+                      ? "thumbnail"
+                      : "icon";
                   return (
                     <a
                       href={link.url}
@@ -164,10 +182,14 @@ export function ProfilePreview({
                       rel="noreferrer"
                       tabIndex={interactive ? undefined : -1}
                       className="profile-link"
-                      data-media={mediaUrl ? mediaType : undefined}
+                      data-media={hasMedia ? mediaType : undefined}
                       onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
                     >
-                      {mediaUrl ? (
+                      {mediaIcon ? (
+                        <span className="profile-link__media" aria-hidden="true">
+                          <MediaIcon id={mediaIcon} />
+                        </span>
+                      ) : mediaUrl ? (
                         <span className="profile-link__media" aria-hidden="true">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={mediaUrl} alt="" />

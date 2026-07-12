@@ -4,6 +4,7 @@ import {
   isEmailAddress,
   normalizeLinkUrl,
 } from "@/lib/email-link";
+import { isMediaIconId } from "@/lib/media-icons";
 import { sanitizeSocials, type SocialKey } from "@/lib/socials";
 
 export type { SocialKey } from "@/lib/socials";
@@ -16,6 +17,7 @@ export type ProfileSection = {
   id: string;
   title: string;
   mediaUrl?: string;
+  mediaIcon?: string;
   mediaType?: ProfileMediaType;
   hideTitle?: boolean;
 };
@@ -29,6 +31,7 @@ export type ProfileLink = {
   kind?: "link" | "project" | "writing";
   sectionId?: string;
   mediaUrl?: string;
+  mediaIcon?: string;
   mediaType?: ProfileMediaType;
 };
 
@@ -470,6 +473,41 @@ export function isAutoLinkDescription(description?: string) {
 
 const MAX_SECTIONS = 12;
 
+type SanitizedMediaFields = {
+  mediaUrl?: string;
+  mediaIcon?: string;
+  mediaType?: ProfileMediaType;
+  hideTitle?: boolean;
+};
+
+function sanitizeMediaFields(source: {
+  mediaUrl?: string;
+  mediaIcon?: string;
+  mediaType?: ProfileMediaType;
+  hideTitle?: boolean;
+}): SanitizedMediaFields {
+  const mediaIcon =
+    source.mediaIcon && isMediaIconId(source.mediaIcon) ? source.mediaIcon : undefined;
+  if (mediaIcon) {
+    return {
+      mediaIcon,
+      mediaType: "icon",
+      ...(source.hideTitle ? { hideTitle: true } : {}),
+    };
+  }
+
+  const mediaUrl = isSafeProfileMediaUrl(source.mediaUrl)
+    ? coerceProfileMediaUrl(source.mediaUrl!).slice(0, 2048)
+    : undefined;
+  if (!mediaUrl) return {};
+
+  return {
+    mediaUrl,
+    mediaType: source.mediaType === "thumbnail" ? "thumbnail" : "icon",
+    ...(source.hideTitle ? { hideTitle: true } : {}),
+  };
+}
+
 export function groupLinksBySection(profile: ProfileConfig): LinkSectionGroup[] {
   const sections = profile.sections ?? [];
   const sectionIds = new Set(sections.map((section) => section.id));
@@ -557,17 +595,11 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
   const sections = (profile.sections ?? [])
     .slice(0, MAX_SECTIONS)
     .map((section) => {
-      const mediaUrl = isSafeProfileMediaUrl(section.mediaUrl)
-        ? coerceProfileMediaUrl(section.mediaUrl!).slice(0, 2048)
-        : undefined;
+      const media = sanitizeMediaFields(section);
       return {
         id: section.id.slice(0, 80),
         title: section.title.trim().slice(0, 60),
-        ...(mediaUrl ? { mediaUrl } : {}),
-        ...(mediaUrl
-          ? { mediaType: section.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
-          : {}),
-        ...(mediaUrl && section.hideTitle ? { hideTitle: true } : {}),
+        ...media,
       };
     })
     .filter((section) => section.title.length > 0);
@@ -593,9 +625,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
       const description = link.description?.trim().slice(0, 160) || undefined;
       const sectionId =
         link.sectionId && sectionIds.has(link.sectionId) ? link.sectionId : undefined;
-      const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
-        ? coerceProfileMediaUrl(link.mediaUrl!).slice(0, 2048)
-        : undefined;
+      const media = sanitizeMediaFields(link);
       return {
         id: link.id.slice(0, 80),
         title: link.title.trim().slice(0, 100),
@@ -607,10 +637,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
         ...(description ? { description } : {}),
         ...(link.kind ? { kind: link.kind } : {}),
         ...(sectionId ? { sectionId } : {}),
-        ...(mediaUrl ? { mediaUrl } : {}),
-        ...(mediaUrl
-          ? { mediaType: link.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
-          : {}),
+        ...media,
       };
     }),
   };

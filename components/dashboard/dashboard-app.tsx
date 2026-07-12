@@ -509,14 +509,14 @@ export function DashboardApp() {
   async function uploadLinkMedia(linkId: string, file: File) {
     if (!user) throw new Error("Sign in before uploading a link image.");
     const mediaUrl = await uploadProfileMedia(user.uid, "links", linkId, file);
-    updateLink(linkId, { mediaUrl });
+    updateLink(linkId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
     setStatus({ tone: "success", message: "Link image uploaded. Save changes to publish it." });
   }
 
   async function uploadSectionMedia(sectionId: string, file: File) {
     if (!user) throw new Error("Sign in before uploading a section image.");
     const mediaUrl = await uploadProfileMedia(user.uid, "sections", sectionId, file);
-    updateSection(sectionId, { mediaUrl });
+    updateSection(sectionId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
     setStatus({ tone: "success", message: "Section image uploaded. Save changes to publish it." });
   }
 
@@ -581,7 +581,10 @@ export function DashboardApp() {
       const invalidLink = profileToSave.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
       const invalidLinkMedia = profileToSave.links.find(
-        (link) => link.mediaUrl && !isSafeProfileMediaUrl(link.mediaUrl),
+        (link) =>
+          link.mediaUrl &&
+          !link.mediaIcon &&
+          !isSafeProfileMediaUrl(link.mediaUrl),
       );
       if (invalidLinkMedia) {
         throw new Error(`"${invalidLinkMedia.title || "Link"}" needs an https:// image URL or local image path.`);
@@ -589,7 +592,9 @@ export function DashboardApp() {
       const invalidSection = (profileToSave.sections ?? []).find(
         (section) =>
           !section.title.trim() ||
-          (section.mediaUrl && !isSafeProfileMediaUrl(section.mediaUrl)),
+          (section.mediaUrl &&
+            !section.mediaIcon &&
+            !isSafeProfileMediaUrl(section.mediaUrl)),
       );
       if (invalidSection) {
         throw new Error("Every section needs heading text and a valid image URL.");

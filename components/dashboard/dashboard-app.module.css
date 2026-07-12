@@ -1126,10 +1126,129 @@
   padding: 0.25rem;
 }
 
+.linkMediaPreview svg {
+  width: 1.55rem;
+  height: 1.55rem;
+  color: rgba(25, 26, 24, 0.82);
+}
+
+.linkMediaPreview svg path:not([fill="none"]) {
+  fill: currentColor !important;
+}
+
+.linkMediaSourceToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.linkMediaSourceToggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  background: rgba(25, 26, 24, 0.03);
+  color: rgba(25, 26, 24, 0.72);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.linkMediaSourceToggle button[aria-pressed="true"] {
+  border-color: rgba(25, 26, 24, 0.28);
+  background: rgba(25, 26, 24, 0.08);
+  color: rgba(25, 26, 24, 0.92);
+}
+
+.linkMediaIconSearch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.linkMediaIconSearch svg {
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.82rem;
+}
+
+.linkMediaIconSearch input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: rgba(25, 26, 24, 0.88);
+  font: inherit;
+  outline: none;
+}
+
+.linkMediaIconGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.35rem, 1fr));
+  gap: 0.35rem;
+  max-height: 11.5rem;
+  overflow: auto;
+  padding: 0.15rem 0.05rem 0.25rem;
+}
+
+.linkMediaIconOption {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  background: rgba(25, 26, 24, 0.03);
+  color: rgba(25, 26, 24, 0.88);
+  cursor: pointer;
+}
+
+.linkMediaIconOption svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: inherit;
+}
+
+.linkMediaIconOption svg path:not([fill="none"]) {
+  fill: currentColor !important;
+}
+
+.linkMediaIconOption[data-selected="true"] {
+  border-color: rgba(25, 26, 24, 0.34);
+  background: rgba(25, 26, 24, 0.1);
+}
+
+.linkMediaIconCheck {
+  position: absolute;
+  right: 0.12rem;
+  bottom: 0.12rem;
+  width: 0.62rem !important;
+  height: 0.62rem !important;
+  color: rgba(25, 26, 24, 0.72);
+}
+
+.linkMediaIconEmpty,
+.linkMediaIconSelected {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgba(25, 26, 24, 0.58);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
 .linkMediaFields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.45rem;
+}
+
+.linkMediaFields > .linkField:has(.linkMediaSourceToggle),
+.linkMediaFields > .linkField:has(.linkMediaIconGrid) {
+  grid-column: 1 / -1;
 }
 
 .linkMediaActions {
@@ -2484,7 +2603,44 @@
 
 :global(html:not([data-app-theme="light"])) .linkMediaPreview {
   background: rgba(247, 243, 251, 0.04);
-  color: rgba(247, 243, 251, 0.4);
+  color: rgba(247, 243, 251, 0.88);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaPreview svg {
+  color: rgba(247, 243, 251, 0.88);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaSourceToggle button,
+:global(html:not([data-app-theme="light"])) .linkMediaIconSearch,
+:global(html:not([data-app-theme="light"])) .linkMediaIconOption {
+  border-color: rgba(247, 243, 251, 0.16);
+  background: rgba(247, 243, 251, 0.04);
+  color: rgba(247, 243, 251, 0.92);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaIconOption svg {
+  color: rgba(247, 243, 251, 0.92);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaIconCheck {
+  color: #d7b7f5;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaSourceToggle button[aria-pressed="true"],
+:global(html:not([data-app-theme="light"])) .linkMediaIconOption[data-selected="true"] {
+  border-color: rgba(215, 183, 245, 0.42);
+  background: rgba(215, 183, 245, 0.12);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaIconSearch {
+  background: rgba(247, 243, 251, 0.03);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaIconSearch svg,
+:global(html:not([data-app-theme="light"])) .linkMediaIconEmpty,
+:global(html:not([data-app-theme="light"])) .linkMediaIconSelected {
+  color: rgba(247, 243, 251, 0.48);
 }
 
 :global(html:not([data-app-theme="light"])) .linkMediaMessage {
