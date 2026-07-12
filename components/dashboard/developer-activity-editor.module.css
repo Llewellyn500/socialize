@@ -154,6 +154,74 @@
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+.linkedAccount,
+.linkAccountPrompt {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.22);
+  background: rgba(138, 43, 226, 0.06);
+  color: #191a18;
+  font-size: 0.72rem;
+}
+
+.linkedAccount strong {
+  font-weight: 700;
+}
+
+.linkedAccount em {
+  margin-left: auto;
+  color: #287c3b;
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.linkAccountPrompt {
+  flex-wrap: wrap;
+  background: transparent;
+}
+
+.linkAccountPrompt p {
+  flex: 1 1 12rem;
+  margin: 0;
+  color: rgba(25, 26, 24, 0.72);
+  line-height: 1.45;
+}
+
+.linkAccountPrompt button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.22);
+  background: #191a18;
+  color: #f4f0e5;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.linkAccountPrompt button:hover:not(:disabled) {
+  background: #8a2be2;
+  border-color: #8a2be2;
+}
+
+.linkAccountPrompt button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.linkAccountPrompt small[data-tone="error"] {
+  flex: 1 1 100%;
+  color: #a12b24;
+}
+
 .connectionActions {
   display: flex;
   align-items: center;
@@ -279,6 +347,35 @@
 
 :global(html:not([data-app-theme="light"])) .connectionActions p[data-tone="success"] { color: #8de0aa; }
 :global(html:not([data-app-theme="light"])) .connectionActions p[data-tone="error"] { color: #ff9dad; }
+
+:global(html:not([data-app-theme="light"])) .linkedAccount,
+:global(html:not([data-app-theme="light"])) .linkAccountPrompt {
+  border-color: rgba(247, 243, 251, 0.2);
+  background: rgba(138, 43, 226, 0.12);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkAccountPrompt {
+  background: transparent;
+}
+
+:global(html:not([data-app-theme="light"])) .linkAccountPrompt p {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .linkAccountPrompt button {
+  border-color: rgba(247, 243, 251, 0.22);
+  background: #8a2be2;
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkedAccount em {
+  color: #8de0aa;
+}
+
+:global(html:not([data-app-theme="light"])) .linkAccountPrompt small[data-tone="error"] {
+  color: #ff9dad;
+}
 
 @media (max-width: 620px) {
   .integrationHeading,

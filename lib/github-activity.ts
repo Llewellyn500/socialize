@@ -14,6 +14,17 @@ import {
   type ContributionDayMap,
   CONTRIBUTION_CACHE_VERSION,
 } from "@/lib/github-contribution-cache";
+import {
+  hasLanguageYearCoverage,
+  LANGUAGE_CACHE_VERSION,
+  languageModeKey,
+  loadLanguageCacheServer,
+  normalizeSyncedYears as normalizeLanguageSyncedYears,
+  readLanguageYearEntry,
+  replaceLanguageYear,
+  saveLanguageCacheServer,
+  type LanguageYearCacheEntry,
+} from "@/lib/github-language-cache";
 
 const GITHUB_API_BASE = "https://api.github.com";
 const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
@@ -25,6 +36,8 @@ const CONTRIBUTION_DAY_CACHE_SECONDS = 5 * 60;
 const EVENT_LIMIT = 100;
 const RECENT_REPOSITORY_LIMIT = 3;
 const SELECTED_REPOSITORY_LIMIT = 5;
+const YEAR_LANGUAGE_REPOSITORY_LIMIT = 12;
+const LANGUAGE_DISPLAY_LIMIT = 30;
 const COMMITS_PER_REPOSITORY = 10;
 const DAY_COUNT = 30;
 
@@ -1279,7 +1292,10 @@ function mergeCommits(results: RepositoryCommitResult[]) {
   );
 }
 
-function mergeLanguages(languageSets: Record<string, number>[]) {
+function mergeLanguages(
+  languageSets: Record<string, number>[],
+  limit = LANGUAGE_DISPLAY_LIMIT,
+) {
   const totals = new Map<string, number>();
   for (const languages of languageSets) {
     for (const [name, bytes] of Object.entries(languages)) {
@@ -1291,10 +1307,282 @@ function mergeLanguages(languageSets: Record<string, number>[]) {
   const totalBytes = entries.reduce((total, [, bytes]) => total + bytes, 0);
   if (totalBytes <= 0) return [] as GitHubActivityLanguage[];
 
-  return entries.slice(0, 4).map(([name, bytes]) => ({
+  const capped =
+    entries.length <= limit
+      ? entries
+      : [
+          ...entries.slice(0, limit - 1),
+          [
+            "Other",
+            entries.slice(limit - 1).reduce((sum, [, bytes]) => sum + bytes, 0),
+          ] as [string, number],
+        ];
+
+  return capped.map(([name, bytes]) => ({
     name,
     percentage: Math.round((bytes / totalBytes) * 10_000) / 100,
   }));
+}
+
+function repositoriesFromPushEventsInYear(pushEvents: GitHubEvent[], year: number) {
+  const { from, to } = contributionRange(year);
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  const byName = new Map<string, RecentRepository>();
+
+  for (const event of pushEvents) {
+    const name = parseRepositoryName(event.repo?.name);
+    const pushedAt = validIsoDate(event.created_at);
+    if (!name || !pushedAt) continue;
+    const pushedMs = Date.parse(pushedAt);
+    if (!Number.isFinite(pushedMs) || pushedMs < fromMs || pushedMs > toMs) {
+      continue;
+    }
+    const key = name.toLowerCase();
+    const current = byName.get(key);
+    if (!current || pushedAt > current.pushedAt) {
+      byName.set(key, { name, pushedAt });
+    }
+  }
+
+  return [...byName.values()].sort((a, b) =>
+    b.pushedAt.localeCompare(a.pushedAt),
+  );
+}
+
+async function requestGitHubSoft(path: string): Promise<GitHubRequestResult | null> {
+  try {
+    return await requestGitHub(path);
+  } catch (error) {
+    if (error instanceof GitHubActivityError && error.status === 429) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function listUserRepositoriesPushedInYear(username: string, year: number) {
+  const { from, to } = contributionRange(year);
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  const result = await requestGitHubSoft(
+    `/users/${encodeURIComponent(username)}/repos?type=owner&sort=pushed&per_page=100`,
+  );
+  if (!result || !result.response.ok || !Array.isArray(result.data)) {
+    return [] as string[];
+  }
+
+  const repositories: string[] = [];
+  const seen = new Set<string>();
+  for (const item of result.data) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const repo = item as {
+      full_name?: unknown;
+      private?: unknown;
+      pushed_at?: unknown;
+      fork?: unknown;
+    };
+    if (repo.private === true) continue;
+    const pushedAt = validIsoDate(repo.pushed_at);
+    if (!pushedAt) continue;
+    const pushedMs = Date.parse(pushedAt);
+    if (!Number.isFinite(pushedMs) || pushedMs < fromMs || pushedMs > toMs) {
+      continue;
+    }
+    const fullName = parseRepositoryName(repo.full_name);
+    if (!fullName) continue;
+    const key = fullName.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    repositories.push(fullName);
+    if (repositories.length >= YEAR_LANGUAGE_REPOSITORY_LIMIT) break;
+  }
+  return repositories;
+}
+
+const fetchCachedUserRepositoriesPushedInYear = unstable_cache(
+  listUserRepositoriesPushedInYear,
+  ["github-activity-user-repos-year-v1"],
+  { revalidate: REPOSITORY_CACHE_SECONDS },
+);
+
+async function discoverRepositoriesForYear(
+  username: string,
+  year: number,
+  pushEvents: GitHubEvent[],
+) {
+  // Prefer already-fetched public events (no extra GitHub quota), then owned
+  // repos pushed in-year. Avoid Search API — it rate-limits far more aggressively.
+  const fromEvents = repositoriesFromPushEventsInYear(pushEvents, year).map(
+    ({ name }) => name,
+  );
+  const fromOwned =
+    fromEvents.length >= YEAR_LANGUAGE_REPOSITORY_LIMIT
+      ? []
+      : await fetchCachedUserRepositoriesPushedInYear(username, year);
+
+  const combined: string[] = [];
+  const seen = new Set<string>();
+  for (const repository of [...fromEvents, ...fromOwned]) {
+    const key = repository.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    combined.push(repository);
+    if (combined.length >= YEAR_LANGUAGE_REPOSITORY_LIMIT) break;
+  }
+  return combined;
+}
+
+function applyRepositoryModeFilter(
+  repositories: string[],
+  mode: GitHubRepositoryMode,
+  configuredRepositories: string[],
+) {
+  if (mode === "recent") {
+    return repositories.slice(0, YEAR_LANGUAGE_REPOSITORY_LIMIT);
+  }
+
+  const selected = new Set(
+    configuredRepositories.map((repository) => repository.toLowerCase()),
+  );
+
+  if (mode === "include") {
+    const active = new Set(repositories.map((repository) => repository.toLowerCase()));
+    const activeSelected = configuredRepositories.filter((repository) =>
+      active.has(repository.toLowerCase()),
+    );
+    // If discovery could not confirm activity (rate limits / sparse events),
+    // still use the explicitly selected repositories.
+    return (
+      activeSelected.length > 0 ? activeSelected : configuredRepositories
+    ).slice(0, SELECTED_REPOSITORY_LIMIT);
+  }
+
+  return repositories
+    .filter((repository) => !selected.has(repository.toLowerCase()))
+    .slice(0, YEAR_LANGUAGE_REPOSITORY_LIMIT);
+}
+
+async function fetchLanguagesForRepositories(repositories: string[]) {
+  const languageSets = await Promise.all(
+    repositories.map(async (repository) => {
+      try {
+        return await fetchCachedRepositoryLanguages(repository);
+      } catch (error) {
+        if (error instanceof GitHubActivityError && error.status === 429) {
+          return {} as Record<string, number>;
+        }
+        throw error;
+      }
+    }),
+  );
+  return mergeLanguages(languageSets);
+}
+
+async function persistLanguageYear(
+  username: string,
+  year: number,
+  entry: LanguageYearCacheEntry,
+  options: { markSynced?: boolean } = {},
+) {
+  const cached = await loadLanguageCacheServer(username);
+  const byYear = replaceLanguageYear(cached?.byYear ?? {}, year, entry);
+  const syncedYears = normalizeLanguageSyncedYears([
+    ...(cached?.syncedYears ?? []),
+    ...(options.markSynced !== false ? [year] : []),
+  ]);
+  await saveLanguageCacheServer(username, byYear, syncedYears, {
+    version: LANGUAGE_CACHE_VERSION,
+  });
+}
+
+async function resolveYearLanguages(
+  username: string,
+  year: number,
+  mode: GitHubRepositoryMode,
+  configuredRepositories: string[],
+  pushEvents: GitHubEvent[],
+): Promise<{ languages: GitHubActivityLanguage[]; repositories: string[] }> {
+  const modeKey = languageModeKey(mode, configuredRepositories);
+  const cached = await loadLanguageCacheServer(username);
+  if (hasLanguageYearCoverage(cached, year, modeKey)) {
+    const entry = cached!.byYear[String(year)]!;
+    return {
+      languages: entry.languages,
+      repositories: entry.repositories,
+    };
+  }
+
+  const stale = readLanguageYearEntry(cached, year, modeKey);
+
+  try {
+    const discovered = await discoverRepositoriesForYear(
+      username,
+      year,
+      pushEvents,
+    );
+    const candidateRepositories = applyRepositoryModeFilter(
+      discovered,
+      mode,
+      configuredRepositories,
+    );
+
+    const verifiedRepositories = (
+      await Promise.all(
+        candidateRepositories.map(async (repository) => {
+          try {
+            return await fetchCachedPublicRepository(repository);
+          } catch (error) {
+            if (error instanceof GitHubActivityError && error.status === 429) {
+              return null;
+            }
+            throw error;
+          }
+        }),
+      )
+    ).filter((repository): repository is string => Boolean(repository));
+
+    // If we could not verify anything (likely rate limited), keep stale data.
+    if (verifiedRepositories.length === 0 && stale) {
+      return {
+        languages: stale.languages,
+        repositories: stale.repositories,
+      };
+    }
+
+    const languages = await fetchLanguagesForRepositories(verifiedRepositories);
+    if (languages.length === 0 && stale) {
+      return {
+        languages: stale.languages,
+        repositories: stale.repositories,
+      };
+    }
+
+    const entry: LanguageYearCacheEntry = {
+      languages,
+      repositories: verifiedRepositories,
+      modeKey,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const currentYear = new Date().getUTCFullYear();
+    await persistLanguageYear(username, year, entry, {
+      markSynced: year < currentYear,
+    });
+
+    return { languages, repositories: verifiedRepositories };
+  } catch (error) {
+    if (stale) {
+      return {
+        languages: stale.languages,
+        repositories: stale.repositories,
+      };
+    }
+    if (error instanceof GitHubActivityError && error.status === 429) {
+      return { languages: [], repositories: [] };
+    }
+    throw error;
+  }
 }
 
 export async function getGitHubActivity(
@@ -1338,7 +1626,7 @@ export async function getGitHubActivity(
           .slice(0, RECENT_REPOSITORY_LIMIT)
           .map(({ name }) => name);
 
-  const needsRepositoryData = includeCommits || includeLanguages;
+  const needsRepositoryData = includeCommits;
   const verifiedRepositories = needsRepositoryData
     ? (
         await Promise.all(
@@ -1351,18 +1639,13 @@ export async function getGitHubActivity(
 
   const repositoryData = await Promise.all(
     verifiedRepositories.map(async (repository) => {
-      const [commitResult, languages] = await Promise.all([
-        includeCommits
-          ? fetchCachedRepositoryCommits(
-              repository,
-              normalizedUsername.toLowerCase(),
-            )
-          : Promise.resolve({ commits: [], hitLimit: false }),
-        includeLanguages
-          ? fetchCachedRepositoryLanguages(repository)
-          : Promise.resolve({} as Record<string, number>),
-      ]);
-      return { commitResult, languages };
+      const commitResult = includeCommits
+        ? await fetchCachedRepositoryCommits(
+            repository,
+            normalizedUsername.toLowerCase(),
+          )
+        : { commits: [], hitLimit: false };
+      return { commitResult };
     }),
   );
 
@@ -1382,22 +1665,39 @@ export async function getGitHubActivity(
       pushEvents,
     );
   }
-  const languages = includeLanguages
-    ? mergeLanguages(
-        repositoryData.map(({ languages: repositoryLanguages }) =>
-          repositoryLanguages,
-        ),
-      )
-    : [];
+
+  let languages: GitHubActivityLanguage[] = [];
+  let languageRepositories: string[] = [];
+  if (includeLanguages) {
+    try {
+      const yearLanguages = await resolveYearLanguages(
+        normalizedUsername.toLowerCase(),
+        contributionYear,
+        repositoryMode,
+        configuredRepositories,
+        pushEvents,
+      );
+      languages = yearLanguages.languages;
+      languageRepositories = yearLanguages.repositories;
+    } catch (error) {
+      // Languages are optional — never fail the whole activity payload for them.
+      if (!(error instanceof GitHubActivityError && error.status === 429)) {
+        // Keep empty languages for unexpected soft failures.
+      }
+    }
+  }
+
   const selectionWasLimited =
     needsRepositoryData &&
     repositoryMode !== "include" &&
     eligibleRecentRepositories.length > RECENT_REPOSITORY_LIMIT;
+  const responseRepositories =
+    languageRepositories.length > 0 ? languageRepositories : verifiedRepositories;
 
   return {
     username: normalizedUsername,
     profileUrl: `https://github.com/${normalizedUsername}`,
-    repositories: verifiedRepositories,
+    repositories: responseRepositories,
     commits,
     daily,
     languages,
@@ -1405,7 +1705,7 @@ export async function getGitHubActivity(
     summary: {
       commits: commits.length,
       activeDays: daily.filter(({ count }) => count > 0).length,
-      repositories: verifiedRepositories.length,
+      repositories: responseRepositories.length,
     },
     limited:
       events.length >= EVENT_LIMIT ||

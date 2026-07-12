@@ -5,6 +5,7 @@ import { onAuthStateChanged, unlink, type User } from "firebase/auth";
 import { FaGithub, FaGoogle } from "react-icons/fa";
 import { FiCheck, FiLock, FiMail } from "react-icons/fi";
 import {
+  captureGitHubLoginFromCredential,
   hasAuthProvider,
   primaryAuthEmail,
   providerLabel,
@@ -78,7 +79,8 @@ export function LinkedSignInMethods() {
 
     if (providerId === "github.com") {
       await runAction(providerId, async () => {
-        await linkGithub(user);
+        const result = await linkGithub(user);
+        await captureGitHubLoginFromCredential(result);
       });
     }
   }

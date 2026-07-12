@@ -28,6 +28,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { MotionToggle } from "@/components/motion-toggle";
 import { uploadUserAvatar } from "@/lib/avatar-upload";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import { hasLinkedGitHub, resolveGitHubLogin } from "@/lib/auth-providers";
 import {
   demoProfile,
   developerActivityHasVisibleModules,
@@ -37,7 +38,6 @@ import {
   isValidGitHubRepository,
   isSafeExternalUrl,
   isValidGitHubUsername,
-  normalizeGitHubUsername,
   resolveDeveloperActivity,
   titleFromUrl,
   type ProfileConfig,
@@ -342,10 +342,6 @@ export function DashboardApp() {
     () => resolveDeveloperActivity(profile.developerActivity),
     [profile.developerActivity],
   );
-  const suggestedGitHubUsername = useMemo(
-    () => normalizeGitHubUsername(profile.socials.github ?? ""),
-    [profile.socials.github],
-  );
 
   async function persistProfile(
     nextProfile: ProfileConfig = profile,
@@ -354,13 +350,39 @@ export function DashboardApp() {
     setSaving(true);
     setStatus(null);
     try {
-      const invalidLink = nextProfile.links.find((link) => !isSafeExternalUrl(link.url));
+      let profileToSave = nextProfile;
+      const invalidLink = profileToSave.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
-      const activity = resolveDeveloperActivity(nextProfile.developerActivity);
+      const activity = resolveDeveloperActivity(profileToSave.developerActivity);
       const activityWillPublish =
         activity.enabled && developerActivityHasVisibleModules(activity);
-      if (activityWillPublish && !isValidGitHubUsername(activity.githubUsername)) {
-        throw new Error("Add a valid GitHub username before showing developer activity.");
+      if (activityWillPublish && !hasLinkedGitHub(user)) {
+        throw new Error("Link your GitHub account before showing developer activity.");
+      }
+      const linkedGitHubUsername = activityWillPublish
+        ? await resolveGitHubLogin(user)
+        : null;
+      if (activityWillPublish && !linkedGitHubUsername) {
+        throw new Error(
+          "Could not resolve your GitHub username. Unlink and link GitHub again under Settings.",
+        );
+      }
+      if (activityWillPublish && linkedGitHubUsername) {
+        profileToSave = {
+          ...profileToSave,
+          developerActivity: {
+            ...activity,
+            githubUsername: linkedGitHubUsername,
+          },
+        };
+      }
+      if (
+        activityWillPublish &&
+        !isValidGitHubUsername(
+          resolveDeveloperActivity(profileToSave.developerActivity).githubUsername,
+        )
+      ) {
+        throw new Error("Link your GitHub account before showing developer activity.");
       }
       if (activity.repositories.names.some((name) => !isValidGitHubRepository(name))) {
         throw new Error("Repository filters must use the owner/repository format.");
@@ -373,11 +395,11 @@ export function DashboardApp() {
         throw new Error("Add at least one repository or use automatic selection.");
       }
       if (auth && user) {
-        const saved = await saveProfile(user.uid, nextProfile);
+        const saved = await saveProfile(user.uid, profileToSave);
         setProfile(saved);
       } else {
-        window.localStorage.setItem("socialize-demo-profile", JSON.stringify(nextProfile));
-        setProfile(nextProfile);
+        window.localStorage.setItem("socialize-demo-profile", JSON.stringify(profileToSave));
+        setProfile(profileToSave);
       }
       setStatus({
         tone: "success",
@@ -637,7 +659,6 @@ export function DashboardApp() {
               <PanelHeading eyebrow="GITHUB / ACTIVITY" title="Show what you ship." />
               <DeveloperActivityEditor
                 onChange={(developerActivityValue) => update("developerActivity", developerActivityValue)}
-                suggestedUsername={suggestedGitHubUsername}
                 value={developerActivity}
               />
             </>

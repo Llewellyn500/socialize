@@ -10,7 +10,10 @@ import {
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import type { AuthProviderId } from "@/lib/auth-providers";
+import {
+  captureGitHubLoginFromCredential,
+  type AuthProviderId,
+} from "@/lib/auth-providers";
 
 export type PendingProviderLink = {
   email: string;
@@ -112,14 +115,18 @@ export async function signInAndLinkPendingCredential(
   } else {
     const provider = providerInstance(providerId);
     if (!provider) throw new Error("Unsupported sign-in provider.");
-    await signInWithPopup(firebaseAuth, provider);
+    const result = await signInWithPopup(firebaseAuth, provider);
+    if (providerId === "github.com") {
+      await captureGitHubLoginFromCredential(result);
+    }
   }
 
   const currentUser = firebaseAuth.currentUser;
   if (!currentUser) throw new Error("Sign-in did not complete.");
 
   if (pendingCredential) {
-    await linkWithCredential(currentUser, pendingCredential);
+    const linkResult = await linkWithCredential(currentUser, pendingCredential);
+    await captureGitHubLoginFromCredential(linkResult);
   } else if (emailPassword) {
     await linkEmailPassword(currentUser, emailPassword.email, emailPassword.password);
   }

@@ -12,6 +12,10 @@ import {
   saveContributionCacheClient,
 } from "@/lib/github-contribution-cache";
 import {
+  languageModeKey,
+  saveLanguageCacheClient,
+} from "@/lib/github-language-cache";
+import {
   isValidGitHubUsername,
   normalizeGitHubUsername,
   type DeveloperActivityConfig,
@@ -111,6 +115,28 @@ export function DeveloperActivity({
                 source: "profile",
                 syncedYear: result.contributions.year,
                 replaceYear: result.contributions.year,
+              },
+            ).catch(() => {
+              // Cache writes are best-effort.
+            });
+          }
+          if (result.languages.length > 0) {
+            void saveLanguageCacheClient(
+              username,
+              selectedYear,
+              {
+                languages: result.languages,
+                repositories: result.repositories,
+                modeKey: languageModeKey(
+                  config.repositories.mode,
+                  config.repositories.names,
+                ),
+              },
+              {
+                syncedYear:
+                  selectedYear === new Date().getUTCFullYear()
+                    ? undefined
+                    : selectedYear,
               },
             ).catch(() => {
               // Cache writes are best-effort.
@@ -216,7 +242,6 @@ export function DeveloperActivity({
         />
       ) : null}
 
-      {state.status === "ready" ? <ActivitySource data={state.data} /> : null}
     </section>
   );
 }
@@ -262,7 +287,7 @@ function ContributionActivity({
       ) : null}
 
       {settings.showLanguages && data.languages.length > 0 ? (
-        <LanguageMix languages={data.languages} />
+        <LanguageMix languages={data.languages} year={selectedYear} />
       ) : null}
     </div>
   );
@@ -405,8 +430,10 @@ function ContributionCalendar({
 
 function LanguageMix({
   languages,
+  year,
 }: {
   languages: GitHubActivityResponse["languages"];
+  year: number;
 }) {
   return (
     <div className="profile-coding-activity__languages">
@@ -415,7 +442,7 @@ function LanguageMix({
           <i key={language.name} style={{ width: `${language.percentage}%` }} />
         ))}
       </div>
-      <ul aria-label="Languages in recently active repositories">
+      <ul aria-label={`Languages used in ${year}`}>
         {languages.map((language) => (
           <li key={language.name}>
             <i aria-hidden="true" />
@@ -480,24 +507,6 @@ function CommitHistory({
         </p>
       )}
     </div>
-  );
-}
-
-function ActivitySource({ data }: { data: GitHubActivityResponse }) {
-  const calendar = data.contributions;
-  const source = calendar?.partial
-    ? "Recent public-event sample"
-    : calendar
-      ? "GitHub contribution graph"
-      : "Public GitHub data";
-  return (
-    <p className="profile-activity__source">
-      {source}
-      {data.repositories.length > 0
-        ? ` · ${data.repositories.length} ${data.repositories.length === 1 ? "repository" : "repositories"}`
-        : ""}
-      {data.limited ? " · commit list sampled" : ""}
-    </p>
   );
 }
 

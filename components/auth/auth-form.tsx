@@ -23,6 +23,7 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import { auth, db, isFirebaseConfigured } from "@/lib/firebase";
+import { captureGitHubLoginFromCredential } from "@/lib/auth-providers";
 import { readPendingProviderLink, type PendingProviderLink } from "@/lib/auth-linking";
 import { loadProfile } from "@/lib/profile-store";
 import { getFirebaseAuthError } from "./firebase-errors";
@@ -188,6 +189,9 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
       }
 
       const result = await signInWithPopup(firebaseAuth, provider);
+      if (providerName === "github") {
+        await captureGitHubLoginFromCredential(result);
+      }
       const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
       if (isSignUp) await recordTermsAcceptance(result.user);
       const route = isNewUser ? "/onboarding" : await getPostAuthRoute(result.user);

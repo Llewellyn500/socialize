@@ -271,6 +271,29 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function validLanguageCache(usernameKey) {
+      return request.resource.data.keys().hasOnly([
+          'username', 'byYear', 'syncedYears', 'updatedAt', 'version'
+        ])
+        && request.resource.data.username is string
+        && request.resource.data.username == usernameKey
+        && validGitHubUsername(request.resource.data.username)
+        && request.resource.data.byYear is map
+        && request.resource.data.byYear.keys().size() <= 15
+        && request.resource.data.syncedYears is list
+        && request.resource.data.syncedYears.size() <= 15
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.version is int
+        && request.resource.data.version >= 1;
+    }
+
+    // Year-scoped language mixes for public GitHub activity.
+    match /githubLanguageCaches/{usernameKey} {
+      allow read: if true;
+      allow create, update: if validLanguageCache(usernameKey);
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

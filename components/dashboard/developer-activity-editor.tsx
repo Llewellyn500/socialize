@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FiActivity, FiCheckCircle, FiGitCommit, FiGithub } from "react-icons/fi";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { FiActivity, FiCheckCircle, FiGitCommit, FiGithub, FiLink } from "react-icons/fi";
 import {
   isValidGitHubUsername,
   isValidGitHubRepository,
@@ -11,6 +12,14 @@ import {
   type RepositoryMode,
 } from "@/lib/profile";
 import type { GitHubActivityResponse } from "@/lib/github-activity";
+import {
+  captureGitHubLoginFromCredential,
+  hasLinkedGitHub,
+  resolveGitHubLogin,
+} from "@/lib/auth-providers";
+import { linkGithub } from "@/lib/auth-linking";
+import { auth } from "@/lib/firebase";
+import { getFirebaseAuthError } from "@/components/auth/firebase-errors";
 import styles from "./developer-activity-editor.module.css";
 
 type ConnectionState =
@@ -21,15 +30,18 @@ type ConnectionState =
 
 type DeveloperActivityEditorProps = {
   value: DeveloperActivityConfig;
-  suggestedUsername?: string;
   onChange: (value: DeveloperActivityConfig) => void;
 };
 
 export function DeveloperActivityEditor({
   value,
-  suggestedUsername,
   onChange,
 }: DeveloperActivityEditorProps) {
+  const [authUser, setAuthUser] = useState<User | null>(auth?.currentUser ?? null);
+  const [linkedUsername, setLinkedUsername] = useState<string | null>(null);
+  const [resolvingLogin, setResolvingLogin] = useState(false);
+  const [linkingGitHub, setLinkingGitHub] = useState(false);
+  const [linkError, setLinkError] = useState("");
   const [connection, setConnection] = useState<ConnectionState>({
     tone: "idle",
     message: "Only public GitHub activity is displayed.",
@@ -39,8 +51,14 @@ export function DeveloperActivityEditor({
   );
   const connectionController = useRef<AbortController | null>(null);
 
-  const normalizedUsername = normalizeGitHubUsername(value.githubUsername);
-  const usernameIsValid = isValidGitHubUsername(value.githubUsername);
+  const githubLinked = hasLinkedGitHub(authUser);
+  const normalizedLinkedUsername = linkedUsername
+    ? normalizeGitHubUsername(linkedUsername)
+    : "";
+  const normalizedUsername = normalizeGitHubUsername(
+    linkedUsername ? normalizedLinkedUsername : value.githubUsername,
+  );
+  const usernameIsValid = isValidGitHubUsername(normalizedUsername);
   const repositoryEntries = repositoryInput.split(/[\s,]+/).filter(Boolean);
   const normalizedRepositories = normalizeGitHubRepositories(repositoryEntries);
   const repositoriesAreValid =
@@ -55,7 +73,44 @@ export function DeveloperActivityEditor({
     value.coding.enabled && (calendarVisible || value.coding.showLanguages);
   const hasVisibleModule = value.commits.enabled || codingHasVisiblePart;
 
+  useEffect(() => {
+    if (!auth) return;
+    return onAuthStateChanged(auth, (nextUser) => setAuthUser(nextUser));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!authUser || !hasLinkedGitHub(authUser)) {
+      setLinkedUsername(null);
+      setResolvingLogin(false);
+      return;
+    }
+    setResolvingLogin(true);
+    void resolveGitHubLogin(authUser).then((login) => {
+      if (cancelled) return;
+      setLinkedUsername(login);
+      setResolvingLogin(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
   useEffect(() => () => connectionController.current?.abort(), []);
+
+  // Keep activity username locked to the linked GitHub account login.
+  useEffect(() => {
+    if (!normalizedLinkedUsername) return;
+    if (
+      normalizeGitHubUsername(value.githubUsername).toLowerCase() ===
+      normalizedLinkedUsername.toLowerCase()
+    ) {
+      return;
+    }
+    onChange({ ...value, githubUsername: normalizedLinkedUsername });
+    // Only re-sync when the resolved login changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [normalizedLinkedUsername]);
 
   function resetConnection() {
     connectionController.current?.abort();
@@ -87,15 +142,55 @@ export function DeveloperActivityEditor({
     patch({
       enabled,
       githubUsername:
-        enabled && !value.githubUsername && suggestedUsername
-          ? suggestedUsername
+        enabled && normalizedLinkedUsername
+          ? normalizedLinkedUsername
           : value.githubUsername,
     });
   }
 
+  async function handleLinkGitHub() {
+    if (!authUser) {
+      setLinkError("Sign in before linking GitHub.");
+      return;
+    }
+    setLinkError("");
+    setLinkingGitHub(true);
+    try {
+      const result = await linkGithub(authUser);
+      setAuthUser(result.user);
+      const nextUsername =
+        (await captureGitHubLoginFromCredential(result)) ??
+        (await resolveGitHubLogin(result.user));
+      setLinkedUsername(nextUsername);
+      if (nextUsername) {
+        patch({ githubUsername: normalizeGitHubUsername(nextUsername) });
+      }
+    } catch (error) {
+      setLinkError(getFirebaseAuthError(error));
+    } finally {
+      setLinkingGitHub(false);
+    }
+  }
+
   async function testConnection() {
+    if (!githubLinked) {
+      setConnection({
+        tone: "error",
+        message: "Link your GitHub account before testing the connection.",
+      });
+      return;
+    }
+    if (!linkedUsername) {
+      setConnection({
+        tone: "error",
+        message: resolvingLogin
+          ? "Still resolving your GitHub username…"
+          : "Could not resolve your GitHub username. Try unlinking and linking GitHub again.",
+      });
+      return;
+    }
     if (!usernameIsValid) {
-      setConnection({ tone: "error", message: "Enter a valid GitHub username first." });
+      setConnection({ tone: "error", message: "Your linked GitHub username is invalid." });
       return;
     }
     if (!hasVisibleModule) {
@@ -122,10 +217,10 @@ export function DeveloperActivityEditor({
         repoMode: value.repositories.mode,
       });
       normalizedRepositories.forEach((repository) => params.append("repo", repository));
-      const response = await fetch(
-        `/api/github-activity?${params.toString()}`,
-        { signal: controller.signal },
-      );
+      const response = await fetch(`/api/github-activity?${params.toString()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
       const data = (await response.json()) as GitHubActivityResponse | { error?: string };
       if (!response.ok || !("summary" in data)) {
         throw new Error("error" in data ? data.error : "GitHub activity is unavailable.");
@@ -161,6 +256,7 @@ export function DeveloperActivityEditor({
           <label className={styles.masterToggle}>
             <input
               checked={value.enabled}
+              disabled={!githubLinked && !value.enabled}
               onChange={(event) => toggleEnabled(event.target.checked)}
               type="checkbox"
             />
@@ -169,32 +265,48 @@ export function DeveloperActivityEditor({
         </div>
 
         <div className={styles.connectionGrid}>
-          <label className={styles.field}>
-            <span>GitHub username</span>
-            <input
-              aria-describedby="github-username-hint"
-              aria-invalid={Boolean(value.githubUsername) && !usernameIsValid}
-              autoCapitalize="none"
-              autoComplete="off"
-              onBlur={() => {
-                if (value.githubUsername && normalizedUsername !== value.githubUsername) {
-                  patch({ githubUsername: normalizedUsername });
-                }
-              }}
-              onChange={(event) => patch({ githubUsername: event.target.value })}
-              placeholder="octocat or github.com/octocat"
-              spellCheck={false}
-              value={value.githubUsername}
-            />
+          <div className={styles.field}>
+            <span>GitHub account</span>
+            {linkedUsername ? (
+              <div className={styles.linkedAccount}>
+                <FiGithub aria-hidden="true" />
+                <strong>@{normalizedLinkedUsername}</strong>
+                <em>Linked</em>
+              </div>
+            ) : githubLinked ? (
+              <div className={styles.linkedAccount}>
+                <FiGithub aria-hidden="true" />
+                <strong>{resolvingLogin ? "Resolving username…" : "GitHub linked"}</strong>
+                <em>Linked</em>
+              </div>
+            ) : (
+              <div className={styles.linkAccountPrompt}>
+                <p>Link your GitHub account to show coding activity. Your username is taken from that connection.</p>
+                <button
+                  disabled={linkingGitHub || !authUser}
+                  onClick={() => void handleLinkGitHub()}
+                  type="button"
+                >
+                  <FiLink aria-hidden="true" />
+                  {linkingGitHub ? "Linking…" : "Link GitHub"}
+                </button>
+                {linkError ? <small data-tone="error">{linkError}</small> : null}
+              </div>
+            )}
             <small id="github-username-hint">
-              {value.githubUsername && !usernameIsValid
-                ? "Use a GitHub username such as octocat, without spaces."
-                : "Only public activity is rendered. This does not verify ownership of the account."}
+              {linkedUsername
+                ? "Activity always uses the GitHub account linked to your Socialize sign-in."
+                : githubLinked
+                  ? resolvingLogin
+                    ? "Looking up your GitHub username from the linked account…"
+                    : "Could not resolve your GitHub username. Unlink and link GitHub again under Settings."
+                  : "You can also link GitHub later under Settings → Sign-in methods."}
             </small>
-          </label>
+          </div>
           <label className={styles.field}>
             <span>Profile placement</span>
             <select
+              disabled={!githubLinked}
               onChange={(event) => patch({
                 placement: event.target.value === "after-links" ? "after-links" : "before-links",
               })}
@@ -211,6 +323,7 @@ export function DeveloperActivityEditor({
           <label className={styles.field}>
             <span>Repository selection</span>
             <select
+              disabled={!githubLinked}
               onChange={(event) => patchRepositories(event.target.value as RepositoryMode)}
               value={value.repositories.mode}
             >
@@ -225,6 +338,7 @@ export function DeveloperActivityEditor({
               <span>{value.repositories.mode === "include" ? "Repositories to show" : "Repositories to hide"}</span>
               <textarea
                 aria-invalid={!repositoriesAreValid || !repositorySelectionIsValid}
+                disabled={!githubLinked}
                 maxLength={600}
                 onBlur={() => {
                   setRepositoryInput(normalizedRepositories.join("\n"));
@@ -250,6 +364,7 @@ export function DeveloperActivityEditor({
         <div className={styles.connectionActions}>
           <button
             disabled={
+              !linkedUsername ||
               !usernameIsValid ||
               !hasVisibleModule ||
               !repositorySelectionIsValid ||
@@ -278,6 +393,7 @@ export function DeveloperActivityEditor({
           <label className={styles.inlineToggle}>
             <input
               checked={value.commits.enabled}
+              disabled={!githubLinked}
               onChange={(event) => patchCommits({ enabled: event.target.checked })}
               type="checkbox"
             />
@@ -331,6 +447,7 @@ export function DeveloperActivityEditor({
           <label className={styles.inlineToggle}>
             <input
               checked={value.coding.enabled}
+              disabled={!githubLinked}
               onChange={(event) => patchCoding({ enabled: event.target.checked })}
               type="checkbox"
             />
