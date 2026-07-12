@@ -1,30 +1,10 @@
 import { ImageResponse } from "next/og";
 import { loadOgFonts, ogFontStyles } from "@/lib/og-fonts";
+import { OG_SIZE, SocializeMark } from "@/lib/og-mark";
 
 export const alt = "Socialize, the link page built for developers";
-export const size = { width: 1200, height: 630 };
+export const size = OG_SIZE;
 export const contentType = "image/png";
-
-function SocializeMark() {
-  return (
-    <svg fill="none" height="70" viewBox="0 0 64 64" width="70">
-      <path
-        d="M23 9.5 9.5 32 23 54.5M41 9.5 54.5 32 41 54.5"
-        stroke="#8a2be2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="5.5"
-      />
-      <circle cx="32" cy="23" fill="#f7f3fb" r="5.5" />
-      <path
-        d="M21.5 46.5c0-9.3 4.7-15 10.5-15s10.5 5.7 10.5 15"
-        stroke="#f7f3fb"
-        strokeLinecap="round"
-        strokeWidth="5.5"
-      />
-    </svg>
-  );
-}
 
 export default async function OpenGraphImage() {
   const fonts = await loadOgFonts();
@@ -143,22 +123,7 @@ export default async function OpenGraphImage() {
               transform: "scale(2.5)",
             }}
           >
-            <svg fill="none" height="96" viewBox="0 0 64 64" width="96">
-              <path
-                d="M23 9.5 9.5 32 23 54.5M41 9.5 54.5 32 41 54.5"
-                stroke="rgba(247,243,251,.42)"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="5.5"
-              />
-              <circle cx="32" cy="23" fill="#f7f3fb" r="5.5" />
-              <path
-                d="M21.5 46.5c0-9.3 4.7-15 10.5-15s10.5 5.7 10.5 15"
-                stroke="#f7f3fb"
-                strokeLinecap="round"
-                strokeWidth="5.5"
-              />
-            </svg>
+            <SocializeMark color="rgba(247,243,251,.52)" dimension={96} />
           </div>
           <div
             style={{

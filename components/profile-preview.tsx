@@ -7,7 +7,13 @@ import {
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
-import { groupLinksBySection, isSafeExternalUrl, type ProfileConfig, type SocialKey } from "@/lib/profile";
+import {
+  groupLinksBySection,
+  isSafeExternalUrl,
+  type ProfileConfig,
+  type SocialKey,
+} from "@/lib/profile";
+import { recordProfileClick } from "@/lib/profile-stats";
 
 const socialIcons: Record<SocialKey, React.ReactNode> = {
   github: <FaGithub />,
@@ -23,13 +29,28 @@ type ProfilePreviewProps = {
   className?: string;
   interactive?: boolean;
   branded?: boolean;
+  /** Record link/social clicks for the profile owner dashboard. */
+  trackClicks?: boolean;
 };
+
+function trackClick(
+  enabled: boolean,
+  handle: string,
+  targetId: string,
+  kind: "link" | "social",
+) {
+  if (!enabled) return;
+  void recordProfileClick({ handle, targetId, kind }).catch(() => {
+    // Tracking must never block navigation.
+  });
+}
 
 export function ProfilePreview({
   profile,
   className = "",
   interactive = false,
   branded = true,
+  trackClicks = false,
 }: ProfilePreviewProps) {
   const style = {
     "--profile-accent": profile.accent,
@@ -75,8 +96,9 @@ export function ProfilePreview({
       <p className="profile-preview__bio">{profile.bio}</p>
 
       <div className="profile-preview__socials" aria-label="Social profiles">
-        {(Object.entries(profile.socials) as [SocialKey, string][]).filter(([, url]) => isSafeExternalUrl(url)).map(
-          ([key, url]) => (
+        {(Object.entries(profile.socials) as [SocialKey, string][])
+          .filter(([, url]) => isSafeExternalUrl(url))
+          .map(([key, url]) => (
             <a
               key={key}
               href={url}
@@ -84,11 +106,11 @@ export function ProfilePreview({
               rel="noreferrer"
               aria-label={key}
               tabIndex={interactive ? undefined : -1}
+              onClick={() => trackClick(trackClicks, profile.handle, key, "social")}
             >
               {socialIcons[key]}
             </a>
-          ),
-        )}
+          ))}
       </div>
 
       <div className="profile-preview__links">
@@ -114,6 +136,7 @@ export function ProfilePreview({
                   rel="noreferrer"
                   tabIndex={interactive ? undefined : -1}
                   className="profile-link"
+                  onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
                 >
                   <span className="profile-link__number">
                     {String(index + 1).padStart(2, "0")}

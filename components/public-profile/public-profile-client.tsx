@@ -97,7 +97,7 @@ export function PublicProfileClient({ handle }: { handle: string }) {
       {phase === "ready" && profile ? (
         <>
           <div className={`${styles.frame} ${styles.frameEnter}`}>
-            <ProfilePreview profile={profile} interactive />
+            <ProfilePreview profile={profile} interactive trackClicks />
           </div>
           <Link className={`${styles.report} ${styles.reportEnter}`} href={`/report/${profile.handle}`}>
             Report this profile

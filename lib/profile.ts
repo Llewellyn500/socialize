@@ -31,6 +31,8 @@ export type ProfileConfig = {
   role: string;
   bio: string;
   avatarUrl?: string;
+  /** CDN URL for the pre-generated Open Graph image (Firebase Storage). */
+  ogImageUrl?: string;
   location?: string;
   availability?: string;
   theme: ProfileTheme;
@@ -296,6 +298,10 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     profile.avatarUrl?.startsWith("/") || profile.avatarUrl?.startsWith("https://")
       ? profile.avatarUrl.slice(0, 2048)
       : undefined;
+  const ogImageUrl =
+    profile.ogImageUrl?.startsWith("https://")
+      ? profile.ogImageUrl.slice(0, 2048)
+      : undefined;
   const location = profile.location?.trim().slice(0, 80) || undefined;
   const availability = profile.availability?.trim().slice(0, 90) || undefined;
 
@@ -315,6 +321,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     bio: profile.bio.trim().slice(0, 240),
     // Omit optional fields when empty — Firestore rejects `undefined` values.
     ...(avatarUrl ? { avatarUrl } : {}),
+    ...(ogImageUrl ? { ogImageUrl } : {}),
     ...(location ? { location } : {}),
     ...(availability ? { availability } : {}),
     theme: profile.theme,

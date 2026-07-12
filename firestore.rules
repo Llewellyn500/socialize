@@ -26,7 +26,7 @@ service cloud.firestore {
     function validProfile(uid) {
       return request.resource.data.keys().hasOnly([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
-          'location', 'availability', 'theme', 'accent', 'published',
+          'ogImageUrl', 'location', 'availability', 'theme', 'accent', 'published',
           'socials', 'sections', 'links', 'updatedAt'
         ])
         && request.resource.data.keys().hasAll([
@@ -45,6 +45,10 @@ service cloud.firestore {
         && (!('avatarUrl' in request.resource.data)
           || (request.resource.data.avatarUrl is string
             && request.resource.data.avatarUrl.size() <= 2048))
+        && (!('ogImageUrl' in request.resource.data)
+          || (request.resource.data.ogImageUrl is string
+            && request.resource.data.ogImageUrl.size() <= 2048
+            && request.resource.data.ogImageUrl.matches('^https://.*')))
         && (!('location' in request.resource.data)
           || (request.resource.data.location is string
             && request.resource.data.location.size() <= 80))
@@ -106,6 +110,29 @@ service cloud.firestore {
         && request.resource.data.status == 'new'
         && request.resource.data.createdAt == request.time;
       allow read, update, delete: if false;
+    }
+
+    function validStatsPayload() {
+      return request.resource.data.keys().hasOnly([
+          'handle', 'totalClicks', 'links', 'socials', 'updatedAt'
+        ])
+        && validHandle(request.resource.data.handle)
+        && request.resource.data.totalClicks is int
+        && request.resource.data.totalClicks >= 0
+        && request.resource.data.links is map
+        && request.resource.data.socials is map
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /profileStats/{uid} {
+      allow read: if owns(uid);
+      allow create: if validStatsPayload()
+        && request.resource.data.totalClicks == 1;
+      allow update: if validStatsPayload()
+        && request.resource.data.totalClicks == resource.data.totalClicks + 1
+        && request.resource.data.links.keys().size() >= resource.data.links.keys().size()
+        && request.resource.data.socials.keys().size() >= resource.data.socials.keys().size();
+      allow delete: if owns(uid);
     }
 
     match /{document=**} {

@@ -6,8 +6,11 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
+  deleteField,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { uploadProfileOgImage } from "@/lib/og-image-upload";
 import {
   normalizeHandle,
   sanitizeProfile,
@@ -32,6 +35,53 @@ export async function loadPublicProfile(handle: string) {
   return profile.published ? profile : null;
 }
 
+async function regenerateOgImage(uid: string, profile: ProfileConfig) {
+  if (!profile.published) {
+    if (!db) return profile;
+    try {
+      await updateDoc(doc(db, "profiles", uid), {
+        ogImageUrl: deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch {
+      // Non-fatal: profile save already succeeded.
+    }
+    const { ogImageUrl: _removed, ...rest } = profile;
+    return rest;
+  }
+
+  const response = await fetch("/api/og-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      profile: {
+        handle: profile.handle,
+        displayName: profile.displayName,
+        role: profile.role,
+        bio: profile.bio,
+        accent: profile.accent,
+        avatarUrl: profile.avatarUrl,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Open Graph image generation failed.");
+  }
+
+  const blob = await response.blob();
+  const ogImageUrl = await uploadProfileOgImage(uid, blob);
+
+  if (db) {
+    await updateDoc(doc(db, "profiles", uid), {
+      ogImageUrl,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  return { ...profile, ogImageUrl };
+}
+
 export async function saveProfile(uid: string, profile: ProfileConfig) {
   const firestore = db;
   if (!firestore) throw new Error("Accounts are not configured.");
@@ -52,6 +102,9 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
     const previousHandle = profileSnapshot.exists()
       ? (profileSnapshot.data().handle as string | undefined)
       : undefined;
+    const previousOgImageUrl = profileSnapshot.exists()
+      ? (profileSnapshot.data().ogImageUrl as string | undefined)
+      : undefined;
 
     if (previousHandle && previousHandle !== cleanProfile.handle) {
       transaction.delete(doc(firestore, "handles", previousHandle));
@@ -62,8 +115,10 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
       ...cleanProfile,
       ownerUid: uid,
       updatedAt: serverTimestamp(),
-    });
-  });
+      ...(cleanProfile.published && previousOgImageUrl
+        ? { ogImageUrl: previousOgImageUrl }
+        : {}),
+    });  });
 
   await setDoc(
     doc(firestore, "users", uid),
@@ -71,5 +126,10 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
     { merge: true },
   );
 
-  return cleanProfile;
+  try {
+    return await regenerateOgImage(uid, cleanProfile);
+  } catch (error) {
+    console.error("Failed to regenerate profile Open Graph image", error);
+    return cleanProfile;
+  }
 }

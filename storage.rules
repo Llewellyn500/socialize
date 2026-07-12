@@ -15,9 +15,20 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
     }
 
+    function isValidOgImage() {
+      return request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType == 'image/png';
+    }
+
     match /avatars/{uid}/{fileName} {
       allow read: if true;
       allow create, update: if ownsPath(uid) && isValidAvatar();
+      allow delete: if ownsPath(uid);
+    }
+
+    match /og/{uid}/{fileName} {
+      allow read: if true;
+      allow create, update: if ownsPath(uid) && isValidOgImage();
       allow delete: if ownsPath(uid);
     }
 

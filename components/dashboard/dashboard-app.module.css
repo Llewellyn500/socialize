@@ -475,6 +475,175 @@
   font-size: 0.68rem;
 }
 
+.overviewStatsHint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding: 0.85rem 0 0.15rem;
+}
+
+.overviewStatsHint p {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.68rem;
+}
+
+.overviewStatsHint button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8a2be2;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.statsPanel {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.statsSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: rgba(25, 26, 24, 0.16);
+}
+
+.statsCard {
+  min-height: 150px;
+  padding: 1.15rem;
+  background: #f4f1e8;
+}
+
+.statsCard span {
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statsCard strong {
+  display: block;
+  margin-top: 1.4rem;
+  font-size: 2.2rem;
+  font-weight: 500;
+  letter-spacing: -0.06em;
+}
+
+.statsCard p {
+  margin: 0.4rem 0 0;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.statsSection {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.statsSectionHeader {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.statsSectionHeader svg {
+  margin-top: 0.2rem;
+  color: #8a2be2;
+  font-size: 1rem;
+}
+
+.statsSectionHeader h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.statsSectionHeader p {
+  margin: 0.2rem 0 0;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.68rem;
+}
+
+.statsList {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgba(25, 26, 24, 0.14);
+}
+
+.statsList li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.statsRowCopy {
+  min-width: 0;
+}
+
+.statsRowCopy strong {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.statsRowCopy small {
+  display: block;
+  margin-top: 0.25rem;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.62rem;
+}
+
+.statsSocialIcon {
+  display: inline-flex;
+  color: #8a2be2;
+  font-size: 0.85rem;
+}
+
+.statsRowMeta {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+}
+
+.statsCount {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.statsCountLabel {
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.statsEmpty {
+  margin: 0;
+  padding: 1rem 0;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.72rem;
+}
+
 .checklist {
   margin-top: 1.5rem;
   border-top: 1px solid rgba(25, 26, 24, 0.18);
@@ -1366,6 +1535,7 @@
 :global(html:not([data-app-theme="light"])) .navLabel,
 :global(html:not([data-app-theme="light"])) .overviewCard span,
 :global(html:not([data-app-theme="light"])) .overviewCard p,
+:global(html:not([data-app-theme="light"])) .overviewStatsHint p,
 :global(html:not([data-app-theme="light"])) .checklist small,
 :global(html:not([data-app-theme="light"])) .linkRowNumber,
 :global(html:not([data-app-theme="light"])) .fieldHint,
@@ -1523,6 +1693,29 @@
 
 :global(html:not([data-app-theme="light"])) .overviewCard {
   background: #18151d;
+}
+
+:global(html:not([data-app-theme="light"])) .statsSummary {
+  border-color: rgba(247, 243, 251, 0.13);
+  background: rgba(247, 243, 251, 0.13);
+}
+
+:global(html:not([data-app-theme="light"])) .statsCard {
+  background: #18151d;
+}
+
+:global(html:not([data-app-theme="light"])) .statsCard span,
+:global(html:not([data-app-theme="light"])) .statsCard p,
+:global(html:not([data-app-theme="light"])) .statsSectionHeader p,
+:global(html:not([data-app-theme="light"])) .statsRowCopy small,
+:global(html:not([data-app-theme="light"])) .statsCountLabel,
+:global(html:not([data-app-theme="light"])) .statsEmpty {
+  color: rgba(247, 243, 251, 0.55);
+}
+
+:global(html:not([data-app-theme="light"])) .statsList,
+:global(html:not([data-app-theme="light"])) .statsList li {
+  border-color: rgba(247, 243, 251, 0.12);
 }
 
 :global(html:not([data-app-theme="light"])) .checklist div,
@@ -1793,7 +1986,7 @@
     align-self: auto;
     height: auto;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     padding: 0.45rem;
     overflow: visible;
     border-right: 0;
@@ -1813,7 +2006,7 @@
   .panel { padding: 1.2rem .85rem 2rem; }
   .panelHeading { align-items:flex-start; }
   .panelHeading h1 { font-size: 2.35rem; }
-  .overviewGrid,.formGrid,.themes { grid-template-columns: 1fr; }
+  .overviewGrid,.formGrid,.themes,.statsSummary { grid-template-columns: 1fr; }
   .formFieldWide { grid-column:auto; }
   .socialProfilesGrid { grid-template-columns: 1fr; }
   .linkCardTop { align-items: flex-start; }

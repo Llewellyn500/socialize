@@ -151,12 +151,8 @@ html[data-custom-cursor="true"] select {
   height: 100%;
 }
 
-.logo-mark__bracket {
+.logo-mark__glyph {
   color: var(--signal);
-}
-
-.logo-mark__person {
-  color: currentColor;
 }
 
 .site-header {

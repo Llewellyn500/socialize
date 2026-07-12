@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import {
+  FiBarChart2,
   FiCheck,
   FiCopy,
   FiDownload,
@@ -37,6 +38,7 @@ import {
   type ProfileTheme,
 } from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { loadProfileStats, type ProfileStats } from "@/lib/profile-stats";
 import { normalizeLinkUrl } from "@/lib/email-link";
 import {
   fetchEnrichedLinkMetadata,
@@ -45,15 +47,17 @@ import {
 import { isLinkedInUrl } from "@/lib/linkedin-url";
 import { LINKEDIN_LINK_TITLE } from "@/lib/linkedin-headline";
 import { LinksEditor } from "./links-editor";
+import { LinkStatsPanel } from "./link-stats-panel";
 import { LinkedSignInMethods } from "./linked-sign-in-methods";
 import { SocialProfilesFields } from "./social-profiles-fields";
 import styles from "./dashboard-app.module.css";
 
-type Tab = "overview" | "links" | "profile" | "appearance" | "settings";
+type Tab = "overview" | "stats" | "links" | "profile" | "appearance" | "settings";
 type Status = { tone: "neutral" | "success" | "error"; message: string } | null;
 
 const navItems = [
   ["overview", "Overview", FiMonitor],
+  ["stats", "Stats", FiBarChart2],
   ["links", "Links", FiLink],
   ["profile", "Profile", FiUser],
   ["appearance", "Appearance", FiSliders],
@@ -79,6 +83,7 @@ export function DashboardApp() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [overviewStats, setOverviewStats] = useState<ProfileStats | null>(null);
 
   useEffect(() => {
     setHost(window.location.host);
@@ -128,10 +133,49 @@ export function DashboardApp() {
     });
   }, [router]);
 
+  useEffect(() => {
+    if (!user?.uid || !isFirebaseConfigured) {
+      setOverviewStats(null);
+      return;
+    }
+
+    let active = true;
+    void loadProfileStats(user.uid)
+      .then((stats) => {
+        if (active) setOverviewStats(stats);
+      })
+      .catch(() => {
+        if (active) setOverviewStats(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.uid, tab]);
+
   const pageUrl = useMemo(() => {
     return `${host}/${profile.handle}`;
   }, [host, profile.handle]);
 
+  const overviewClickSummary = useMemo(() => {
+    const totalClicks = overviewStats?.totalClicks ?? 0;
+    const linkEntries = Object.entries(overviewStats?.links ?? {});
+    const topEntry = linkEntries.sort((a, b) => (b[1].clicks ?? 0) - (a[1].clicks ?? 0))[0];
+    const topLink = topEntry
+      ? profile.links.find((link) => link.id === topEntry[0])
+      : undefined;
+    const socialClicks = Object.values(overviewStats?.socials ?? {}).reduce(
+      (sum, entry) => sum + (entry.clicks ?? 0),
+      0,
+    );
+
+    return {
+      totalClicks,
+      topLinkTitle: topLink?.title,
+      topLinkClicks: topEntry?.[1].clicks ?? 0,
+      socialClicks,
+    };
+  }, [overviewStats, profile.links]);
   function update<K extends keyof ProfileConfig>(key: K, value: ProfileConfig[K]) {
     setProfile((current) => ({ ...current, [key]: value }));
     setStatus(null);
@@ -446,14 +490,37 @@ export function DashboardApp() {
               <div className={styles.overviewGrid}>
                 <div className={styles.overviewCard}><span>Profile status</span><strong>{profile.published ? "Live" : "Draft"}</strong><p>@{profile.handle}</p></div>
                 <div className={styles.overviewCard}><span>Active links</span><strong>{profile.links.filter((link) => link.enabled).length}</strong><p>of {profile.links.length} total</p></div>
-                <div className={styles.overviewCard}><span>Theme</span><strong>{profile.theme}</strong><p>{profile.accent} accent</p></div>
-                <div className={styles.overviewCard}><span>Data mode</span><strong>{user ? "Cloud" : "Local"}</strong><p>{user ? "Synced" : "browser demo"}</p></div>
+                <div className={styles.overviewCard}>
+                  <span>Total clicks</span>
+                  <strong>{overviewClickSummary.totalClicks}</strong>
+                  <p>{overviewClickSummary.socialClicks > 0 ? `${overviewClickSummary.socialClicks} from social icons` : "From your public profile"}</p>
+                </div>
+                <div className={styles.overviewCard}>
+                  <span>Top link</span>
+                  <strong>{overviewClickSummary.topLinkClicks}</strong>
+                  <p>{overviewClickSummary.topLinkTitle || "No clicks yet"}</p>
+                </div>
+              </div>
+              <div className={styles.overviewStatsHint}>
+                <p>Click counts update when people open links on your live profile.</p>
+                <button type="button" onClick={() => setTab("stats")}>Open full stats</button>
               </div>
               <div className={styles.checklist}>
                 <div><FiCheck /><span>Claim your handle</span><small>@{profile.handle}</small></div>
                 <div><FiCheck /><span>Add your best work</span><small>{profile.links.length} links</small></div>
                 <div>{profile.published ? <FiCheck /> : <FiFileText />}<span>Publish your profile</span><small>{profile.published ? "done" : "waiting"}</small></div>
               </div>
+            </>
+          ) : null}
+
+          {tab === "stats" ? (
+            <>
+              <PanelHeading eyebrow="WORKSPACE / STATS" title="What people open." />
+              <LinkStatsPanel
+                uid={user?.uid ?? null}
+                profile={profile}
+                localDemo={!isFirebaseConfigured || !user}
+              />
             </>
           ) : null}
 
