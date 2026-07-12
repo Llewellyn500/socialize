@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { FiBarChart2, FiMousePointer } from "react-icons/fi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FiBarChart2, FiMousePointer, FiRefreshCw } from "react-icons/fi";
 import { socialIcons } from "@/components/social-icons";
 import type { ProfileConfig, SocialKey } from "@/lib/profile";
 import { socialLabel } from "@/lib/socials";
@@ -15,55 +15,62 @@ type LinkStatsPanelProps = {
 };
 
 function formatWhen(value?: string) {
-  if (!value) return "—";
+  if (!value) return null;
   try {
     return new Intl.DateTimeFormat(undefined, {
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(value));
   } catch {
-    return "—";
+    return null;
   }
+}
+
+function lastClickLabel(value?: string) {
+  const when = formatWhen(value);
+  return when ? `Last click ${when}` : "No clicks yet";
 }
 
 export function LinkStatsPanel({ uid, profile, localDemo = false }: LinkStatsPanelProps) {
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (localDemo || !uid) {
-      setStats({
-        handle: profile.handle,
-        totalClicks: 0,
-        links: {},
-        socials: {},
-      });
-      setLoading(false);
-      return;
-    }
+  const fetchStats = useCallback(
+    async (mode: "initial" | "refresh" = "initial") => {
+      if (localDemo || !uid) {
+        setStats({
+          handle: profile.handle,
+          totalClicks: 0,
+          links: {},
+          socials: {},
+        });
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
-    let active = true;
-    setLoading(true);
-    setError(null);
+      if (mode === "initial") setLoading(true);
+      else setRefreshing(true);
+      setError(null);
 
-    loadProfileStats(uid)
-      .then((result) => {
-        if (!active) return;
+      try {
+        const result = await loadProfileStats(uid);
         setStats(result);
-      })
-      .catch(() => {
-        if (!active) return;
+      } catch {
         setError("Could not load click stats right now.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [uid, localDemo, profile.handle],
+  );
 
-    return () => {
-      active = false;
-    };
-  }, [uid, localDemo, profile.handle]);
+  useEffect(() => {
+    void fetchStats("initial");
+  }, [fetchStats]);
 
   const linkRows = useMemo(() => {
     const clicks = stats?.links ?? {};
@@ -94,9 +101,30 @@ export function LinkStatsPanel({ uid, profile, localDemo = false }: LinkStatsPan
   const totalClicks = stats?.totalClicks ?? 0;
   const topLink = linkRows.find((row) => row.clicks > 0);
   const enabledCount = profile.links.filter((link) => link.enabled).length;
+  const maxLinkClicks = Math.max(1, ...linkRows.map((row) => row.clicks));
+  const maxSocialClicks = Math.max(1, ...socialRows.map((row) => row.clicks));
 
   return (
     <div className={styles.statsPanel}>
+      <div className={styles.statsToolbar}>
+        <p>
+          {profile.published
+            ? "Counts update when people open links on your live profile."
+            : "Publish your profile to start collecting public click stats."}
+        </p>
+        {!localDemo && uid ? (
+          <button
+            type="button"
+            className={styles.statsRefresh}
+            onClick={() => void fetchStats("refresh")}
+            disabled={loading || refreshing}
+          >
+            <FiRefreshCw aria-hidden="true" data-spin={refreshing ? "true" : undefined} />
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </button>
+        ) : null}
+      </div>
+
       {localDemo ? (
         <div className={styles.notice}>
           Stats sync when your account and cloud backend are connected. Local demo mode
@@ -141,11 +169,20 @@ export function LinkStatsPanel({ uid, profile, localDemo = false }: LinkStatsPan
           <ul className={styles.statsList}>
             {linkRows.map((row) => (
               <li key={row.id}>
-                <div className={styles.statsRowCopy}>
-                  <strong>{row.title}</strong>
-                  <small>
-                    {row.enabled ? "Visible" : "Hidden"} · last click {formatWhen(row.lastClickAt)}
-                  </small>
+                <div className={styles.statsRowMain}>
+                  <div className={styles.statsRowCopy}>
+                    <strong>{row.title}</strong>
+                    <small>
+                      {row.enabled ? "Visible" : "Hidden"} · {lastClickLabel(row.lastClickAt)}
+                    </small>
+                  </div>
+                  <div
+                    className={styles.statsBar}
+                    aria-hidden="true"
+                    style={{
+                      ["--stats-fill" as string]: `${Math.round((row.clicks / maxLinkClicks) * 100)}%`,
+                    }}
+                  />
                 </div>
                 <div className={styles.statsRowMeta}>
                   <span className={styles.statsCount}>{row.clicks}</span>
@@ -174,12 +211,21 @@ export function LinkStatsPanel({ uid, profile, localDemo = false }: LinkStatsPan
           <ul className={styles.statsList}>
             {socialRows.map((row) => (
               <li key={row.key}>
-                <div className={styles.statsRowCopy}>
-                  <strong>
-                    <span className={styles.statsSocialIcon}>{socialIcons[row.key]}</span>
-                    {socialLabel(row.key)}
-                  </strong>
-                  <small>last click {formatWhen(row.lastClickAt)}</small>
+                <div className={styles.statsRowMain}>
+                  <div className={styles.statsRowCopy}>
+                    <strong>
+                      <span className={styles.statsSocialIcon}>{socialIcons[row.key]}</span>
+                      {socialLabel(row.key)}
+                    </strong>
+                    <small>{lastClickLabel(row.lastClickAt)}</small>
+                  </div>
+                  <div
+                    className={styles.statsBar}
+                    aria-hidden="true"
+                    style={{
+                      ["--stats-fill" as string]: `${Math.round((row.clicks / maxSocialClicks) * 100)}%`,
+                    }}
+                  />
                 </div>
                 <div className={styles.statsRowMeta}>
                   <span className={styles.statsCount}>{row.clicks}</span>

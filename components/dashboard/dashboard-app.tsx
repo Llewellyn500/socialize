@@ -947,15 +947,23 @@ export function DashboardApp() {
             </>
           ) : null}
 
-          <button
-            className={styles.primaryAction}
-            type="button"
-            onClick={() => void persistProfile()}
-            disabled={saving || handleBlocksSave}
-          >
-            <FiSave /> {saving ? "Saving…" : "Save changes"}
-          </button>
-          {status ? <p className={styles.status} data-tone={status.tone}>{status.message}</p> : null}
+          {tab === "links" || tab === "profile" || tab === "appearance" || tab === "activity" ? (
+            <>
+              <button
+                className={styles.primaryAction}
+                type="button"
+                onClick={() => void persistProfile()}
+                disabled={saving || handleBlocksSave}
+              >
+                <FiSave /> {saving ? "Saving…" : "Save changes"}
+              </button>
+              {status ? (
+                <p className={styles.status} data-tone={status.tone}>
+                  {status.message}
+                </p>
+              ) : null}
+            </>
+          ) : null}
         </main>
 
         <aside className={styles.previewPane} aria-label="Live profile preview">
