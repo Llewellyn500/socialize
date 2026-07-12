@@ -1,7 +1,24 @@
 const GOOGLE_FONT_USER_AGENT =
   "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1";
 
-/** Load a Google Font for next/og ImageResponse (woff2). */
+function extractFontUrl(css: string) {
+  const patterns = [
+    /src: url\(([^)]+)\) format\('truetype'\)/,
+    /src: url\(([^)]+)\) format\('opentype'\)/,
+    /src: url\(([^)]+)\) format\('woff'\)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = css.match(pattern);
+    if (match?.[1]) {
+      return match[1].replace(/^["']|["']$/g, "");
+    }
+  }
+
+  return undefined;
+}
+
+/** Load a Google Font for next/og ImageResponse. */
 export async function loadGoogleFont(family: string, weight: number) {
   const familyParam = family.replace(/ /g, "+");
   const css = await fetch(
@@ -9,12 +26,12 @@ export async function loadGoogleFont(family: string, weight: number) {
     { headers: { "User-Agent": GOOGLE_FONT_USER_AGENT } },
   ).then((response) => response.text());
 
-  const match = css.match(/src: url\(([^)]+)\) format\('woff2'\)/);
-  if (!match?.[1]) {
+  const fontUrl = extractFontUrl(css);
+  if (!fontUrl) {
     throw new Error(`Could not load ${family} ${weight} for Open Graph images.`);
   }
 
-  return fetch(match[1]).then((response) => response.arrayBuffer());
+  return fetch(fontUrl).then((response) => response.arrayBuffer());
 }
 
 /** Hero sans stack: Helvetica Neue on site; Arimo embeds cleanly for OG images. */
