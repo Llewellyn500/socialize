@@ -36,7 +36,7 @@ export async function saveProfile(profile: Profile): Promise<void> {
 
   const reference = doc(services.db, selfHostedConfig.firestoreDocumentPath);
   await setDoc(reference, {
-    ...cloneProfile(profile),
+    ...normalizeProfile(profile, selfHostedConfig.profile),
     updatedAt: serverTimestamp()
   });
 }

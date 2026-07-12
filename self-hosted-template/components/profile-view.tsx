@@ -8,6 +8,8 @@ import { DeveloperActivity } from "@/components/developer-activity";
 import {
   cloneProfile,
   developerActivityHasVisibleModules,
+  groupLinksBySection,
+  isSafeImageUrl,
   profileInitials
 } from "@/lib/profile-utils";
 import { subscribeToProfile } from "@/lib/profile-store";
@@ -24,7 +26,11 @@ export function ProfileView() {
 
   useEffect(() => subscribeToProfile(setProfile), []);
 
-  const activeLinks = profile.links.filter((link) => link.enabled);
+  const linkGroups = groupLinksBySection(profile).map((group) => ({
+    ...group,
+    links: group.links.filter((link) => link.enabled)
+  }));
+  const hasActiveLinks = linkGroups.some((group) => group.links.length > 0);
   const developerActivity = profile.developerActivity;
   const showDeveloperActivity = Boolean(
     developerActivity?.enabled &&
@@ -87,22 +93,61 @@ export function ProfileView() {
             ) : null}
 
             <section className="profile-links" aria-label="Featured links">
-              {activeLinks.length ? (
-                activeLinks.map((link, index) => (
-                  <a
-                    className="profile-link-card"
-                    href={link.url}
-                    key={link.id}
-                    style={{ "--item-delay": `${90 + index * 65}ms` } as CSSProperties}
-                    {...newTabProps(link.url)}
-                  >
-                    <span>
-                      <strong>{link.title}</strong>
-                      {link.description ? <small>{link.description}</small> : null}
-                    </span>
-                    <ArrowUpRight aria-hidden="true" size={22} weight="bold" />
-                  </a>
-                ))
+              {hasActiveLinks ? (
+                linkGroups.map((group) => {
+                  if (!group.links.length) return null;
+                  const sectionMediaUrl = group.section?.mediaUrl &&
+                    isSafeImageUrl(group.section.mediaUrl)
+                    ? group.section.mediaUrl
+                    : undefined;
+                  const sectionMediaType = group.section?.mediaType === "thumbnail"
+                    ? "thumbnail"
+                    : "icon";
+                  const mediaOnly = Boolean(sectionMediaUrl && group.section?.hideTitle);
+                  return (
+                    <section className="profile-link-section" key={group.section?.id ?? "ungrouped"}>
+                      {group.section ? (
+                        <h2
+                          className="profile-links-heading"
+                          data-media={sectionMediaUrl ? sectionMediaType : undefined}
+                          data-media-only={mediaOnly}
+                        >
+                          {sectionMediaUrl ? <img src={sectionMediaUrl} alt="" /> : null}
+                          <span className={mediaOnly ? "sr-only" : undefined}>{group.section.title}</span>
+                        </h2>
+                      ) : null}
+                      <div className="profile-link-group">
+                        {group.links.map((link, index) => {
+                          const linkMediaUrl = link.mediaUrl && isSafeImageUrl(link.mediaUrl)
+                            ? link.mediaUrl
+                            : undefined;
+                          const linkMediaType = link.mediaType === "thumbnail" ? "thumbnail" : "icon";
+                          return (
+                            <a
+                              className="profile-link-card"
+                              data-media={linkMediaUrl ? linkMediaType : undefined}
+                              href={link.url}
+                              key={link.id}
+                              style={{ "--item-delay": `${90 + index * 65}ms` } as CSSProperties}
+                              {...newTabProps(link.url)}
+                            >
+                              {linkMediaUrl ? (
+                                <span className="profile-link-media" aria-hidden="true">
+                                  <img src={linkMediaUrl} alt="" />
+                                </span>
+                              ) : null}
+                              <span className="profile-link-copy">
+                                <strong>{link.title}</strong>
+                                {link.description ? <small>{link.description}</small> : null}
+                              </span>
+                              <ArrowUpRight aria-hidden="true" size={22} weight="bold" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })
               ) : (
                 <div className="profile-empty">
                   <h2>No links published yet</h2>

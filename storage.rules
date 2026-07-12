@@ -20,6 +20,11 @@ service firebase.storage {
         && request.resource.contentType == 'image/png';
     }
 
+    function isValidProfileMedia() {
+      return request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    }
+
     match /avatars/{uid}/{fileName} {
       allow read: if true;
       allow create, update: if ownsPath(uid) && isValidAvatar();
@@ -29,6 +34,15 @@ service firebase.storage {
     match /og/{uid}/{fileName} {
       allow read: if true;
       allow create, update: if ownsPath(uid) && isValidOgImage();
+      allow delete: if ownsPath(uid);
+    }
+
+    match /profile-media/{uid}/{scope}/{itemId}/{fileName} {
+      allow read: if true;
+      allow create, update: if ownsPath(uid)
+        && scope in ['links', 'sections']
+        && fileName == 'media'
+        && isValidProfileMedia();
       allow delete: if ownsPath(uid);
     }
 

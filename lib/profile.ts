@@ -1,6 +1,7 @@
 import { emailFromLinkUrl, isEmailAddress, normalizeLinkUrl } from "@/lib/email-link";
 
 export type ProfileTheme = "terminal" | "paper" | "midnight" | "mono";
+export type ProfileMediaType = "icon" | "thumbnail";
 
 export type SocialKey =
   | "github"
@@ -13,6 +14,9 @@ export type SocialKey =
 export type ProfileSection = {
   id: string;
   title: string;
+  mediaUrl?: string;
+  mediaType?: ProfileMediaType;
+  hideTitle?: boolean;
 };
 
 export type ProfileLink = {
@@ -23,6 +27,8 @@ export type ProfileLink = {
   enabled: boolean;
   kind?: "link" | "project" | "writing";
   sectionId?: string;
+  mediaUrl?: string;
+  mediaType?: ProfileMediaType;
 };
 
 export type ActivityWindowDays = 7 | 14 | 30;
@@ -210,6 +216,18 @@ export function isSafeExternalUrl(value: string) {
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "mailto:";
+  } catch {
+    return false;
+  }
+}
+
+export function isSafeProfileMediaUrl(value?: string) {
+  if (!value) return false;
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "https:" && !url.username && !url.password;
   } catch {
     return false;
   }
@@ -524,10 +542,20 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
 
   const sections = (profile.sections ?? [])
     .slice(0, MAX_SECTIONS)
-    .map((section) => ({
-      id: section.id.slice(0, 80),
-      title: section.title.trim().slice(0, 60),
-    }))
+    .map((section) => {
+      const mediaUrl = isSafeProfileMediaUrl(section.mediaUrl)
+        ? section.mediaUrl?.trim().slice(0, 2048)
+        : undefined;
+      return {
+        id: section.id.slice(0, 80),
+        title: section.title.trim().slice(0, 60),
+        ...(mediaUrl ? { mediaUrl } : {}),
+        ...(mediaUrl
+          ? { mediaType: section.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
+          : {}),
+        ...(mediaUrl && section.hideTitle ? { hideTitle: true } : {}),
+      };
+    })
     .filter((section) => section.title.length > 0);
   const sectionIds = new Set(sections.map((section) => section.id));
 
@@ -551,6 +579,9 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
       const description = link.description?.trim().slice(0, 160) || undefined;
       const sectionId =
         link.sectionId && sectionIds.has(link.sectionId) ? link.sectionId : undefined;
+      const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
+        ? link.mediaUrl?.trim().slice(0, 2048)
+        : undefined;
       return {
         id: link.id.slice(0, 80),
         title: link.title.trim().slice(0, 100),
@@ -559,6 +590,10 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
         ...(description ? { description } : {}),
         ...(link.kind ? { kind: link.kind } : {}),
         ...(sectionId ? { sectionId } : {}),
+        ...(mediaUrl ? { mediaUrl } : {}),
+        ...(mediaUrl
+          ? { mediaType: link.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
+          : {}),
       };
     }),
   };

@@ -27,6 +27,7 @@ import { ProfilePreview } from "@/components/profile-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MotionToggle } from "@/components/motion-toggle";
 import { uploadUserAvatar } from "@/lib/avatar-upload";
+import { uploadProfileMedia } from "@/lib/profile-media-upload";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { hasLinkedGitHub, resolveGitHubLogin } from "@/lib/auth-providers";
 import {
@@ -37,10 +38,13 @@ import {
   isAutoLinkTitle,
   isValidGitHubRepository,
   isSafeExternalUrl,
+  isSafeProfileMediaUrl,
   isValidGitHubUsername,
   resolveDeveloperActivity,
   titleFromUrl,
   type ProfileConfig,
+  type ProfileLink,
+  type ProfileSection,
   type ProfileTheme,
 } from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-store";
@@ -197,13 +201,14 @@ export function DashboardApp() {
     update("sections", sections);
   }
 
-  function updateSectionTitle(sectionId: string, title: string) {
-    update(
-      "sections",
-      (profile.sections ?? []).map((section) =>
-        section.id === sectionId ? { ...section, title } : section,
+  function updateSection(sectionId: string, patch: Partial<ProfileSection>) {
+    setProfile((current) => ({
+      ...current,
+      sections: (current.sections ?? []).map((section) =>
+        section.id === sectionId ? { ...section, ...patch } : section,
       ),
-    );
+    }));
+    setStatus(null);
   }
 
   function moveSection(sectionId: string, direction: -1 | 1) {
@@ -243,20 +248,15 @@ export function DashboardApp() {
 
   function updateLink(
     linkId: string,
-    key: "title" | "description" | "url" | "enabled" | "sectionId",
-    value: string | boolean,
+    patch: Partial<ProfileLink>,
   ) {
-    const links = profile.links.map((link) => {
-      if (link.id !== linkId) return link;
-
-      if (key === "sectionId") {
-        const sectionId = typeof value === "string" && value ? value : undefined;
-        return { ...link, sectionId };
-      }
-
-      return { ...link, [key]: value };
-    });
-    update("links", links);
+    setProfile((current) => ({
+      ...current,
+      links: current.links.map((link) =>
+        link.id === linkId ? { ...link, ...patch } : link,
+      ),
+    }));
+    setStatus(null);
   }
 
   async function handleLinkUrlChange(linkId: string, rawUrl: string) {
@@ -333,6 +333,54 @@ export function DashboardApp() {
     update("links", links);
   }
 
+  function reorderLink(
+    linkId: string,
+    targetLinkId: string | null,
+    targetSectionId?: string,
+  ) {
+    if (linkId === targetLinkId) return;
+    setProfile((current) => {
+      const dragged = current.links.find((link) => link.id === linkId);
+      if (!dragged) return current;
+
+      const links = current.links.filter((link) => link.id !== linkId);
+      const moved = {
+        ...dragged,
+        sectionId: targetSectionId || undefined,
+      };
+      if (targetLinkId) {
+        const targetIndex = links.findIndex((link) => link.id === targetLinkId);
+        if (targetIndex >= 0) links.splice(targetIndex, 0, moved);
+        else links.push(moved);
+      } else {
+        let insertAt = -1;
+        for (let index = links.length - 1; index >= 0; index -= 1) {
+          if ((links[index].sectionId ?? "") === (targetSectionId ?? "")) {
+            insertAt = index + 1;
+            break;
+          }
+        }
+        links.splice(insertAt >= 0 ? insertAt : links.length, 0, moved);
+      }
+      return { ...current, links };
+    });
+    setStatus(null);
+  }
+
+  async function uploadLinkMedia(linkId: string, file: File) {
+    if (!user) throw new Error("Sign in before uploading a link image.");
+    const mediaUrl = await uploadProfileMedia(user.uid, "links", linkId, file);
+    updateLink(linkId, { mediaUrl });
+    setStatus({ tone: "success", message: "Link image uploaded. Save changes to publish it." });
+  }
+
+  async function uploadSectionMedia(sectionId: string, file: File) {
+    if (!user) throw new Error("Sign in before uploading a section image.");
+    const mediaUrl = await uploadProfileMedia(user.uid, "sections", sectionId, file);
+    updateSection(sectionId, { mediaUrl });
+    setStatus({ tone: "success", message: "Section image uploaded. Save changes to publish it." });
+  }
+
   function removeLink(linkId: string) {
     update("links", profile.links.filter((link) => link.id !== linkId));
   }
@@ -353,6 +401,20 @@ export function DashboardApp() {
       let profileToSave = nextProfile;
       const invalidLink = profileToSave.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
+      const invalidLinkMedia = profileToSave.links.find(
+        (link) => link.mediaUrl && !isSafeProfileMediaUrl(link.mediaUrl),
+      );
+      if (invalidLinkMedia) {
+        throw new Error(`"${invalidLinkMedia.title || "Link"}" needs an https:// image URL or local image path.`);
+      }
+      const invalidSection = (profileToSave.sections ?? []).find(
+        (section) =>
+          !section.title.trim() ||
+          (section.mediaUrl && !isSafeProfileMediaUrl(section.mediaUrl)),
+      );
+      if (invalidSection) {
+        throw new Error("Every section needs heading text and a valid image URL.");
+      }
       const activity = resolveDeveloperActivity(profileToSave.developerActivity);
       const activityWillPublish =
         activity.enabled && developerActivityHasVisibleModules(activity);
@@ -589,10 +651,14 @@ export function DashboardApp() {
                 onLinkUrlChange={handleLinkUrlChange}
                 onMoveLink={moveLink}
                 onMoveSection={moveSection}
+                onReorderLink={reorderLink}
                 onRemoveLink={removeLink}
                 onRemoveSection={removeSection}
+                onUploadLinkMedia={uploadLinkMedia}
+                onUploadSectionMedia={uploadSectionMedia}
                 onUpdateLink={updateLink}
-                onUpdateSectionTitle={updateSectionTitle}
+                onUpdateSection={updateSection}
+                canUploadMedia={Boolean(user)}
               />
             </>
           ) : null}

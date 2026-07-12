@@ -1,9 +1,22 @@
+export type ProfileMediaType = "icon" | "thumbnail";
+
+export type ProfileSection = {
+  id: string;
+  title: string;
+  mediaUrl?: string;
+  mediaType?: ProfileMediaType;
+  hideTitle?: boolean;
+};
+
 export type ProfileLink = {
   id: string;
   title: string;
   description: string;
   url: string;
   enabled: boolean;
+  sectionId?: string;
+  mediaUrl?: string;
+  mediaType?: ProfileMediaType;
 };
 
 export type SocialLink = {
@@ -50,6 +63,7 @@ export type Profile = {
   availability: string;
   avatarUrl: string;
   accent: string;
+  sections: ProfileSection[];
   links: ProfileLink[];
   socials: SocialLink[];
   developerActivity?: DeveloperActivity;

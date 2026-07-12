@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowDown,
-  ArrowUp,
   ArrowUpRight,
   ChartBar,
   FloppyDisk,
@@ -29,11 +27,11 @@ import {
   repositoryNameTokens,
 } from "@/lib/profile-utils";
 import { saveProfile, subscribeToProfile } from "@/lib/profile-store";
+import { ManageLinks } from "@/components/manage-links";
 import { selfHostedConfig } from "@/profile.config";
 import type {
   DeveloperActivity,
   Profile,
-  ProfileLink,
   SocialLink,
 } from "@/types/profile";
 
@@ -43,15 +41,6 @@ const GITHUB_USERNAME = /^(?!.*--)[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
 
 function createId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
-}
-
-function reorder<T>(items: T[], index: number, offset: -1 | 1): T[] {
-  const destination = index + offset;
-  if (destination < 0 || destination >= items.length) return items;
-
-  const next = [...items];
-  [next[index], next[destination]] = [next[destination], next[index]];
-  return next;
 }
 
 function validateProfile(profile: Profile): string {
@@ -65,6 +54,15 @@ function validateProfile(profile: Profile): string {
     (link) => !link.title.trim() || !isSafePublicUrl(link.url)
   );
   if (invalidLink) return "Every primary link needs a title and a valid URL.";
+  const invalidLinkMedia = profile.links.find(
+    (link) => link.mediaUrl && !isSafeImageUrl(link.mediaUrl)
+  );
+  if (invalidLinkMedia) return "Link images must use a local path or an http or https URL.";
+
+  const invalidSection = profile.sections.find(
+    (section) => !section.title.trim() || (section.mediaUrl && !isSafeImageUrl(section.mediaUrl))
+  );
+  if (invalidSection) return "Every section needs a heading and a valid image path or URL.";
 
   const invalidSocial = profile.socials.find(
     (social) => !social.label.trim() || !isSafePublicUrl(social.url, false)
@@ -119,14 +117,6 @@ export function ManageProfile() {
     setProfile((current) => ({ ...current, ...patch }));
     setSaveState("idle");
     setMessage("");
-  }
-
-  function patchLink(index: number, patch: Partial<ProfileLink>) {
-    patchProfile({
-      links: profile.links.map((link, linkIndex) =>
-        linkIndex === index ? { ...link, ...patch } : link
-      )
-    });
   }
 
   function patchSocial(index: number, patch: Partial<SocialLink>) {
@@ -317,107 +307,11 @@ export function ManageProfile() {
               <LinkSimple aria-hidden="true" size={25} weight="duotone" />
               <div>
                 <h2 id="links-heading">Primary links</h2>
-                <p>Reorder, hide, or update the links on your public profile.</p>
+                <p>Drag links into any order, group them, and add optional imagery.</p>
               </div>
             </div>
-            <button
-              className="secondary-button"
-              onClick={() => patchProfile({
-                links: [
-                  ...profile.links,
-                  { id: createId("link"), title: "", description: "", url: "https://", enabled: true }
-                ]
-              })}
-              type="button"
-            >
-              <Plus aria-hidden="true" size={17} weight="bold" />
-              Add link
-            </button>
           </div>
-
-          <div className="editor-list">
-            {profile.links.length ? profile.links.map((link, index) => (
-              <article className="link-editor" key={link.id}>
-                <div className="editor-row-top">
-                  <span className="editor-index">{String(index + 1).padStart(2, "0")}</span>
-                  <div className="editor-actions">
-                    <label className="toggle-label">
-                      <input
-                        checked={link.enabled}
-                        onChange={(event) => patchLink(index, { enabled: event.target.checked })}
-                        type="checkbox"
-                      />
-                      Published
-                    </label>
-                    <button
-                      aria-label={`Move ${link.title || "link"} up`}
-                      className="icon-button"
-                      disabled={index === 0}
-                      onClick={() => patchProfile({ links: reorder(profile.links, index, -1) })}
-                      title="Move up"
-                      type="button"
-                    >
-                      <ArrowUp aria-hidden="true" size={17} weight="bold" />
-                    </button>
-                    <button
-                      aria-label={`Move ${link.title || "link"} down`}
-                      className="icon-button"
-                      disabled={index === profile.links.length - 1}
-                      onClick={() => patchProfile({ links: reorder(profile.links, index, 1) })}
-                      title="Move down"
-                      type="button"
-                    >
-                      <ArrowDown aria-hidden="true" size={17} weight="bold" />
-                    </button>
-                    <button
-                      aria-label={`Remove ${link.title || "link"}`}
-                      className="icon-button danger-button"
-                      onClick={() => patchProfile({ links: profile.links.filter((_, itemIndex) => itemIndex !== index) })}
-                      title="Remove"
-                      type="button"
-                    >
-                      <Trash aria-hidden="true" size={17} weight="bold" />
-                    </button>
-                  </div>
-                </div>
-                <div className="field-grid link-fields">
-                  <div className="field-block">
-                    <label htmlFor={`link-title-${link.id}`}>Title</label>
-                    <input
-                      id={`link-title-${link.id}`}
-                      onChange={(event) => patchLink(index, { title: event.target.value })}
-                      required
-                      value={link.title}
-                    />
-                  </div>
-                  <div className="field-block">
-                    <label htmlFor={`link-url-${link.id}`}>URL</label>
-                    <input
-                      id={`link-url-${link.id}`}
-                      inputMode="url"
-                      onChange={(event) => patchLink(index, { url: event.target.value })}
-                      required
-                      value={link.url}
-                    />
-                  </div>
-                  <div className="field-block field-span">
-                    <label htmlFor={`link-description-${link.id}`}>Description</label>
-                    <input
-                      id={`link-description-${link.id}`}
-                      onChange={(event) => patchLink(index, { description: event.target.value })}
-                      value={link.description}
-                    />
-                  </div>
-                </div>
-              </article>
-            )) : (
-              <div className="editor-empty">
-                <LinkSimple aria-hidden="true" size={28} weight="duotone" />
-                <h3>Your link list is empty</h3>
-                <p>Add a link when you are ready to publish something.</p>
-              </div>
-            )}
-          </div>
+          <ManageLinks profile={profile} onChange={patchProfile} />
         </section>
 
         <section className="editor-section" aria-labelledby="developer-activity-heading">

@@ -10,6 +10,7 @@ import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
 import {
   groupLinksBySection,
   isSafeExternalUrl,
+  isSafeProfileMediaUrl,
   resolveDeveloperActivity,
   type ProfileConfig,
   type SocialKey,
@@ -128,6 +129,15 @@ export function ProfilePreview({
             (link) => link.enabled && isSafeExternalUrl(link.url),
           );
           if (visibleLinks.length === 0) return null;
+          const sectionMediaUrl = isSafeProfileMediaUrl(group.section?.mediaUrl)
+            ? group.section?.mediaUrl
+            : undefined;
+          const sectionMediaType = group.section?.mediaType === "thumbnail"
+            ? "thumbnail"
+            : "icon";
+          const mediaOnlyHeading = Boolean(
+            sectionMediaUrl && group.section?.hideTitle,
+          );
 
           return (
             <section
@@ -135,28 +145,55 @@ export function ProfilePreview({
               key={group.section?.id ?? "ungrouped"}
             >
               {group.section ? (
-                <h2 className="profile-link-section__title">{group.section.title}</h2>
-              ) : null}
-              {visibleLinks.map((link, index) => (
-                <a
-                  href={link.url}
-                  key={link.id}
-                  target="_blank"
-                  rel="noreferrer"
-                  tabIndex={interactive ? undefined : -1}
-                  className="profile-link"
-                  onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
+                <h2
+                  className="profile-link-section__title"
+                  data-media={sectionMediaUrl ? sectionMediaType : undefined}
+                  data-media-only={mediaOnlyHeading}
                 >
-                  <span className="profile-link__number">
-                    {String(index + 1).padStart(2, "0")}
+                  {sectionMediaUrl ? (
+                    // User-provided heading media is decorative; the text remains the accessible name.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={sectionMediaUrl} alt="" />
+                  ) : null}
+                  <span className={mediaOnlyHeading ? "sr-only" : undefined}>
+                    {group.section.title}
                   </span>
-                  <span className="profile-link__copy">
-                    <strong>{link.title}</strong>
-                    {link.description ? <small>{link.description}</small> : null}
-                  </span>
-                  <FiArrowUpRight aria-hidden="true" />
-                </a>
-              ))}
+                </h2>
+              ) : null}
+              {visibleLinks.map((link, index) => {
+                const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
+                  ? link.mediaUrl
+                  : undefined;
+                const mediaType = link.mediaType === "thumbnail" ? "thumbnail" : "icon";
+                return (
+                  <a
+                    href={link.url}
+                    key={link.id}
+                    target="_blank"
+                    rel="noreferrer"
+                    tabIndex={interactive ? undefined : -1}
+                    className="profile-link"
+                    data-media={mediaUrl ? mediaType : undefined}
+                    onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
+                  >
+                    {mediaUrl ? (
+                      <span className="profile-link__media" aria-hidden="true">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={mediaUrl} alt="" />
+                      </span>
+                    ) : (
+                      <span className="profile-link__number">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    )}
+                    <span className="profile-link__copy">
+                      <strong>{link.title}</strong>
+                      {link.description ? <small>{link.description}</small> : null}
+                    </span>
+                    <FiArrowUpRight aria-hidden="true" />
+                  </a>
+                );
+              })}
             </section>
           );
         })}

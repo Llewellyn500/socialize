@@ -735,6 +735,11 @@
   border-bottom: 1px solid rgba(25, 26, 24, 0.12);
 }
 
+.linkSectionCustomization {
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.1);
+}
+
 .linkSectionTitle {
   flex: 1 1 12rem;
   min-width: 0;
@@ -789,6 +794,16 @@
   padding: 0.85rem;
   border: 1px solid rgba(25, 26, 24, 0.14);
   background: #ece9df;
+  transition: border-color 180ms ease, background-color 180ms ease, opacity 180ms ease;
+}
+
+.linkCard[data-dragging="true"] {
+  opacity: 0.42;
+}
+
+.linkCard[data-drop-target="true"] {
+  border-color: rgba(138, 43, 226, 0.72);
+  background: rgba(138, 43, 226, 0.07);
 }
 
 .linkCardHidden {
@@ -801,6 +816,33 @@
   gap: 0.5rem;
   align-items: center;
   justify-content: space-between;
+}
+
+.linkCardIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.linkDragHandle {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: transparent;
+  color: rgba(25, 26, 24, 0.58);
+  cursor: grab;
+  font-size: 0.78rem;
+}
+
+.linkDragHandle:active {
+  cursor: grabbing;
+}
+
+.linkDragHandle:focus-visible {
+  outline: 2px solid #8a2be2;
+  outline-offset: 2px;
 }
 
 .linkCardStatus {
@@ -852,7 +894,8 @@
   text-transform: uppercase;
 }
 
-.linkField input {
+.linkField input,
+.linkField select {
   width: 100%;
   padding: 0.55rem 0;
   border: 0;
@@ -867,8 +910,185 @@
   color: rgba(25, 26, 24, 0.34);
 }
 
-.linkField input:focus {
+.linkField input:focus,
+.linkField select:focus {
   border-bottom-color: rgba(138, 43, 226, 0.45);
+}
+
+.linkDropZone {
+  display: grid;
+  min-height: 2.4rem;
+  place-items: center;
+  border: 1px dashed rgba(138, 43, 226, 0.34);
+  background: rgba(138, 43, 226, 0.04);
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.62rem;
+  font-weight: 650;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.linkDropZone[data-active="true"] {
+  border-color: #8a2be2;
+  background: rgba(138, 43, 226, 0.12);
+  color: #6b21c8;
+}
+
+.linkMediaEditor {
+  border-top: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.linkSectionCustomization .linkMediaEditor {
+  border-top: 0;
+}
+
+.linkMediaEditor summary {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: rgba(25, 26, 24, 0.68);
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.linkMediaEditor summary::-webkit-details-marker {
+  display: none;
+}
+
+.linkMediaEditor summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.linkMediaEditor summary small {
+  color: rgba(25, 26, 24, 0.44);
+  font-size: 0.58rem;
+  font-weight: 650;
+}
+
+.linkMediaEditor[open] summary {
+  color: #6b21c8;
+}
+
+.linkMediaEditorBody {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.75rem 0.9rem;
+  padding: 0.6rem 0 0.15rem;
+}
+
+.linkMediaPreview {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: rgba(25, 26, 24, 0.04);
+  color: rgba(25, 26, 24, 0.38);
+}
+
+.linkMediaPreview[data-type="icon"] {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.linkMediaPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linkMediaPreview[data-type="icon"] img {
+  object-fit: contain;
+  padding: 0.35rem;
+}
+
+.linkMediaFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.45fr);
+  gap: 0.7rem;
+}
+
+.linkMediaActions {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.linkMediaUpload,
+.linkMediaClear {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  background: transparent;
+  color: rgba(25, 26, 24, 0.72);
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.linkMediaUpload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.linkMediaUpload:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.linkMediaClear {
+  font-family: inherit;
+}
+
+.linkMediaToggle {
+  display: inline-flex;
+  grid-column: 2;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgba(25, 26, 24, 0.66);
+  cursor: pointer;
+  font-size: 0.63rem;
+  font-weight: 650;
+}
+
+.linkMediaToggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #8a2be2;
+}
+
+.linkMediaToggle:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.linkMediaHint,
+.linkMediaMessage {
+  grid-column: 2;
+  margin: 0;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.6rem;
+  line-height: 1.45;
+}
+
+.linkMediaMessage {
+  color: #287c3b;
 }
 
 .linkAddDescription {
@@ -1754,6 +1974,11 @@
   border-color: rgba(247, 243, 251, 0.12);
 }
 
+:global(html:not([data-app-theme="light"])) .linkSectionCustomization,
+:global(html:not([data-app-theme="light"])) .linkMediaEditor {
+  border-color: rgba(247, 243, 251, 0.12);
+}
+
 :global(html:not([data-app-theme="light"])) .linkSectionTitle,
 :global(html:not([data-app-theme="light"])) .linkSectionTitleStatic {
   color: #f7f3fb;
@@ -1768,18 +1993,30 @@
   background: #1b1720;
 }
 
+:global(html:not([data-app-theme="light"])) .linkCard[data-drop-target="true"] {
+  border-color: rgba(180, 121, 235, 0.82);
+  background: rgba(138, 43, 226, 0.14);
+}
+
 :global(html:not([data-app-theme="light"])) .linkIconActions button {
   border-color: rgba(247, 243, 251, 0.16);
   color: rgba(247, 243, 251, 0.78);
+}
+
+:global(html:not([data-app-theme="light"])) .linkDragHandle {
+  border-color: rgba(247, 243, 251, 0.16);
+  color: rgba(247, 243, 251, 0.62);
 }
 
 :global(html:not([data-app-theme="light"])) .linkField span {
   color: rgba(247, 243, 251, 0.48);
 }
 
-:global(html:not([data-app-theme="light"])) .linkField input {
+:global(html:not([data-app-theme="light"])) .linkField input,
+:global(html:not([data-app-theme="light"])) .linkField select {
   border-color: rgba(247, 243, 251, 0.2);
   color: #f7f3fb;
+  color-scheme: dark;
 }
 
 :global(html:not([data-app-theme="light"])) .linkField input::placeholder {
@@ -1788,6 +2025,49 @@
 
 :global(html:not([data-app-theme="light"])) .linkAddDescription {
   color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkDropZone {
+  border-color: rgba(180, 121, 235, 0.36);
+  background: rgba(138, 43, 226, 0.08);
+  color: rgba(247, 243, 251, 0.62);
+}
+
+:global(html:not([data-app-theme="light"])) .linkDropZone[data-active="true"] {
+  border-color: #b479eb;
+  background: rgba(138, 43, 226, 0.22);
+  color: #f0ddff;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaEditor summary,
+:global(html:not([data-app-theme="light"])) .linkMediaToggle,
+:global(html:not([data-app-theme="light"])) .linkMediaUpload,
+:global(html:not([data-app-theme="light"])) .linkMediaClear {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaEditor summary small,
+:global(html:not([data-app-theme="light"])) .linkMediaHint {
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaEditor[open] summary {
+  color: #d7b7f5;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaPreview,
+:global(html:not([data-app-theme="light"])) .linkMediaUpload,
+:global(html:not([data-app-theme="light"])) .linkMediaClear {
+  border-color: rgba(247, 243, 251, 0.16);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaPreview {
+  background: rgba(247, 243, 251, 0.04);
+  color: rgba(247, 243, 251, 0.4);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMediaMessage {
+  color: #88d69b;
 }
 
 :global(html:not([data-app-theme="light"])) .linkMoveMenuList {
@@ -2011,6 +2291,12 @@
   .socialProfilesGrid { grid-template-columns: 1fr; }
   .linkCardTop { align-items: flex-start; }
   .linkIconActions { width: 100%; justify-content: flex-end; }
+  .linkMediaEditorBody { grid-template-columns: 1fr; }
+  .linkMediaFields { grid-template-columns: 1fr; }
+  .linkMediaActions,
+  .linkMediaToggle,
+  .linkMediaHint,
+  .linkMediaMessage { grid-column: 1; }
   .previewPane { min-height: 700px; padding-inline: .5rem; }
   .phone { width: 98%; }
 }

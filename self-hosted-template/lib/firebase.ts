@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -22,6 +23,7 @@ type FirebaseServices = {
   app: FirebaseApp;
   auth: Auth;
   db: Firestore;
+  storage: FirebaseStorage;
 };
 
 let cachedServices: FirebaseServices | null = null;
@@ -39,7 +41,8 @@ export function getFirebaseServices(): FirebaseServices | null {
   cachedServices = {
     app,
     auth: getAuth(app),
-    db: getFirestore(app)
+    db: getFirestore(app),
+    storage: getStorage(app)
   };
 
   return cachedServices;

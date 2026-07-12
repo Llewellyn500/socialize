@@ -46,6 +46,7 @@ export const selfHostedConfig: SelfHostedConfig = {
         showLanguages: true
       }
     },
+    sections: [],
     links: [
       {
         id: "github",

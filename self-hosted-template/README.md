@@ -23,11 +23,21 @@ npm run dev
 
 On PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
 
-Edit [`profile.config.ts`](./profile.config.ts) before you deploy. It is the single source for owner identity, the Firestore document path, profile copy, social accounts, fallback links, and developer activity defaults.
+Edit [`profile.config.ts`](./profile.config.ts) before you deploy. It is the single source for owner identity, the Firestore document path, profile copy, social accounts, fallback sections and links, and developer activity defaults.
 
 For a local avatar, add `public/avatar.jpg` and set `avatarUrl` to `/avatar.jpg`. This avoids a third-party image request from every visitor.
 
 The profile in that file renders even before Firebase is configured. After the first save from `/manage`, Firestore becomes the live source. To return to the file-based profile, delete the configured document (default: `profiles/main`) in Firestore.
+
+## Arrange links and headings
+
+The private `/manage` workspace lets the owner drag links into any order and move
+them between custom sections. Arrow buttons and a section selector provide the
+same operations without dragging. Every link and section heading can optionally
+use a compact icon or wide thumbnail. Uploads accept JPEG, PNG, WebP, or GIF files
+up to 3 MB. You can also use an `https://` image URL or a local file placed under
+`public/` and referenced as `/filename.png`. Section text remains the accessible
+name even when the image is used as the visible heading.
 
 ## Show GitHub activity
 
@@ -47,12 +57,13 @@ The language list counts primary languages in the account's recently pushed, non
 
 1. Create a Firebase project and add a Web app.
 2. Create a Cloud Firestore database.
-3. Copy the Web app values into `.env.local`.
-4. In **Authentication > Sign-in method**, enable the providers you want:
+3. Create a Firebase Storage bucket for optional link and heading uploads.
+4. Copy the Web app values into `.env.local`.
+5. In **Authentication > Sign-in method**, enable the providers you want:
    - Email/Password
    - Google
    - GitHub
-5. Add every deployed hostname to **Authentication > Settings > Authorized domains**.
+6. Add every deployed hostname to **Authentication > Settings > Authorized domains**.
 
 For GitHub authentication, create a GitHub OAuth App and use Firebase's callback URL:
 
@@ -79,8 +90,12 @@ The included rules allow anyone to read the public profile document. Profile wri
 ```bash
 npx firebase-tools login
 npx firebase-tools use --add
-npx firebase-tools deploy --only firestore:rules
+npx firebase-tools deploy --only firestore:rules,storage
 ```
+
+The first Storage rules deployment may ask you to enable the Firebase Rules
+permission that lets Storage check the Firestore owner allowlist. Accept that
+cross-service permission so uploads can verify `owners/{uid}`.
 
 Keep `firestoreDocumentPath` under `profiles/<document-id>` unless you also update `firestore.rules`.
 
@@ -95,7 +110,7 @@ Keep `firestoreDocumentPath` under `profiles/<document-id>` unless you also upda
 5. Deploy, then add the resulting `*.vercel.app` hostname and your custom domain to Firebase Authentication → Authorized domains.
 6. Redeploy after changing any `NEXT_PUBLIC_` value because those values are embedded at build time.
 
-Vercel deploys the application but does not deploy `firestore.rules`. Run the Firebase CLI rule command separately whenever those rules change.
+Vercel deploys the application but does not deploy `firestore.rules` or `storage.rules`. Run the Firebase CLI rule command separately whenever those rules change.
 
 ### Docker (optional VPS path)
 
@@ -121,6 +136,7 @@ npm run start      # Run the production build
 - Public Firestore read access is intentional because `/` is a public profile.
 - Client route guards improve the experience, but `firestore.rules` is the real write boundary.
 - Firestore checks one owner allowlist document when authorizing a profile write.
+- Storage rules keep link and section uploads owner-writable and publicly readable for profile rendering.
 - A saved Firestore profile overrides the root config until the document is deleted.
 - Developer activity requests only public GitHub data and never sends `GITHUB_TOKEN` to the browser.
 - The template stores no analytics or visitor identifiers.

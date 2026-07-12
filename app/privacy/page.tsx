@@ -48,8 +48,10 @@ const sections: LegalSection[] = [
         <h3>Profile content</h3>
         <p>
           We store the name, handle, role, bio, location, availability, avatar,
-          accent choice, project links, social links, and other content you choose
-          to publish. A published profile record is publicly readable. When
+          accent choice, section headings, project links, social links, and other
+          content you choose to publish. Optional uploaded link icons, thumbnails,
+          and heading images are stored in publicly readable cloud storage because
+          public profiles must be able to render them. A published profile record is publicly readable. When
           developer activity is enabled, its GitHub username, repository selections,
           and display settings are part of that public record. When it is disabled,
           the hosted service omits those settings from the public profile and keeps

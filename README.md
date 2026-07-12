@@ -15,10 +15,10 @@ optional nested `developerActivity` shape is portable between both editions.
 - Editorial SaaS landing page with hosted and self-hosted paths
 - Email/password, Google, and GitHub sign-in flows
 - Onboarding with transactional handle reservation
-- Profile, links, GitHub activity, appearance, publish, preview, and data-export dashboard
+- Profile, drag-sortable links, custom sections/media, GitHub activity, appearance, publish, preview, and data-export dashboard
 - Public `/{handle}` profiles backed by cloud storage
 - Product documentation, self-hosting guide, sponsorship, trust, and legal routes
-- Database and avatar storage rules
+- Database, avatar, link-media, and section-media storage rules
 - Vercel-first deployment guidance, optional Docker build, and CI workflow
 - A complete stripped starter in [`self-hosted-template`](./self-hosted-template)
 
@@ -75,6 +75,7 @@ profiles/{uid}     publishable ProfileConfig plus ownerUid
 handles/{handle}   public handle → uid lookup, reserved transactionally
 reports/{id}       write-only abuse reports for future moderation tooling
 avatars/{uid}/*    user-owned Firebase Storage path
+profile-media/{uid}/{links|sections}/{itemId}/media
 ```
 
 `socialize.config.ts` documents the hosted profile contract, which hosted accounts
@@ -83,6 +84,11 @@ store in Firestore. The stripped edition has its own top-level profile schema in
 stable migration source, but identity, social, and link fields need conversion
 before they are used by the stripped template. The nested `developerActivity`
 object intentionally uses the same shape in both editions.
+
+Links retain their array order and can be dragged within or between sections.
+Each link and section heading accepts an optional compact icon or wide thumbnail.
+Hosted uploads use the owner-only `profile-media/{uid}/...` Storage path; the
+self-hosted editor supports the same controls and also accepts local `/public` paths.
 
 ## GitHub developer activity
 

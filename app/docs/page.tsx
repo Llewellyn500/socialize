@@ -44,12 +44,22 @@ const profileShape = `type Profile = {
   availability: string;
   avatarUrl: string;
   accent: string;
+  sections: Array<{
+    id: string;
+    title: string;
+    mediaUrl?: string;
+    mediaType?: "icon" | "thumbnail";
+    hideTitle?: boolean;
+  }>;
   links: Array<{
     id: string;
     title: string;
     description: string;
     url: string;
     enabled: boolean;
+    sectionId?: string;
+    mediaUrl?: string;
+    mediaType?: "icon" | "thumbnail";
   }>;
   socials: Array<{
     id: string;
@@ -350,6 +360,16 @@ export default function DocsPage() {
             <li>
               Link IDs should remain stable across edits so reorder and update
               operations do not create unnecessary records.
+            </li>
+            <li>
+              Link order is the array order. Dragging between sections updates both
+              that order and <code>sectionId</code>; arrow and section controls remain
+              available for keyboard users.
+            </li>
+            <li>
+              Links and section headings can use an optional compact icon or wide
+              thumbnail from an uploaded image, an <code>https://</code> URL, or a
+              local public path in the self-hosted edition.
             </li>
           </ul>
           <h3>Public by design</h3>

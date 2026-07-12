@@ -85,8 +85,8 @@ export default function SelfHostPage() {
           />
           <CheckList>
             <CheckItem>
-              A root <code>profile.config.ts</code> with your identity, links,
-              socials, accent, and fallback profile.
+              A root <code>profile.config.ts</code> with your identity, sections,
+              links, socials, accent, and fallback profile.
             </CheckItem>
             <CheckItem>
               Email/password, Google, and GitHub owner sign-in through your
@@ -97,8 +97,8 @@ export default function SelfHostPage() {
               <code>firestore.rules</code>.
             </CheckItem>
             <CheckItem>
-              A focused editor for identity, link order, visibility, and social
-              profiles.
+              A focused editor for identity, drag-sortable sections and links,
+              optional icons or thumbnails, visibility, and social profiles.
             </CheckItem>
             <CheckItem>
               Optional public GitHub commit and coding activity with repository,
@@ -214,7 +214,7 @@ export default function SelfHostPage() {
                 body: (
                   <p>
                     Edit <code>profile.config.ts</code>. Replace the owner email,
-                    name, handle, links, social URLs, accent color, and optional
+                    name, handle, sections, links, social URLs, accent color, and optional
                     developer-activity defaults. Keep
                     <code>firestoreDocumentPath</code> at
                     <code>profiles/main</code> unless you also update the rules and
@@ -231,7 +231,8 @@ export default function SelfHostPage() {
                   <>
                     <p>
                       In your backend project dashboard, create a project, add a Web
-                      app, then create a profile database. Copy the six web-app values
+                      app, then create a profile database and a Storage bucket for
+                      optional link and heading uploads. Copy the six web-app values
                       into a local environment file.
                     </p>
                     <p>
@@ -292,17 +293,20 @@ export default function SelfHostPage() {
                 label: "Database",
               },
               {
-                title: "Deploy the database rules",
+                title: "Deploy the database and storage rules",
                 body: (
                   <p>
                     The included rules allow anyone to read the public profile and
                     allow writes only when the authenticated UID has a matching
-                    owner document. Deploy those rules before using the manager
-                    in production.
+                    owner document. Storage rules make profile imagery publicly
+                    readable while restricting uploads to the signed-in owner.
+                    Deploy both rule files before using the manager in production.
+                    On the first deploy, accept the Firebase Rules permission that
+                    lets Storage check the Firestore owner allowlist.
                   </p>
                 ),
                 code:
-                  "npx firebase-tools@latest login\nnpx firebase-tools@latest use --add\nnpx firebase-tools@latest deploy --only firestore:rules",
+                  "npx firebase-tools@latest login\nnpx firebase-tools@latest use --add\nnpx firebase-tools@latest deploy --only firestore:rules,storage",
               },
               {
                 title: "Verify locally",
@@ -347,8 +351,8 @@ export default function SelfHostPage() {
           <Notice title="Two deployments protect two different things" tone="signal">
             <p>
               Vercel deploys the Next.js application. The backend CLI deploys
-              <code>firestore.rules</code>. A successful Vercel deployment does
-              not publish a local database rule change.
+              <code>firestore.rules</code> and <code>storage.rules</code>. A successful
+              Vercel deployment does not publish local backend rule changes.
             </p>
           </Notice>
           <h3>Connect a custom domain</h3>

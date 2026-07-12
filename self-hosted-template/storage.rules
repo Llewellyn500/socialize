@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/owners/$(request.auth.uid)
+        );
+    }
+
+    function validProfileMedia() {
+      return request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    }
+
+    match /profile-media/{uid}/{scope}/{itemId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isOwner()
+        && request.auth.uid == uid
+        && scope in ['links', 'sections']
+        && fileName == 'media'
+        && validProfileMedia();
+      allow delete: if isOwner() && request.auth.uid == uid;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

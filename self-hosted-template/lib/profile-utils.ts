@@ -2,6 +2,7 @@ import type {
   DeveloperActivity,
   Profile,
   ProfileLink,
+  ProfileSection,
   SocialLink
 } from "@/types/profile";
 
@@ -70,6 +71,28 @@ export function isSafeImageUrl(value: string): boolean {
   return (value.startsWith("/") && !value.startsWith("//")) || isSafePublicUrl(value, false);
 }
 
+function mediaUrl(value: unknown): string | undefined {
+  const candidate = text(value);
+  return candidate && isSafeImageUrl(candidate) ? candidate.slice(0, 2048) : undefined;
+}
+
+function normalizeSection(value: unknown, index: number): ProfileSection | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<ProfileSection>;
+  const title = text(candidate.title).slice(0, 60);
+  if (!title) return null;
+  const sectionMediaUrl = mediaUrl(candidate.mediaUrl);
+  return {
+    id: text(candidate.id, `section-${index + 1}`).slice(0, 80),
+    title,
+    ...(sectionMediaUrl ? { mediaUrl: sectionMediaUrl } : {}),
+    ...(sectionMediaUrl
+      ? { mediaType: candidate.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
+      : {}),
+    ...(sectionMediaUrl && candidate.hideTitle ? { hideTitle: true } : {})
+  };
+}
+
 function normalizeLink(value: unknown, index: number): ProfileLink | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -78,6 +101,7 @@ function normalizeLink(value: unknown, index: number): ProfileLink | null {
   const candidate = value as Partial<ProfileLink>;
   const title = text(candidate.title);
   const url = text(candidate.url);
+  const linkMediaUrl = mediaUrl(candidate.mediaUrl);
 
   if (!title || !isSafePublicUrl(url)) {
     return null;
@@ -88,7 +112,12 @@ function normalizeLink(value: unknown, index: number): ProfileLink | null {
     title,
     description: text(candidate.description),
     url,
-    enabled: candidate.enabled !== false
+    enabled: candidate.enabled !== false,
+    ...(text(candidate.sectionId) ? { sectionId: text(candidate.sectionId).slice(0, 80) } : {}),
+    ...(linkMediaUrl ? { mediaUrl: linkMediaUrl } : {}),
+    ...(linkMediaUrl
+      ? { mediaType: candidate.mediaType === "thumbnail" ? "thumbnail" as const : "icon" as const }
+      : {})
   };
 }
 
@@ -200,6 +229,7 @@ function normalizeDeveloperActivity(
 export function cloneProfile(profile: Profile): Profile {
   const cloned: Profile = {
     ...profile,
+    sections: profile.sections.map((section) => ({ ...section })),
     links: profile.links.map((link) => ({ ...link })),
     socials: profile.socials.map((social) => ({ ...social }))
   };
@@ -213,6 +243,22 @@ export function cloneProfile(profile: Profile): Profile {
   return cloned;
 }
 
+export function groupLinksBySection(profile: Profile) {
+  const sectionIds = new Set(profile.sections.map((section) => section.id));
+  const groups: Array<{ section: ProfileSection | null; links: ProfileLink[] }> =
+    profile.sections.map((section) => ({
+    section,
+    links: profile.links.filter((link) => link.sectionId === section.id)
+  }));
+  const ungrouped = profile.links.filter(
+    (link) => !link.sectionId || !sectionIds.has(link.sectionId)
+  );
+  if (ungrouped.length || groups.length === 0) {
+    groups.push({ section: null, links: ungrouped });
+  }
+  return groups;
+}
+
 export function normalizeProfile(value: unknown, fallback: Profile): Profile {
   if (!value || typeof value !== "object") {
     return cloneProfile(fallback);
@@ -220,11 +266,21 @@ export function normalizeProfile(value: unknown, fallback: Profile): Profile {
 
   const candidate = value as Partial<Profile>;
   const avatarUrl = text(candidate.avatarUrl);
-  const links = Array.isArray(candidate.links)
+  const sections = Array.isArray(candidate.sections)
+    ? candidate.sections
+        .slice(0, 12)
+        .map(normalizeSection)
+        .filter((section): section is ProfileSection => Boolean(section))
+    : cloneProfile(fallback).sections;
+  const sectionIds = new Set(sections.map((section) => section.id));
+  const links = (Array.isArray(candidate.links)
     ? candidate.links
         .map(normalizeLink)
         .filter((link): link is ProfileLink => Boolean(link))
-    : cloneProfile(fallback).links;
+    : cloneProfile(fallback).links)
+    .map((link) => link.sectionId && !sectionIds.has(link.sectionId)
+      ? { ...link, sectionId: undefined }
+      : link);
   const socials = Array.isArray(candidate.socials)
     ? candidate.socials
         .map(normalizeSocial)
@@ -244,6 +300,7 @@ export function normalizeProfile(value: unknown, fallback: Profile): Profile {
     availability: text(candidate.availability, fallback.availability),
     avatarUrl: avatarUrl && isSafeImageUrl(avatarUrl) ? avatarUrl : "",
     accent: HEX_COLOR.test(text(candidate.accent)) ? text(candidate.accent) : fallback.accent,
+    sections,
     links,
     socials
   };
