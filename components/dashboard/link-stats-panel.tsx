@@ -1,35 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  FaEnvelope,
-  FaGithub,
-  FaGitlab,
-  FaLinkedinIn,
-} from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
-import { FiBarChart2, FiGlobe, FiMousePointer } from "react-icons/fi";
+import { FiBarChart2, FiMousePointer } from "react-icons/fi";
+import { socialIcons } from "@/components/social-icons";
 import type { ProfileConfig, SocialKey } from "@/lib/profile";
+import { socialLabel } from "@/lib/socials";
 import { loadProfileStats, type ProfileStats } from "@/lib/profile-stats";
 import styles from "./dashboard-app.module.css";
-
-const socialLabels: Record<SocialKey, string> = {
-  github: "GitHub",
-  gitlab: "GitLab",
-  linkedin: "LinkedIn",
-  x: "X",
-  email: "Email",
-  website: "Website",
-};
-
-const socialIcons: Record<SocialKey, React.ReactNode> = {
-  github: <FaGithub />,
-  gitlab: <FaGitlab />,
-  linkedin: <FaLinkedinIn />,
-  x: <FaXTwitter />,
-  email: <FaEnvelope />,
-  website: <FiGlobe />,
-};
 
 type LinkStatsPanelProps = {
   uid: string | null;
@@ -200,7 +177,7 @@ export function LinkStatsPanel({ uid, profile, localDemo = false }: LinkStatsPan
                 <div className={styles.statsRowCopy}>
                   <strong>
                     <span className={styles.statsSocialIcon}>{socialIcons[row.key]}</span>
-                    {socialLabels[row.key]}
+                    {socialLabel(row.key)}
                   </strong>
                   <small>last click {formatWhen(row.lastClickAt)}</small>
                 </div>

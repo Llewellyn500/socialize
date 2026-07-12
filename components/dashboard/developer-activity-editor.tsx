@@ -20,6 +20,7 @@ import {
 import { linkGithub } from "@/lib/auth-linking";
 import { auth } from "@/lib/firebase";
 import { getFirebaseAuthError } from "@/components/auth/firebase-errors";
+import { CustomSelect } from "@/components/ui/custom-select";
 import styles from "./developer-activity-editor.module.css";
 
 type ConnectionState =
@@ -303,36 +304,42 @@ export function DeveloperActivityEditor({
                   : "You can also link GitHub later under Settings → Sign-in methods."}
             </small>
           </div>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>Profile placement</span>
-            <select
+            <CustomSelect
+              aria-label="Profile placement"
               disabled={!githubLinked}
-              onChange={(event) => patch({
-                placement: event.target.value === "after-links" ? "after-links" : "before-links",
-              })}
+              options={[
+                { value: "before-links", label: "Before links" },
+                { value: "after-links", label: "After links" },
+              ]}
               value={value.placement}
-            >
-              <option value="before-links">Before links</option>
-              <option value="after-links">After links</option>
-            </select>
+              onChange={(next) =>
+                patch({
+                  placement: next === "after-links" ? "after-links" : "before-links",
+                })
+              }
+            />
             <small>Choose where the complete activity section appears.</small>
-          </label>
+          </div>
         </div>
 
         <div className={styles.repositoryControls}>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>Repository selection</span>
-            <select
+            <CustomSelect
+              aria-label="Repository selection"
               disabled={!githubLinked}
-              onChange={(event) => patchRepositories(event.target.value as RepositoryMode)}
+              options={[
+                { value: "recent", label: "Automatic · recent repositories" },
+                { value: "include", label: "Only selected repositories" },
+                { value: "exclude", label: "All recent except selected" },
+              ]}
               value={value.repositories.mode}
-            >
-              <option value="recent">Automatic · recent repositories</option>
-              <option value="include">Only selected repositories</option>
-              <option value="exclude">All recent except selected</option>
-            </select>
+              onChange={(next) => patchRepositories(next as RepositoryMode)}
+            />
             <small>Automatic mode samples up to three recently pushed public repositories.</small>
-          </label>
+          </div>
           {value.repositories.mode !== "recent" ? (
             <label className={styles.field}>
               <span>{value.repositories.mode === "include" ? "Repositories to show" : "Repositories to hide"}</span>
@@ -410,18 +417,19 @@ export function DeveloperActivityEditor({
               value={value.commits.title}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>Commits displayed</span>
-            <select
+            <CustomSelect
+              aria-label="Commits displayed"
               disabled={!value.commits.enabled}
-              onChange={(event) => patchCommits({ limit: Number(event.target.value) })}
-              value={value.commits.limit}
-            >
-              {Array.from({ length: 10 }, (_, index) => index + 1).map((limit) => (
-                <option key={limit} value={limit}>{limit}</option>
-              ))}
-            </select>
-          </label>
+              options={Array.from({ length: 10 }, (_, index) => {
+                const limit = index + 1;
+                return { value: String(limit), label: String(limit) };
+              })}
+              value={String(value.commits.limit)}
+              onChange={(next) => patchCommits({ limit: Number(next) })}
+            />
+          </div>
           <ToggleField
             checked={value.commits.showRepository}
             disabled={!value.commits.enabled}

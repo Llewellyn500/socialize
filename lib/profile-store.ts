@@ -45,6 +45,21 @@ export async function loadPublicProfile(handle: string) {
   return profile.published ? profile : null;
 }
 
+/**
+ * Returns whether `handle` can be claimed by `ownerUid`.
+ * Own current handle counts as available.
+ */
+export async function isHandleAvailableForUser(handle: string, ownerUid?: string) {
+  if (!db) return true;
+  const normalized = normalizeHandle(handle);
+  if (!normalized) return false;
+
+  const handleSnapshot = await getDoc(doc(db, "handles", normalized));
+  if (!handleSnapshot.exists()) return true;
+  const existingUid = handleSnapshot.data().uid as string | undefined;
+  return Boolean(ownerUid && existingUid === ownerUid);
+}
+
 async function regenerateOgImage(uid: string, profile: ProfileConfig) {
   if (!profile.published) {
     if (!db) return profile;

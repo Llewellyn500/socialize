@@ -489,7 +489,7 @@ function MediaEditor({
         <div className="managed-media-actions">
           <label className="secondary-button managed-media-upload">
             <input
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
               disabled={uploading}
               type="file"
               onChange={(event) => {

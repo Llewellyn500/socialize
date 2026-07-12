@@ -37,9 +37,11 @@ import {
   isAutoLinkDescription,
   isAutoLinkTitle,
   isValidGitHubRepository,
+  coerceProfileMediaUrl,
   isSafeExternalUrl,
   isSafeProfileMediaUrl,
   isValidGitHubUsername,
+  isValidHandle,
   resolveDeveloperActivity,
   titleFromUrl,
   type ProfileConfig,
@@ -47,9 +49,17 @@ import {
   type ProfileSection,
   type ProfileTheme,
 } from "@/lib/profile";
-import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { isHandleAvailableForUser, loadProfile, saveProfile } from "@/lib/profile-store";
 import { loadProfileStats, type ProfileStats } from "@/lib/profile-stats";
-import { normalizeLinkUrl } from "@/lib/email-link";
+import { coerceExternalUrl, normalizeLinkUrl } from "@/lib/email-link";
+import {
+  clearProfileDraft,
+  profileUpdatedAtKey,
+  profilesMatch,
+  resolveProfileWithDraft,
+  writeProfileDraft,
+} from "@/lib/profile-draft";
+import { sanitizeSocials } from "@/lib/socials";
 import {
   fetchEnrichedLinkMetadata,
   isEnrichableLinkUrl,
@@ -65,6 +75,14 @@ import styles from "./dashboard-app.module.css";
 
 type Tab = "overview" | "stats" | "links" | "profile" | "activity" | "appearance" | "settings";
 type Status = { tone: "neutral" | "success" | "error"; message: string } | null;
+type HandleCheckStatus =
+  | "idle"
+  | "current"
+  | "checking"
+  | "available"
+  | "taken"
+  | "invalid"
+  | "error";
 
 const navItems = [
   ["overview", "Overview", FiMonitor],
@@ -96,6 +114,11 @@ export function DashboardApp() {
   const [status, setStatus] = useState<Status>(null);
   const [urlCopied, setUrlCopied] = useState(false);
   const [overviewStats, setOverviewStats] = useState<ProfileStats | null>(null);
+  const [claimedHandle, setClaimedHandle] = useState(demoProfile.handle);
+  const [handleCheck, setHandleCheck] = useState<HandleCheckStatus>("current");
+  const [draftBaseUpdatedAt, setDraftBaseUpdatedAt] = useState("");
+  const [lastSavedProfile, setLastSavedProfile] = useState<ProfileConfig | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   useEffect(() => {
     setHost(window.location.host);
@@ -104,13 +127,18 @@ export function DashboardApp() {
       const localProfile = window.localStorage.getItem("socialize-demo-profile");
       if (localProfile) {
         try {
-          setProfile(JSON.parse(localProfile) as ProfileConfig);
+          const parsed = JSON.parse(localProfile) as ProfileConfig;
+          setProfile(parsed);
+          setClaimedHandle(parsed.handle);
         } catch {
           setProfile(demoProfile);
+          setClaimedHandle(demoProfile.handle);
         }
       } else {
         setProfile(demoProfile);
+        setClaimedHandle(demoProfile.handle);
       }
+      setHandleCheck("current");
       setWorkspaceReady(true);
       return;
     }
@@ -133,7 +161,19 @@ export function DashboardApp() {
             router.replace("/onboarding");
             return;
           }
-          setProfile(stored);
+          const resolved = resolveProfileWithDraft(nextUser.uid, stored);
+          setProfile(resolved.profile);
+          setClaimedHandle(stored.handle);
+          setHandleCheck("current");
+          setDraftBaseUpdatedAt(resolved.baseUpdatedAt);
+          setLastSavedProfile(stored);
+          setDraftHydrated(true);
+          if (resolved.restoredDraft) {
+            setStatus({
+              tone: "neutral",
+              message: "Restored your unsaved draft from this browser.",
+            });
+          }
           setWorkspaceReady(true);
         })
         .catch(() => {
@@ -144,6 +184,76 @@ export function DashboardApp() {
         });
     });
   }, [router]);
+
+  useEffect(() => {
+    if (!draftHydrated || !user?.uid || !isFirebaseConfigured) return;
+    if (lastSavedProfile && profilesMatch(profile, lastSavedProfile)) {
+      clearProfileDraft(user.uid);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      writeProfileDraft(user.uid, profile, draftBaseUpdatedAt);
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [profile, user?.uid, draftHydrated, draftBaseUpdatedAt, lastSavedProfile]);
+
+  useEffect(() => {
+    if (!user?.uid || !lastSavedProfile) return;
+    if (profilesMatch(profile, lastSavedProfile)) return;
+
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [profile, lastSavedProfile, user?.uid]);
+
+  useEffect(() => {
+    const candidate = profile.handle.trim().toLowerCase();
+
+    if (!candidate) {
+      setHandleCheck("invalid");
+      return;
+    }
+
+    if (candidate === claimedHandle) {
+      setHandleCheck("current");
+      return;
+    }
+
+    if (!isValidHandle(candidate)) {
+      setHandleCheck("invalid");
+      return;
+    }
+
+    if (!isFirebaseConfigured || !user) {
+      setHandleCheck("available");
+      return;
+    }
+
+    let cancelled = false;
+    setHandleCheck("checking");
+    const timer = window.setTimeout(() => {
+      void isHandleAvailableForUser(candidate, user.uid)
+        .then((available) => {
+          if (cancelled) return;
+          setHandleCheck(available ? "available" : "taken");
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setHandleCheck("error");
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [profile.handle, claimedHandle, user, isFirebaseConfigured]);
 
   useEffect(() => {
     if (!user?.uid || !isFirebaseConfigured) {
@@ -168,6 +278,34 @@ export function DashboardApp() {
   const pageUrl = useMemo(() => {
     return `${host}/${profile.handle}`;
   }, [host, profile.handle]);
+
+  const handleHint = useMemo(() => {
+    switch (handleCheck) {
+      case "checking":
+        return { text: "Checking if this handle is available…", tone: "neutral" as const };
+      case "available":
+        return { text: `@${profile.handle} is available`, tone: "success" as const };
+      case "current":
+        return { text: "3–30 lowercase letters, numbers, or hyphens", tone: "neutral" as const };
+      case "taken":
+        return { text: "That handle is already taken", tone: "error" as const };
+      case "invalid":
+        return {
+          text: "Use 3–30 lowercase letters, numbers, or hyphens. Reserved routes are unavailable.",
+          tone: "error" as const,
+        };
+      case "error":
+        return { text: "Could not check availability. Try again before saving.", tone: "error" as const };
+      default:
+        return { text: "3–30 lowercase letters, numbers, or hyphens", tone: "neutral" as const };
+    }
+  }, [handleCheck, profile.handle]);
+
+  const handleBlocksSave =
+    handleCheck === "checking" ||
+    handleCheck === "taken" ||
+    handleCheck === "invalid" ||
+    handleCheck === "error";
 
   const overviewClickSummary = useMemo(() => {
     const totalClicks = overviewStats?.totalClicks ?? 0;
@@ -399,6 +537,46 @@ export function DashboardApp() {
     setStatus(null);
     try {
       let profileToSave = nextProfile;
+      const nextHandle = profileToSave.handle.trim().toLowerCase();
+      if (!isValidHandle(nextHandle)) {
+        throw new Error(
+          "Choose a handle with 3 to 30 lowercase letters, numbers, or hyphens.",
+        );
+      }
+      if (nextHandle !== claimedHandle) {
+        if (handleCheck === "checking") {
+          throw new Error("Wait for the handle availability check to finish.");
+        }
+        if (handleCheck === "taken") {
+          throw new Error("That handle is already taken.");
+        }
+        if (handleCheck === "invalid" || handleCheck === "error") {
+          throw new Error("Pick an available handle before saving.");
+        }
+        const available = await isHandleAvailableForUser(nextHandle, user?.uid);
+        if (!available) {
+          setHandleCheck("taken");
+          throw new Error("That handle is already taken.");
+        }
+      }
+      profileToSave = {
+        ...profileToSave,
+        handle: nextHandle,
+        links: profileToSave.links.map((link) => ({
+          ...link,
+          url: coerceExternalUrl(link.url),
+          ...(link.mediaUrl
+            ? { mediaUrl: coerceProfileMediaUrl(link.mediaUrl) }
+            : {}),
+        })),
+        sections: (profileToSave.sections ?? []).map((section) => ({
+          ...section,
+          ...(section.mediaUrl
+            ? { mediaUrl: coerceProfileMediaUrl(section.mediaUrl) }
+            : {}),
+        })),
+        socials: sanitizeSocials(profileToSave.socials),
+      };
       const invalidLink = profileToSave.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
       const invalidLinkMedia = profileToSave.links.find(
@@ -459,9 +637,17 @@ export function DashboardApp() {
       if (auth && user) {
         const saved = await saveProfile(user.uid, profileToSave);
         setProfile(saved);
+        setClaimedHandle(saved.handle);
+        setHandleCheck("current");
+        setLastSavedProfile(saved);
+        setDraftBaseUpdatedAt(profileUpdatedAtKey(saved));
+        clearProfileDraft(user.uid);
       } else {
         window.localStorage.setItem("socialize-demo-profile", JSON.stringify(profileToSave));
         setProfile(profileToSave);
+        setClaimedHandle(profileToSave.handle);
+        setHandleCheck("current");
+        setLastSavedProfile(profileToSave);
       }
       setStatus({
         tone: "success",
@@ -572,7 +758,7 @@ export function DashboardApp() {
             {urlCopied ? <><FiCheck /> Copied!</> : <><FiCopy /> Copy URL</>}
           </button>
           <Link href={`/${profile.handle}`} target="_blank"><FiEye /> Preview</Link>
-          <button className={styles.publish} type="button" onClick={togglePublished} disabled={saving}>
+          <button className={styles.publish} type="button" onClick={togglePublished} disabled={saving || handleBlocksSave}>
             {profile.published ? "Unpublish" : "Publish"}
           </button>
         </div>
@@ -668,7 +854,15 @@ export function DashboardApp() {
               <PanelHeading eyebrow="IDENTITY / PROFILE" title="Make it yours." />
               <div className={styles.formGrid}>
                 <Field label="Display name"><input value={profile.displayName} onChange={(event) => update("displayName",event.target.value)} /></Field>
-                <Field label="Handle" hint="3–30 lowercase letters, numbers, or hyphens"><input value={profile.handle} onChange={(event) => update("handle",event.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} /></Field>
+                <Field label="Handle" hint={handleHint.text} hintTone={handleHint.tone}>
+                  <input
+                    aria-invalid={handleCheck === "taken" || handleCheck === "invalid"}
+                    value={profile.handle}
+                    onChange={(event) =>
+                      update("handle", event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                    }
+                  />
+                </Field>
                 <Field label="Role" wide><input value={profile.role} onChange={(event) => update("role",event.target.value)} /></Field>
                 <Field label="Bio" wide><textarea maxLength={240} value={profile.bio} onChange={(event) => update("bio",event.target.value)} /></Field>
                 <div className={styles.formFieldWide}>
@@ -746,7 +940,14 @@ export function DashboardApp() {
             </>
           ) : null}
 
-          <button className={styles.primaryAction} type="button" onClick={() => void persistProfile()} disabled={saving}><FiSave /> {saving ? "Saving…" : "Save changes"}</button>
+          <button
+            className={styles.primaryAction}
+            type="button"
+            onClick={() => void persistProfile()}
+            disabled={saving || handleBlocksSave}
+          >
+            <FiSave /> {saving ? "Saving…" : "Save changes"}
+          </button>
           {status ? <p className={styles.status} data-tone={status.tone}>{status.message}</p> : null}
         </main>
 
@@ -765,6 +966,28 @@ function PanelHeading({ eyebrow, title, action }: { eyebrow: string; title: stri
   return <header className={styles.panelHeading}><div><span>{eyebrow}</span><h1>{title}</h1></div>{action}</header>;
 }
 
-function Field({ label, hint, wide = false, children }: { label: string; hint?: string; wide?: boolean; children: React.ReactNode }) {
-  return <div className={`${styles.formField} ${wide ? styles.formFieldWide : ""}`}><label>{label}</label>{children}{hint ? <span className={styles.fieldHint}>{hint}</span> : null}</div>;
+function Field({
+  label,
+  hint,
+  hintTone = "neutral",
+  wide = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  hintTone?: "neutral" | "success" | "error";
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`${styles.formField} ${wide ? styles.formFieldWide : ""}`}>
+      <label>{label}</label>
+      {children}
+      {hint ? (
+        <span className={styles.fieldHint} data-tone={hintTone}>
+          {hint}
+        </span>
+      ) : null}
+    </div>
+  );
 }

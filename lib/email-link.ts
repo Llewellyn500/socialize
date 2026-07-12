@@ -11,6 +11,7 @@ export function isEmailAddress(value: string) {
   return EMAIL_PATTERN.test(trimmed);
 }
 
+/** Live-edit helper: emails become mailto:, other values stay as typed. */
 export function normalizeLinkUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return trimmed;
@@ -18,6 +19,29 @@ export function normalizeLinkUrl(value: string) {
     return `mailto:${trimmed}`;
   }
   return trimmed;
+}
+
+/**
+ * Save-time helper: emails → mailto:, bare domains/paths → https://,
+ * http:// → https://. Leaves other schemes unchanged.
+ */
+export function coerceExternalUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  if (isEmailAddress(trimmed)) {
+    return trimmed.toLowerCase().startsWith("mailto:")
+      ? trimmed
+      : `mailto:${trimmed}`;
+  }
+
+  if (/^https:\/\//i.test(trimmed)) return trimmed;
+  if (/^http:\/\//i.test(trimmed)) {
+    return `https://${trimmed.slice("http://".length)}`;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+
+  return `https://${trimmed}`;
 }
 
 export function emailFromLinkUrl(value: string) {

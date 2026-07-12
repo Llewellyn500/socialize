@@ -12,7 +12,7 @@ import {
   normalizeHandle,
   type ProfileConfig,
 } from "@/lib/profile";
-import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { loadProfile, saveProfile, isHandleAvailableForUser } from "@/lib/profile-store";
 import { AppLoadingState } from "@/components/app-loading-state";
 import { getFirebaseAuthError } from "./firebase-errors";
 import styles from "./auth.module.css";
@@ -42,6 +42,9 @@ export function OnboardingForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [handleTouched, setHandleTouched] = useState(false);
+  const [handleAvailability, setHandleAvailability] = useState<
+    "idle" | "checking" | "available" | "taken" | "error"
+  >("idle");
   const isReady = isFirebaseConfigured && Boolean(auth);
 
   useEffect(() => {
@@ -77,10 +80,56 @@ export function OnboardingForm() {
 
   const handleError = useMemo(() => {
     if (!handleTouched || !handle) return null;
-    return isValidHandle(handle)
-      ? null
-      : "Use 3 to 30 lowercase letters, numbers, or hyphens. Reserved routes are unavailable.";
-  }, [handle, handleTouched]);
+    if (!isValidHandle(handle)) {
+      return "Use 3 to 30 lowercase letters, numbers, or hyphens. Reserved routes are unavailable.";
+    }
+    if (handleAvailability === "taken") return "That handle is already taken.";
+    if (handleAvailability === "error") {
+      return "Could not check availability. Try again.";
+    }
+    return null;
+  }, [handle, handleTouched, handleAvailability]);
+
+  const handleHint = useMemo(() => {
+    if (handleError) return handleError;
+    if (handleAvailability === "checking") return "Checking if this handle is available…";
+    if (handleAvailability === "available" && handle) return `@${handle} is available`;
+    return "Lowercase letters, numbers, and hyphens only.";
+  }, [handle, handleAvailability, handleError]);
+
+  useEffect(() => {
+    if (!handle) {
+      setHandleAvailability("idle");
+      return;
+    }
+    if (!isValidHandle(handle)) {
+      setHandleAvailability("idle");
+      return;
+    }
+    if (!isFirebaseConfigured || !user) {
+      setHandleAvailability("available");
+      return;
+    }
+
+    let cancelled = false;
+    setHandleAvailability("checking");
+    const timer = window.setTimeout(() => {
+      void isHandleAvailableForUser(handle, user.uid)
+        .then((available) => {
+          if (cancelled) return;
+          setHandleAvailability(available ? "available" : "taken");
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setHandleAvailability("error");
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [handle, user]);
 
   const usesUnverifiedPassword = Boolean(
     user &&
@@ -126,6 +175,14 @@ export function OnboardingForm() {
       );
       return;
     }
+    if (handleAvailability === "checking") {
+      setError("Wait for the handle availability check to finish.");
+      return;
+    }
+    if (handleAvailability === "taken") {
+      setError("That handle is already taken.");
+      return;
+    }
     if (displayName.trim().length < 2) {
       setError("Enter the name you want visitors to see.");
       return;
@@ -135,21 +192,28 @@ export function OnboardingForm() {
       return;
     }
 
-    const initialProfile: ProfileConfig = {
-      handle,
-      displayName: displayName.trim(),
-      role: role.trim(),
-      bio: bio.trim(),
-      ...(avatarUrl ? { avatarUrl } : {}),
-      theme: "paper",
-      accent: "#8a2be2",
-      published: false,
-      socials: {},
-      links: [],
-    };
-
     setIsSaving(true);
     try {
+      const available = await isHandleAvailableForUser(handle, user.uid);
+      if (!available) {
+        setHandleAvailability("taken");
+        setError("That handle is already taken.");
+        return;
+      }
+
+      const initialProfile: ProfileConfig = {
+        handle,
+        displayName: displayName.trim(),
+        role: role.trim(),
+        bio: bio.trim(),
+        ...(avatarUrl ? { avatarUrl } : {}),
+        theme: "paper",
+        accent: "#8a2be2",
+        published: false,
+        socials: {},
+        links: [],
+      };
+
       await saveProfile(user.uid, initialProfile);
       router.push("/dashboard");
     } catch (saveError) {
@@ -270,15 +334,25 @@ export function OnboardingForm() {
                 required
                 value={handle}
                 placeholder="your-handle"
-                aria-invalid={Boolean(handleError)}
+                aria-invalid={Boolean(handleError) || handleAvailability === "taken"}
                 aria-describedby="handle-hint"
                 disabled={isSaving}
                 onBlur={() => setHandleTouched(true)}
                 onChange={(event) => setHandle(normalizeHandle(event.target.value))}
               />
             </div>
-            <p className={styles.hint} id="handle-hint">
-              {handleError ?? "Lowercase letters, numbers, and hyphens only."}
+            <p
+              className={styles.hint}
+              data-tone={
+                handleError || handleAvailability === "taken"
+                  ? "error"
+                  : handleAvailability === "available"
+                    ? "success"
+                    : undefined
+              }
+              id="handle-hint"
+            >
+              {handleHint}
             </p>
           </div>
 
@@ -383,7 +457,15 @@ export function OnboardingForm() {
           <button
             className={styles.primaryButton}
             type="submit"
-            disabled={isSaving || isUploadingAvatar || usesUnverifiedPassword}
+            disabled={
+              isSaving ||
+              isUploadingAvatar ||
+              usesUnverifiedPassword ||
+              !isValidHandle(handle) ||
+              handleAvailability === "checking" ||
+              handleAvailability === "taken" ||
+              handleAvailability === "error"
+            }
           >
             {isSaving ? <span className={styles.spinner} aria-hidden="true" /> : null}
             {isSaving ? "Reserving your handle..." : "Create my profile"}

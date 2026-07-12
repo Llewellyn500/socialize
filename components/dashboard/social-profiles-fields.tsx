@@ -1,30 +1,18 @@
 "use client";
 
+import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { socialIcons } from "@/components/social-icons";
 import {
-  FaEnvelope,
-  FaGithub,
-  FaGitlab,
-  FaLinkedinIn,
-} from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
-import { FiGlobe } from "react-icons/fi";
-import { normalizeLinkUrl } from "@/lib/email-link";
-import type { ProfileConfig, SocialKey } from "@/lib/profile";
+  displaySocialValue,
+  listedSocialKeys,
+  normalizeSocialValue,
+  SOCIAL_CATALOG,
+  SOCIAL_KEYS,
+  type SocialKey,
+} from "@/lib/socials";
+import type { ProfileConfig } from "@/lib/profile";
 import styles from "./dashboard-app.module.css";
-
-const socialFields: {
-  key: SocialKey;
-  label: string;
-  placeholder: string;
-  icon: React.ReactNode;
-}[] = [
-  { key: "github", label: "GitHub", placeholder: "https://github.com/you", icon: <FaGithub aria-hidden="true" /> },
-  { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/you", icon: <FaLinkedinIn aria-hidden="true" /> },
-  { key: "x", label: "X", placeholder: "https://x.com/you", icon: <FaXTwitter aria-hidden="true" /> },
-  { key: "gitlab", label: "GitLab", placeholder: "https://gitlab.com/you", icon: <FaGitlab aria-hidden="true" /> },
-  { key: "email", label: "Email", placeholder: "you@example.com", icon: <FaEnvelope aria-hidden="true" /> },
-  { key: "website", label: "Website", placeholder: "https://yoursite.com", icon: <FiGlobe aria-hidden="true" /> },
-];
 
 type SocialProfilesFieldsProps = {
   socials: ProfileConfig["socials"];
@@ -32,50 +20,91 @@ type SocialProfilesFieldsProps = {
 };
 
 export function SocialProfilesFields({ socials, onChange }: SocialProfilesFieldsProps) {
+  const activeKeys = listedSocialKeys(socials);
+  const availableOptions = SOCIAL_KEYS.filter((key) => !(key in socials)).map((key) => ({
+    value: key,
+    label: SOCIAL_CATALOG[key].label,
+  }));
+
   function updateSocial(key: SocialKey, rawValue: string) {
-    const trimmed = rawValue.trim();
-    const next = { ...socials };
-
-    if (!trimmed) {
-      delete next[key];
-      onChange(next);
-      return;
-    }
-
-    next[key] = key === "email" ? normalizeLinkUrl(trimmed) : trimmed;
-    onChange(next);
+    onChange({
+      ...socials,
+      [key]: normalizeSocialValue(key, rawValue),
+    });
   }
 
-  function displayValue(key: SocialKey) {
-    const value = socials[key] ?? "";
-    if (key === "email" && value.startsWith("mailto:")) {
-      return value.slice("mailto:".length);
-    }
-    return value;
+  function addSocial(key: string) {
+    if (!(SOCIAL_KEYS as readonly string[]).includes(key)) return;
+    if (key in socials) return;
+    onChange({
+      ...socials,
+      [key as SocialKey]: "",
+    });
+  }
+
+  function removeSocial(key: SocialKey) {
+    const next = { ...socials };
+    delete next[key];
+    onChange(next);
   }
 
   return (
     <div className={styles.socialProfiles}>
       <div className={styles.socialProfilesIntro}>
         <h3>Social profiles</h3>
-        <p>Icon links shown under your bio. Leave blank to hide.</p>
+        <p>Icon links under your bio. Add only the platforms you use.</p>
       </div>
-      <div className={styles.socialProfilesGrid}>
-        {socialFields.map(({ key, label, placeholder, icon }) => (
-          <label className={styles.socialProfileField} key={key}>
-            <span className={styles.socialProfileLabel}>
-              {icon}
-              {label}
-            </span>
-            <input
-              placeholder={placeholder}
-              type={key === "email" ? "email" : "url"}
-              value={displayValue(key)}
-              onChange={(event) => updateSocial(key, event.target.value)}
-            />
-          </label>
-        ))}
-      </div>
+
+      {activeKeys.length > 0 ? (
+        <ul className={styles.socialProfilesList}>
+          {activeKeys.map((key) => {
+            const meta = SOCIAL_CATALOG[key];
+            return (
+              <li className={styles.socialProfileRow} key={key}>
+                <label className={styles.socialProfileField}>
+                  <span className={styles.socialProfileLabel}>
+                    {socialIcons[key]}
+                    {meta.label}
+                  </span>
+                  <input
+                    placeholder={meta.placeholder}
+                    type={meta.inputType}
+                    value={displaySocialValue(key, socials[key] ?? "")}
+                    onChange={(event) => updateSocial(key, event.target.value)}
+                  />
+                </label>
+                <button
+                  aria-label={`Remove ${meta.label}`}
+                  className={styles.socialProfileRemove}
+                  type="button"
+                  onClick={() => removeSocial(key)}
+                >
+                  <FiTrash2 aria-hidden="true" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className={styles.socialProfilesEmpty}>No social profiles yet.</p>
+      )}
+
+      {availableOptions.length > 0 ? (
+        <div className={styles.socialProfilesAdd}>
+          <span className={styles.socialProfilesAddIcon} aria-hidden="true">
+            <FiPlus />
+          </span>
+          <CustomSelect
+            aria-label="Add a social profile"
+            options={availableOptions}
+            placeholder="Add a social profile…"
+            searchPlaceholder="Search platforms…"
+            searchable
+            value=""
+            onChange={addSocial}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

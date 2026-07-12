@@ -661,21 +661,29 @@
 
 .checklist small { color: rgba(25, 26, 24, 0.4); }
 
-.linkList { display: grid; gap: 1rem; }
+.linkList { display: grid; gap: 1.15rem; }
 
 .linksIntro {
-  margin: -0.35rem 0 1rem;
-  max-width: 34rem;
+  margin: -0.35rem 0 0.85rem;
+  max-width: 36rem;
   color: rgba(25, 26, 24, 0.52);
   font-size: 0.72rem;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .linksToolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.linksCount {
+  margin-left: auto;
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.62rem;
+  font-weight: 650;
 }
 
 .linksPrimaryAction,
@@ -683,12 +691,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.55rem 0.85rem;
+  min-height: 2.1rem;
+  padding: 0.45rem 0.8rem;
   border: 1px solid transparent;
   cursor: pointer;
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .linksPrimaryAction {
@@ -705,71 +714,99 @@
 
 .linksEmpty {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.55rem;
   justify-items: start;
-  padding: 1.5rem 1.1rem;
-  border: 1px dashed rgba(25, 26, 24, 0.22);
-  background: rgba(25, 26, 24, 0.03);
+  padding: 1.35rem 1.1rem;
+  border: 1px dashed rgba(25, 26, 24, 0.2);
+  background: rgba(25, 26, 24, 0.025);
+}
+
+.linksEmpty strong {
+  color: #191a18;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .linksEmpty p {
-  margin: 0;
+  margin: 0 0 0.35rem;
+  max-width: 28rem;
   color: rgba(25, 26, 24, 0.55);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .linkSectionCard {
   display: grid;
   gap: 0;
-  border: 1px solid rgba(25, 26, 24, 0.14);
-  background: rgba(25, 26, 24, 0.03);
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  background: rgba(25, 26, 24, 0.02);
 }
 
 .linkSectionHeader {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
+  gap: 0.55rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.7rem 0.85rem;
-  border-bottom: 1px solid rgba(25, 26, 24, 0.12);
-}
-
-.linkSectionCustomization {
-  padding: 0.55rem 0.85rem;
+  padding: 0.65rem 0.8rem;
   border-bottom: 1px solid rgba(25, 26, 24, 0.1);
 }
 
-.linkSectionTitle {
+.linkSectionHeading {
+  display: flex;
   flex: 1 1 12rem;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.7rem;
+  align-items: baseline;
   min-width: 0;
-  padding: 0.2rem 0;
+}
+
+.linkSectionCustomization {
+  padding: 0.35rem 0.8rem 0.55rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.08);
+}
+
+.linkSectionTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.1rem 0;
   border: 0;
   background: transparent;
   color: #191a18;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   outline: 0;
 }
 
+.linkSectionTitle:focus-visible {
+  box-shadow: inset 0 -1px 0 #8a2be2;
+}
+
 .linkSectionTitleStatic {
-  color: rgba(25, 26, 24, 0.52);
-  font-size: 0.68rem;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+}
+
+.linkSectionMeta {
+  color: rgba(25, 26, 24, 0.4);
+  font-size: 0.6rem;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .linkSectionBody {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.75rem;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border-radius: 0.2rem;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
 .linkSectionEmpty {
   margin: 0;
-  padding: 0.35rem 0.15rem;
+  padding: 0.55rem 0.35rem;
   color: rgba(25, 26, 24, 0.45);
   font-size: 0.68rem;
 }
@@ -779,10 +816,11 @@
   align-items: center;
   gap: 0.35rem;
   width: fit-content;
-  padding: 0.35rem 0.15rem;
+  margin: 0.15rem 0.2rem 0.2rem;
+  padding: 0.35rem 0.2rem;
   border: 0;
   background: transparent;
-  color: rgba(138, 43, 226, 0.92);
+  color: rgba(138, 43, 226, 0.95);
   cursor: pointer;
   font-size: 0.66rem;
   font-weight: 700;
@@ -790,50 +828,93 @@
 
 .linkCard {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.85rem;
-  border: 1px solid rgba(25, 26, 24, 0.14);
-  background: #ece9df;
-  transition: border-color 180ms ease, background-color 180ms ease, opacity 180ms ease;
+  gap: 0;
+  padding: 0.55rem 0.55rem 0.55rem 0.35rem;
+  border: 1px solid rgba(25, 26, 24, 0.1);
+  background: rgba(255, 255, 255, 0.42);
+  transition: border-color 160ms ease, background-color 160ms ease, opacity 160ms ease;
 }
 
 .linkCard[data-dragging="true"] {
-  opacity: 0.42;
+  opacity: 0.4;
 }
 
-.linkCard[data-drop-target="true"] {
+.linkCard[data-active="true"] {
   border-color: rgba(138, 43, 226, 0.72);
-  background: rgba(138, 43, 226, 0.07);
+  background: rgba(138, 43, 226, 0.08);
+}
+
+.linkSectionBody[data-active="true"] {
+  box-shadow: inset 0 0 0 1px rgba(138, 43, 226, 0.55);
+  background: rgba(138, 43, 226, 0.05);
 }
 
 .linkCardHidden {
-  opacity: 0.62;
+  opacity: 0.58;
+}
+
+.linkList[data-dragging="true"] .linkCardHidden[data-dragging="true"] {
+  opacity: 0.4;
 }
 
 .linkCardTop {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: start;
 }
 
-.linkCardIdentity {
+.linkCardMain {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.linkCardTitleRow {
   display: flex;
+  gap: 0.55rem;
   align-items: center;
-  gap: 0.5rem;
+  min-width: 0;
+}
+
+.linkTitleInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: #191a18;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  outline: 0;
+}
+
+.linkTitleInput:focus-visible {
+  box-shadow: inset 0 -1px 0 #8a2be2;
+}
+
+.linkTitleInput::placeholder {
+  color: rgba(25, 26, 24, 0.34);
+  font-weight: 650;
 }
 
 .linkDragHandle {
   display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  margin-top: 0.15rem;
   place-items: center;
-  border: 1px solid rgba(25, 26, 24, 0.16);
+  border: 0;
+  border-radius: 0.25rem;
   background: transparent;
-  color: rgba(25, 26, 24, 0.58);
+  color: rgba(25, 26, 24, 0.42);
   cursor: grab;
-  font-size: 0.78rem;
+}
+
+.linkDragHandle:hover {
+  background: rgba(25, 26, 24, 0.06);
+  color: rgba(25, 26, 24, 0.72);
 }
 
 .linkDragHandle:active {
@@ -842,43 +923,99 @@
 
 .linkDragHandle:focus-visible {
   outline: 2px solid #8a2be2;
-  outline-offset: 2px;
+  outline-offset: 1px;
+}
+
+.linkDragGrip {
+  width: 0.7rem;
+  height: 0.9rem;
+  background:
+    radial-gradient(circle, currentColor 1.1px, transparent 1.2px) 0 0 / 0.35rem 0.3rem,
+    radial-gradient(circle, currentColor 1.1px, transparent 1.2px) 0.35rem 0 / 0.35rem 0.3rem;
+  opacity: 0.9;
 }
 
 .linkCardStatus {
-  color: rgba(25, 26, 24, 0.42);
-  font-size: 0.58rem;
+  flex: 0 0 auto;
+  padding: 0.12rem 0.4rem;
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  border-radius: 999px;
+  color: rgba(25, 26, 24, 0.5);
+  font-size: 0.56rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
+.linkCardStatus[data-state="hidden"] {
+  border-color: rgba(25, 26, 24, 0.18);
+  background: rgba(25, 26, 24, 0.05);
+}
+
+.linkCardActions,
 .linkIconActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.28rem;
+  gap: 0.22rem;
 }
 
+.linkCardActions button,
 .linkIconActions button {
   display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.7rem;
+  height: 1.7rem;
   place-items: center;
-  border: 1px solid rgba(25, 26, 24, 0.16);
+  border: 1px solid transparent;
+  border-radius: 0.28rem;
   background: transparent;
-  color: rgba(25, 26, 24, 0.72);
+  color: rgba(25, 26, 24, 0.62);
   cursor: pointer;
   font-size: 0.72rem;
 }
 
+.linkCardActions button:hover:not(:disabled),
+.linkIconActions button:hover:not(:disabled) {
+  border-color: rgba(25, 26, 24, 0.14);
+  background: rgba(25, 26, 24, 0.05);
+  color: #191a18;
+}
+
 .linkIconActions button:disabled {
-  opacity: 0.35;
+  opacity: 0.32;
   cursor: not-allowed;
 }
 
-.linkCardFields {
+.linkUrlField,
+.linkDescriptionField {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.15rem;
+}
+
+.linkUrlField input,
+.linkDescriptionField input {
+  width: 100%;
+  padding: 0.35rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.14);
+  background: transparent;
+  color: #191a18;
+  font-size: 0.72rem;
+  outline: 0;
+}
+
+.linkUrlField input:focus,
+.linkDescriptionField input:focus {
+  border-bottom-color: #8a2be2;
+}
+
+.linkUrlField input::placeholder,
+.linkDescriptionField input::placeholder {
+  color: rgba(25, 26, 24, 0.34);
+}
+
+.linkUrlField small {
+  color: rgba(25, 26, 24, 0.4);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.56rem;
 }
 
 .linkField {
@@ -890,19 +1027,17 @@
   color: rgba(25, 26, 24, 0.48);
   font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .linkField input,
 .linkField select {
   width: 100%;
-  padding: 0.55rem 0;
-  border: 0;
-  border-bottom: 1px solid rgba(25, 26, 24, 0.2);
-  background: transparent;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: rgba(255, 255, 255, 0.55);
   color: #191a18;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   outline: 0;
 }
 
@@ -912,45 +1047,29 @@
 
 .linkField input:focus,
 .linkField select:focus {
-  border-bottom-color: rgba(138, 43, 226, 0.45);
-}
-
-.linkDropZone {
-  display: grid;
-  min-height: 2.4rem;
-  place-items: center;
-  border: 1px dashed rgba(138, 43, 226, 0.34);
-  background: rgba(138, 43, 226, 0.04);
-  color: rgba(25, 26, 24, 0.55);
-  font-size: 0.62rem;
-  font-weight: 650;
-  transition: border-color 160ms ease, background-color 160ms ease;
-}
-
-.linkDropZone[data-active="true"] {
-  border-color: #8a2be2;
-  background: rgba(138, 43, 226, 0.12);
-  color: #6b21c8;
+  border-color: rgba(138, 43, 226, 0.55);
 }
 
 .linkMediaEditor {
-  border-top: 1px solid rgba(25, 26, 24, 0.12);
+  margin-top: 0.15rem;
+  border-top: 1px solid rgba(25, 26, 24, 0.08);
 }
 
 .linkSectionCustomization .linkMediaEditor {
+  margin-top: 0;
   border-top: 0;
 }
 
 .linkMediaEditor summary {
   display: flex;
-  min-height: 2.25rem;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  color: rgba(25, 26, 24, 0.68);
+  padding: 0.4rem 0;
+  color: rgba(25, 26, 24, 0.55);
   cursor: pointer;
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-size: 0.62rem;
+  font-weight: 650;
   list-style: none;
 }
 
@@ -961,40 +1080,39 @@
 .linkMediaEditor summary > span {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .linkMediaEditor summary small {
-  color: rgba(25, 26, 24, 0.44);
-  font-size: 0.58rem;
+  color: rgba(25, 26, 24, 0.38);
+  font-size: 0.56rem;
   font-weight: 650;
 }
 
 .linkMediaEditor[open] summary {
-  color: #6b21c8;
+  color: rgba(25, 26, 24, 0.72);
 }
 
 .linkMediaEditorBody {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
-  gap: 0.75rem 0.9rem;
-  padding: 0.6rem 0 0.15rem;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+  gap: 0.55rem 0.7rem;
+  padding: 0.15rem 0 0.45rem;
 }
 
 .linkMediaPreview {
   display: grid;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 3.2rem;
+  height: 3.2rem;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(25, 26, 24, 0.16);
+  border: 1px solid rgba(25, 26, 24, 0.12);
   background: rgba(25, 26, 24, 0.04);
-  color: rgba(25, 26, 24, 0.38);
+  color: rgba(25, 26, 24, 0.35);
 }
 
 .linkMediaPreview[data-type="icon"] {
-  width: 3.25rem;
-  height: 3.25rem;
+  border-radius: 0.55rem;
 }
 
 .linkMediaPreview img {
@@ -1005,30 +1123,30 @@
 
 .linkMediaPreview[data-type="icon"] img {
   object-fit: contain;
-  padding: 0.35rem;
+  padding: 0.25rem;
 }
 
 .linkMediaFields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.45fr);
-  gap: 0.7rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
 }
 
 .linkMediaActions {
   display: flex;
-  grid-column: 2;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.4rem;
+  grid-column: 2;
 }
 
 .linkMediaUpload,
 .linkMediaClear {
+  position: relative;
   display: inline-flex;
-  min-height: 2rem;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.4rem 0.55rem;
-  border: 1px solid rgba(25, 26, 24, 0.18);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(25, 26, 24, 0.16);
   background: transparent;
   color: rgba(25, 26, 24, 0.72);
   cursor: pointer;
@@ -1093,15 +1211,18 @@
 
 .linkAddDescription {
   justify-self: start;
-  padding: 0.15rem 0;
+  width: fit-content;
+  padding: 0.1rem 0;
   border: 0;
   background: transparent;
   color: rgba(25, 26, 24, 0.48);
   cursor: pointer;
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 0.14em;
+}
+
+.linkAddDescription:hover {
+  color: #6b21c8;
 }
 
 .linkMoveMenu {
@@ -1110,35 +1231,112 @@
 
 .linkMoveMenuList {
   position: absolute;
-  top: calc(100% + 0.25rem);
+  top: calc(100% + 0.3rem);
   right: 0;
-  z-index: 8;
-  min-width: 9.5rem;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  width: max-content;
+  min-width: 12.5rem;
+  max-width: min(18rem, 72vw);
   margin: 0;
-  padding: 0.35rem;
-  list-style: none;
-  border: 1px solid rgba(25, 26, 24, 0.16);
-  background: #f4f1e8;
-  box-shadow: 0 10px 28px rgba(25, 26, 24, 0.12);
+  padding: 0.4rem;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: #f7f4ec;
+  box-shadow: 0 14px 36px rgba(25, 26, 24, 0.16);
+}
+
+.linkMenuGroup {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.linkMenuGroup + .linkMenuGroup {
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(25, 26, 24, 0.1);
+}
+
+.linkMenuLabel {
+  margin: 0 0 0.15rem;
+  padding: 0.15rem 0.45rem;
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .linkMoveMenuList button {
-  display: block;
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
   width: 100%;
-  padding: 0.45rem 0.55rem;
+  min-height: 2rem;
+  padding: 0.4rem 0.45rem;
   border: 0;
+  border-radius: 0.28rem;
   background: transparent;
   color: #191a18;
   cursor: pointer;
   font-size: 0.68rem;
   font-weight: 650;
+  line-height: 1.25;
   text-align: left;
 }
 
-.linkMoveMenuList button:hover,
-.linkMoveMenuList button[aria-current="true"] {
+.linkMoveMenuList button > svg {
+  flex: 0 0 auto;
+  color: rgba(25, 26, 24, 0.48);
+  font-size: 0.78rem;
+}
+
+.linkMoveMenuList button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkMenuCheck {
+  color: #8a2be2 !important;
+  font-size: 0.78rem;
+}
+
+.linkMoveMenuList button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.linkMoveMenuList button:hover:not(:disabled) {
   background: rgba(138, 43, 226, 0.1);
   color: #6b21c8;
+}
+
+.linkMoveMenuList button:hover:not(:disabled) > svg {
+  color: #6b21c8;
+}
+
+.linkMoveMenuList button[aria-current="true"] {
+  background: rgba(138, 43, 226, 0.08);
+  color: #6b21c8;
+}
+
+.linkMoveMenuList button:active:not(:disabled) {
+  background: rgba(138, 43, 226, 0.16);
+}
+
+.linkMenuDanger {
+  color: #9b2c2c !important;
+}
+
+.linkMenuDanger > svg {
+  color: #9b2c2c !important;
+}
+
+.linkMenuDanger:hover:not(:disabled) {
+  background: rgba(155, 44, 44, 0.1) !important;
+  color: #9b2c2c !important;
 }
 
 /* Legacy link row styles kept for reference during migration */
@@ -1367,15 +1565,25 @@
   line-height: 1.45;
 }
 
-.socialProfilesGrid {
+.socialProfilesList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem 1rem;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.socialProfileRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: end;
 }
 
 .socialProfileField {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
 .socialProfileLabel {
@@ -1393,7 +1601,7 @@
 
 .socialProfileField input {
   width: 100%;
-  padding: 0.65rem 0;
+  padding: 0.55rem 0;
   border: 0;
   border-bottom: 1px solid rgba(25, 26, 24, 0.22);
   background: transparent;
@@ -1406,8 +1614,50 @@
   color: rgba(25, 26, 24, 0.34);
 }
 
+.socialProfileRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.15rem;
+  border: 0;
+  background: transparent;
+  color: rgba(25, 26, 24, 0.42);
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.socialProfileRemove:hover {
+  color: #b42318;
+  background: rgba(180, 35, 24, 0.08);
+}
+
+.socialProfilesEmpty {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.66rem;
+}
+
+.socialProfilesAdd {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.socialProfilesAddIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.9rem;
+}
+
 .formField textarea { min-height: 7rem; resize: vertical; }
 .fieldHint { color: rgba(25, 26, 24, 0.4); font-size: 0.57rem; }
+.fieldHint[data-tone="success"] { color: #1f7a4d; }
+.fieldHint[data-tone="error"] { color: #b42318; }
 
 .filePicker {
   display: flex;
@@ -1900,6 +2150,14 @@
   color: rgba(247, 243, 251, 0.42);
 }
 
+:global(html:not([data-app-theme="light"])) .fieldHint[data-tone="success"] {
+  color: #8de0aa;
+}
+
+:global(html:not([data-app-theme="light"])) .fieldHint[data-tone="error"] {
+  color: #ff9dad;
+}
+
 :global(html:not([data-app-theme="light"])) .notice {
   border-color: rgba(138, 43, 226, 0.5);
   background: rgba(138, 43, 226, 0.12);
@@ -1951,8 +2209,18 @@
 :global(html:not([data-app-theme="light"])) .linksIntro,
 :global(html:not([data-app-theme="light"])) .linksEmpty p,
 :global(html:not([data-app-theme="light"])) .linkSectionEmpty,
-:global(html:not([data-app-theme="light"])) .linkCardStatus {
+:global(html:not([data-app-theme="light"])) .linksCount,
+:global(html:not([data-app-theme="light"])) .linkSectionMeta,
+:global(html:not([data-app-theme="light"])) .linkCardStatus,
+:global(html:not([data-app-theme="light"])) .linkUrlField small {
   color: rgba(247, 243, 251, 0.55);
+}
+
+:global(html:not([data-app-theme="light"])) .linksEmpty strong,
+:global(html:not([data-app-theme="light"])) .linkTitleInput,
+:global(html:not([data-app-theme="light"])) .linkUrlField input,
+:global(html:not([data-app-theme="light"])) .linkDescriptionField input {
+  color: #f7f3fb;
 }
 
 :global(html:not([data-app-theme="light"])) .linksSecondaryAction {
@@ -1984,28 +2252,65 @@
   color: #f7f3fb;
 }
 
-:global(html:not([data-app-theme="light"])) .linkSectionAdd {
+:global(html:not([data-app-theme="light"])) .linkSectionAdd,
+:global(html:not([data-app-theme="light"])) .linkAddDescription:hover {
   color: rgba(180, 121, 235, 0.95);
 }
 
 :global(html:not([data-app-theme="light"])) .linkCard {
-  border-color: rgba(247, 243, 251, 0.14);
+  border-color: rgba(247, 243, 251, 0.12);
   background: #1b1720;
 }
 
-:global(html:not([data-app-theme="light"])) .linkCard[data-drop-target="true"] {
+:global(html:not([data-app-theme="light"])) .linkCard[data-active="true"],
+:global(html:not([data-app-theme="light"])) .linkSectionBody[data-active="true"] {
   border-color: rgba(180, 121, 235, 0.82);
   background: rgba(138, 43, 226, 0.14);
+  box-shadow: none;
 }
 
+:global(html:not([data-app-theme="light"])) .linkSectionBody[data-active="true"] {
+  box-shadow: inset 0 0 0 1px rgba(180, 121, 235, 0.7);
+}
+
+:global(html:not([data-app-theme="light"])) .linkCardActions button,
 :global(html:not([data-app-theme="light"])) .linkIconActions button {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .linkCardActions button:hover:not(:disabled),
+:global(html:not([data-app-theme="light"])) .linkIconActions button:hover:not(:disabled) {
   border-color: rgba(247, 243, 251, 0.16);
-  color: rgba(247, 243, 251, 0.78);
+  background: rgba(247, 243, 251, 0.06);
+  color: #f7f3fb;
 }
 
 :global(html:not([data-app-theme="light"])) .linkDragHandle {
-  border-color: rgba(247, 243, 251, 0.16);
-  color: rgba(247, 243, 251, 0.62);
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkDragHandle:hover {
+  background: rgba(247, 243, 251, 0.06);
+  color: rgba(247, 243, 251, 0.78);
+}
+
+:global(html:not([data-app-theme="light"])) .linkCardStatus {
+  border-color: rgba(247, 243, 251, 0.14);
+}
+
+:global(html:not([data-app-theme="light"])) .linkCardStatus[data-state="hidden"] {
+  background: rgba(247, 243, 251, 0.06);
+}
+
+:global(html:not([data-app-theme="light"])) .linkTitleInput::placeholder,
+:global(html:not([data-app-theme="light"])) .linkUrlField input::placeholder,
+:global(html:not([data-app-theme="light"])) .linkDescriptionField input::placeholder {
+  color: rgba(247, 243, 251, 0.34);
+}
+
+:global(html:not([data-app-theme="light"])) .linkUrlField input,
+:global(html:not([data-app-theme="light"])) .linkDescriptionField input {
+  border-bottom-color: rgba(247, 243, 251, 0.16);
 }
 
 :global(html:not([data-app-theme="light"])) .linkField span {
@@ -2015,6 +2320,7 @@
 :global(html:not([data-app-theme="light"])) .linkField input,
 :global(html:not([data-app-theme="light"])) .linkField select {
   border-color: rgba(247, 243, 251, 0.2);
+  background: rgba(247, 243, 251, 0.04);
   color: #f7f3fb;
   color-scheme: dark;
 }
@@ -2025,18 +2331,6 @@
 
 :global(html:not([data-app-theme="light"])) .linkAddDescription {
   color: rgba(247, 243, 251, 0.48);
-}
-
-:global(html:not([data-app-theme="light"])) .linkDropZone {
-  border-color: rgba(180, 121, 235, 0.36);
-  background: rgba(138, 43, 226, 0.08);
-  color: rgba(247, 243, 251, 0.62);
-}
-
-:global(html:not([data-app-theme="light"])) .linkDropZone[data-active="true"] {
-  border-color: #b479eb;
-  background: rgba(138, 43, 226, 0.22);
-  color: #f0ddff;
 }
 
 :global(html:not([data-app-theme="light"])) .linkMediaEditor summary,
@@ -2071,19 +2365,46 @@
 }
 
 :global(html:not([data-app-theme="light"])) .linkMoveMenuList {
-  border-color: rgba(247, 243, 251, 0.16);
+  border-color: rgba(247, 243, 251, 0.14);
   background: #1f1a24;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMenuGroup + .linkMenuGroup {
+  border-top-color: rgba(247, 243, 251, 0.1);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMenuLabel {
+  color: rgba(247, 243, 251, 0.4);
 }
 
 :global(html:not([data-app-theme="light"])) .linkMoveMenuList button {
   color: #f7f3fb;
 }
 
-:global(html:not([data-app-theme="light"])) .linkMoveMenuList button:hover,
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button > svg {
+  color: rgba(247, 243, 251, 0.5);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button:hover:not(:disabled),
 :global(html:not([data-app-theme="light"])) .linkMoveMenuList button[aria-current="true"] {
-  background: rgba(138, 43, 226, 0.18);
-  color: #e9d5ff;
+  background: rgba(138, 43, 226, 0.2);
+  color: #f0ddff;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button:hover:not(:disabled) > svg,
+:global(html:not([data-app-theme="light"])) .linkMenuCheck {
+  color: #d7b7f5 !important;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMenuDanger,
+:global(html:not([data-app-theme="light"])) .linkMenuDanger > svg {
+  color: #f0a0a0 !important;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMenuDanger:hover:not(:disabled) {
+  background: rgba(240, 160, 160, 0.12) !important;
+  color: #f0a0a0 !important;
 }
 
 :global(html:not([data-app-theme="light"])) .socialProfilesIntro h3 {
@@ -2091,7 +2412,9 @@
 }
 
 :global(html:not([data-app-theme="light"])) .socialProfilesIntro p,
-:global(html:not([data-app-theme="light"])) .socialProfileLabel {
+:global(html:not([data-app-theme="light"])) .socialProfileLabel,
+:global(html:not([data-app-theme="light"])) .socialProfilesEmpty,
+:global(html:not([data-app-theme="light"])) .socialProfilesAddIcon {
   color: rgba(247, 243, 251, 0.55);
 }
 
@@ -2102,6 +2425,15 @@
 
 :global(html:not([data-app-theme="light"])) .socialProfileField input::placeholder {
   color: rgba(247, 243, 251, 0.34);
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfileRemove {
+  color: rgba(247, 243, 251, 0.42);
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfileRemove:hover {
+  color: #ff9dad;
+  background: rgba(255, 157, 173, 0.1);
 }
 
 :global(html:not([data-app-theme="light"])) .sectionHeader {
@@ -2288,9 +2620,9 @@
   .panelHeading h1 { font-size: 2.35rem; }
   .overviewGrid,.formGrid,.themes,.statsSummary { grid-template-columns: 1fr; }
   .formFieldWide { grid-column:auto; }
-  .socialProfilesGrid { grid-template-columns: 1fr; }
-  .linkCardTop { align-items: flex-start; }
-  .linkIconActions { width: 100%; justify-content: flex-end; }
+  .socialProfilesAdd { grid-template-columns: auto minmax(0, 1fr); }
+  .linkCardTop { grid-template-columns: auto minmax(0, 1fr); }
+  .linkCardActions { grid-column: 2; justify-content: flex-end; }
   .linkMediaEditorBody { grid-template-columns: 1fr; }
   .linkMediaFields { grid-template-columns: 1fr; }
   .linkMediaActions,

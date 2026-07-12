@@ -8,7 +8,10 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { normalizeHandle, type SocialKey } from "@/lib/profile";
+import { normalizeHandle } from "@/lib/profile";
+import { isSocialKey } from "@/lib/socials";
+
+export { isSocialKey };
 
 export type LinkClickStat = {
   clicks: number;
@@ -152,6 +155,3 @@ export async function recordProfileClick(input: {
   });
 }
 
-export function isSocialKey(value: string): value is SocialKey {
-  return ["github", "gitlab", "linkedin", "x", "email", "website"].includes(value);
-}

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { FiAlertCircle, FiCheck } from "react-icons/fi";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import styles from "@/components/service-content.module.css";
 
@@ -13,6 +14,8 @@ const reasons = [
   "Intellectual-property concern",
   "Another policy concern",
 ];
+
+const reasonOptions = reasons.map((item) => ({ value: item, label: item }));
 
 export function ReportForm({ handle, fallbackEmail }: { handle: string; fallbackEmail: string }) {
   const [reason, setReason] = useState("");
@@ -66,10 +69,15 @@ export function ReportForm({ handle, fallbackEmail }: { handle: string; fallback
         </div>
         <div className={styles.reportField}>
           <label htmlFor="report-reason">Reason</label>
-          <select id="report-reason" required value={reason} onChange={(event) => setReason(event.target.value)}>
-            <option disabled value="">Select the closest reason</option>
-            {reasons.map((item) => <option key={item}>{item}</option>)}
-          </select>
+          <CustomSelect
+            aria-label="Reason"
+            id="report-reason"
+            options={reasonOptions}
+            placeholder="Select the closest reason"
+            required
+            value={reason}
+            onChange={setReason}
+          />
         </div>
         <div className={styles.reportField}>
           <label htmlFor="report-details">Specific content and context</label>

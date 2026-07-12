@@ -1,31 +1,18 @@
 import type { CSSProperties } from "react";
-import {
-  FaEnvelope,
-  FaGithub,
-  FaGitlab,
-  FaLinkedinIn,
-} from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
-import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
+import { FiArrowUpRight } from "react-icons/fi";
 import {
   groupLinksBySection,
   isSafeExternalUrl,
+  coerceProfileMediaUrl,
   isSafeProfileMediaUrl,
+  isSocialKey,
   resolveDeveloperActivity,
+  socialLabel,
   type ProfileConfig,
-  type SocialKey,
 } from "@/lib/profile";
 import { recordProfileClick } from "@/lib/profile-stats";
 import { DeveloperActivity } from "@/components/developer-activity";
-
-const socialIcons: Record<SocialKey, React.ReactNode> = {
-  github: <FaGithub />,
-  gitlab: <FaGitlab />,
-  linkedin: <FaLinkedinIn />,
-  x: <FaXTwitter />,
-  email: <FaEnvelope />,
-  website: <FiGlobe />,
-};
+import { socialIcons } from "@/components/social-icons";
 
 type ProfilePreviewProps = {
   profile: ProfileConfig;
@@ -104,15 +91,17 @@ export function ProfilePreview({
       <p className="profile-preview__bio">{profile.bio}</p>
 
       <div className="profile-preview__socials" aria-label="Social profiles">
-        {(Object.entries(profile.socials) as [SocialKey, string][])
-          .filter(([, url]) => isSafeExternalUrl(url))
+        {Object.entries(profile.socials)
+          .filter((entry): entry is [keyof typeof socialIcons, string] =>
+            isSocialKey(entry[0]) && isSafeExternalUrl(entry[1]),
+          )
           .map(([key, url]) => (
             <a
               key={key}
               href={url}
               target={url.startsWith("mailto:") ? undefined : "_blank"}
               rel="noreferrer"
-              aria-label={key}
+              aria-label={socialLabel(key)}
               tabIndex={interactive ? undefined : -1}
               onClick={() => trackClick(trackClicks, profile.handle, key, "social")}
             >
@@ -124,13 +113,14 @@ export function ProfilePreview({
       {developerActivity.placement === "before-links" ? activityBlock : null}
 
       <div className="profile-preview__links">
-        {groupLinksBySection(profile).map((group) => {
+        {groupLinksBySection(profile).flatMap((group) => {
           const visibleLinks = group.links.filter(
             (link) => link.enabled && isSafeExternalUrl(link.url),
           );
-          if (visibleLinks.length === 0) return null;
+          if (visibleLinks.length === 0) return [];
+
           const sectionMediaUrl = isSafeProfileMediaUrl(group.section?.mediaUrl)
-            ? group.section?.mediaUrl
+            ? coerceProfileMediaUrl(group.section!.mediaUrl!)
             : undefined;
           const sectionMediaType = group.section?.mediaType === "thumbnail"
             ? "thumbnail"
@@ -139,7 +129,7 @@ export function ProfilePreview({
             sectionMediaUrl && group.section?.hideTitle,
           );
 
-          return (
+          return [
             <section
               className="profile-link-section"
               key={group.section?.id ?? "ungrouped"}
@@ -148,7 +138,7 @@ export function ProfilePreview({
                 <h2
                   className="profile-link-section__title"
                   data-media={sectionMediaUrl ? sectionMediaType : undefined}
-                  data-media-only={mediaOnlyHeading}
+                  data-media-only={mediaOnlyHeading ? "true" : undefined}
                 >
                   {sectionMediaUrl ? (
                     // User-provided heading media is decorative; the text remains the accessible name.
@@ -160,42 +150,44 @@ export function ProfilePreview({
                   </span>
                 </h2>
               ) : null}
-              {visibleLinks.map((link, index) => {
-                const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
-                  ? link.mediaUrl
-                  : undefined;
-                const mediaType = link.mediaType === "thumbnail" ? "thumbnail" : "icon";
-                return (
-                  <a
-                    href={link.url}
-                    key={link.id}
-                    target="_blank"
-                    rel="noreferrer"
-                    tabIndex={interactive ? undefined : -1}
-                    className="profile-link"
-                    data-media={mediaUrl ? mediaType : undefined}
-                    onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
-                  >
-                    {mediaUrl ? (
-                      <span className="profile-link__media" aria-hidden="true">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={mediaUrl} alt="" />
+              <div className="profile-link-section__links">
+                {visibleLinks.map((link, index) => {
+                  const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
+                    ? coerceProfileMediaUrl(link.mediaUrl!)
+                    : undefined;
+                  const mediaType = link.mediaType === "thumbnail" ? "thumbnail" : "icon";
+                  return (
+                    <a
+                      href={link.url}
+                      key={link.id}
+                      target="_blank"
+                      rel="noreferrer"
+                      tabIndex={interactive ? undefined : -1}
+                      className="profile-link"
+                      data-media={mediaUrl ? mediaType : undefined}
+                      onClick={() => trackClick(trackClicks, profile.handle, link.id, "link")}
+                    >
+                      {mediaUrl ? (
+                        <span className="profile-link__media" aria-hidden="true">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={mediaUrl} alt="" />
+                        </span>
+                      ) : (
+                        <span className="profile-link__number">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                      )}
+                      <span className="profile-link__copy">
+                        <strong>{link.title}</strong>
+                        {link.description ? <small>{link.description}</small> : null}
                       </span>
-                    ) : (
-                      <span className="profile-link__number">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    )}
-                    <span className="profile-link__copy">
-                      <strong>{link.title}</strong>
-                      {link.description ? <small>{link.description}</small> : null}
-                    </span>
-                    <FiArrowUpRight aria-hidden="true" />
-                  </a>
-                );
-              })}
-            </section>
-          );
+                      <FiArrowUpRight aria-hidden="true" />
+                    </a>
+                  );
+                })}
+              </div>
+            </section>,
+          ];
         })}
       </div>
 

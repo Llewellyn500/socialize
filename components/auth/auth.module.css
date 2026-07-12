@@ -426,6 +426,14 @@
   line-height: 1.45;
 }
 
+.hint[data-tone="success"] {
+  color: #1f7a4d;
+}
+
+.hint[data-tone="error"] {
+  color: #b42318;
+}
+
 .characterCount {
   text-align: right;
 }
@@ -856,6 +864,14 @@
 :global(html:not([data-app-theme="light"])) .fieldHint,
 :global(html:not([data-app-theme="light"])) .checkboxLabel {
   color: rgba(247, 243, 251, 0.68);
+}
+
+:global(html:not([data-app-theme="light"])) .hint[data-tone="success"] {
+  color: #8de0aa;
+}
+
+:global(html:not([data-app-theme="light"])) .hint[data-tone="error"] {
+  color: #ff9dad;
 }
 
 :global(html:not([data-app-theme="light"])) .label,

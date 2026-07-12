@@ -15,7 +15,7 @@ service firebase.storage {
 
     function validProfileMedia() {
       return request.resource.size < 3 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif|svg\\+xml)');
     }
 
     match /profile-media/{uid}/{scope}/{itemId}/{fileName} {

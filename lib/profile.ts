@@ -1,15 +1,16 @@
-import { emailFromLinkUrl, isEmailAddress, normalizeLinkUrl } from "@/lib/email-link";
+import {
+  coerceExternalUrl,
+  emailFromLinkUrl,
+  isEmailAddress,
+  normalizeLinkUrl,
+} from "@/lib/email-link";
+import { sanitizeSocials, type SocialKey } from "@/lib/socials";
+
+export type { SocialKey } from "@/lib/socials";
+export { isSocialKey, SOCIAL_KEYS, socialLabel } from "@/lib/socials";
 
 export type ProfileTheme = "terminal" | "paper" | "midnight" | "mono";
 export type ProfileMediaType = "icon" | "thumbnail";
-
-export type SocialKey =
-  | "github"
-  | "gitlab"
-  | "linkedin"
-  | "x"
-  | "email"
-  | "website";
 
 export type ProfileSection = {
   id: string;
@@ -221,9 +222,22 @@ export function isSafeExternalUrl(value: string) {
   }
 }
 
+/** Normalize pasted media URLs (add https:// when missing). Local paths stay as-is. */
+export function coerceProfileMediaUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  if (/^https:\/\//i.test(trimmed)) return trimmed;
+  if (/^http:\/\//i.test(trimmed)) {
+    return `https://${trimmed.slice("http://".length)}`;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export function isSafeProfileMediaUrl(value?: string) {
   if (!value) return false;
-  const trimmed = value.trim();
+  const trimmed = coerceProfileMediaUrl(value);
   if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
   try {
     const url = new URL(trimmed);
@@ -544,7 +558,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     .slice(0, MAX_SECTIONS)
     .map((section) => {
       const mediaUrl = isSafeProfileMediaUrl(section.mediaUrl)
-        ? section.mediaUrl?.trim().slice(0, 2048)
+        ? coerceProfileMediaUrl(section.mediaUrl!).slice(0, 2048)
         : undefined;
       return {
         id: section.id.slice(0, 80),
@@ -572,7 +586,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     theme: profile.theme,
     accent: /^#[0-9a-f]{6}$/i.test(profile.accent) ? profile.accent : "#8a2be2",
     published: profile.published,
-    socials: profile.socials,
+    socials: sanitizeSocials(profile.socials),
     ...(developerActivity ? { developerActivity } : {}),
     ...(sections.length > 0 ? { sections } : {}),
     links: profile.links.slice(0, 50).map((link) => {
@@ -580,12 +594,15 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
       const sectionId =
         link.sectionId && sectionIds.has(link.sectionId) ? link.sectionId : undefined;
       const mediaUrl = isSafeProfileMediaUrl(link.mediaUrl)
-        ? link.mediaUrl?.trim().slice(0, 2048)
+        ? coerceProfileMediaUrl(link.mediaUrl!).slice(0, 2048)
         : undefined;
       return {
         id: link.id.slice(0, 80),
         title: link.title.trim().slice(0, 100),
-        url: isSafeExternalUrl(link.url) ? link.url : "https://example.com",
+        url: (() => {
+          const url = coerceExternalUrl(link.url).slice(0, 2048);
+          return isSafeExternalUrl(url) ? url : "https://example.com";
+        })(),
         enabled: link.enabled,
         ...(description ? { description } : {}),
         ...(link.kind ? { kind: link.kind } : {}),

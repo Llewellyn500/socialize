@@ -168,7 +168,13 @@ service cloud.firestore {
         && request.resource.data.published is bool
         && request.resource.data.socials is map
         && request.resource.data.socials.keys().hasOnly([
-          'github', 'gitlab', 'linkedin', 'x', 'email', 'website'
+          'github', 'gitlab', 'linkedin', 'x', 'youtube', 'instagram', 'tiktok',
+          'facebook', 'threads', 'bluesky', 'mastodon', 'discord', 'twitch',
+          'reddit', 'medium', 'hashnode', 'devto', 'stackoverflow', 'codepen',
+          'codesandbox', 'dribbble', 'behance', 'figma', 'npm', 'producthunt',
+          'telegram', 'whatsapp', 'spotify', 'soundcloud', 'apple_music',
+          'patreon', 'kofi', 'buymeacoffee', 'calendly', 'calcom', 'email',
+          'website'
         ])
         && (!('sections' in request.resource.data)
           || (request.resource.data.sections is list

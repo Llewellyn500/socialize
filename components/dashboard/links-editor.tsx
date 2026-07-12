@@ -10,11 +10,11 @@ import {
 import {
   FiArrowDown,
   FiArrowUp,
+  FiCheck,
   FiEye,
   FiEyeOff,
   FiFolder,
   FiImage,
-  FiMove,
   FiMoreHorizontal,
   FiPlus,
   FiTrash2,
@@ -22,13 +22,16 @@ import {
   FiX,
 } from "react-icons/fi";
 import {
+  coerceProfileMediaUrl,
   isAutoLinkDescription,
+  isSafeProfileMediaUrl,
   type LinkSectionGroup,
   type ProfileConfig,
   type ProfileLink,
   type ProfileMediaType,
   type ProfileSection,
 } from "@/lib/profile";
+import { CustomSelect } from "@/components/ui/custom-select";
 import styles from "./dashboard-app.module.css";
 
 type MediaPatch = {
@@ -59,6 +62,20 @@ type LinksEditorProps = {
   onUploadSectionMedia: (sectionId: string, file: File) => Promise<void>;
 };
 
+function linkHostLabel(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  try {
+    const withProtocol = /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    const host = new URL(withProtocol).hostname.replace(/^www\./, "");
+    return host;
+  } catch {
+    return "";
+  }
+}
+
 export function LinksEditor({
   profile,
   linkGroups,
@@ -78,19 +95,62 @@ export function LinksEditor({
 }: LinksEditorProps) {
   const hasSections = (profile.sections?.length ?? 0) > 0;
   const showEmptyState = profile.links.length === 0 && !hasSections;
-  const [draggedLinkId, setDraggedLinkId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const draggedLinkIdRef = useRef<string | null>(null);
+  const dropTargetKeyRef = useRef<string | null>(null);
+
+  function clearDropTargetHighlight() {
+    const root = listRef.current;
+    if (!root) return;
+    root.querySelectorAll("[data-drop-key]").forEach((node) => {
+      node.setAttribute("data-active", "false");
+    });
+    dropTargetKeyRef.current = null;
+  }
+
+  function setDropTargetHighlight(targetKey: string | null) {
+    if (dropTargetKeyRef.current === targetKey) return;
+    const root = listRef.current;
+    if (!root) return;
+    dropTargetKeyRef.current = targetKey;
+    root.querySelectorAll("[data-drop-key]").forEach((node) => {
+      const key = node.getAttribute("data-drop-key");
+      node.setAttribute("data-active", key === targetKey ? "true" : "false");
+    });
+  }
+
+  function setDraggingUi(linkId: string | null) {
+    const root = listRef.current;
+    if (!root) return;
+    if (linkId) {
+      root.setAttribute("data-dragging", "true");
+      root.querySelectorAll("[data-link-id]").forEach((node) => {
+        node.setAttribute(
+          "data-dragging",
+          node.getAttribute("data-link-id") === linkId ? "true" : "false",
+        );
+      });
+    } else {
+      root.removeAttribute("data-dragging");
+      root.querySelectorAll("[data-link-id]").forEach((node) => {
+        node.setAttribute("data-dragging", "false");
+      });
+      clearDropTargetHighlight();
+    }
+  }
 
   function startLinkDrag(event: DragEvent<HTMLElement>, linkId: string) {
-    setDraggedLinkId(linkId);
-    setDropTarget(null);
+    draggedLinkIdRef.current = linkId;
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", linkId);
+    // Keep the drag gesture alive: no React state updates here (they shift
+    // layout under later sections and cancel HTML5 drag).
+    setDraggingUi(linkId);
   }
 
   function finishLinkDrag() {
-    setDraggedLinkId(null);
-    setDropTarget(null);
+    draggedLinkIdRef.current = null;
+    setDraggingUi(null);
   }
 
   function dropLink(
@@ -100,16 +160,28 @@ export function LinksEditor({
   ) {
     event.preventDefault();
     event.stopPropagation();
-    const linkId = draggedLinkId || event.dataTransfer.getData("text/plain");
-    if (linkId) onReorderLink(linkId, targetLinkId, targetSectionId);
+    const linkId =
+      draggedLinkIdRef.current || event.dataTransfer.getData("text/plain");
     finishLinkDrag();
+    if (linkId) onReorderLink(linkId, targetLinkId, targetSectionId);
+  }
+
+  function allowLinkDragOver(
+    event: DragEvent<HTMLElement>,
+    options: { targetKey: string; ignoreLinkId?: string },
+  ) {
+    const draggingId = draggedLinkIdRef.current;
+    if (!draggingId) return;
+    if (options.ignoreLinkId && draggingId === options.ignoreLinkId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetHighlight(options.targetKey);
   }
 
   return (
     <>
       <p className={styles.linksIntro} id="link-order-help">
-        Drag a link by its handle to place it anywhere, including another section.
-        Arrow buttons and the section menu provide the same controls from the keyboard.
+        Drag the handle to reorder. Use the menu for keyboard-friendly move controls.
       </p>
 
       <div className={styles.linksToolbar}>
@@ -121,30 +193,34 @@ export function LinksEditor({
           <FiFolder aria-hidden="true" />
           New section
         </button>
+        {!showEmptyState ? (
+          <span className={styles.linksCount}>
+            {profile.links.length} {profile.links.length === 1 ? "link" : "links"}
+          </span>
+        ) : null}
       </div>
 
       {showEmptyState ? (
         <div className={styles.linksEmpty}>
-          <p>No links yet.</p>
+          <strong>Start with a link visitors should open first.</strong>
+          <p>Add a project, docs, or social profile. Group later with sections if you need them.</p>
           <button className={styles.linksPrimaryAction} type="button" onClick={() => onAddLink()}>
             <FiPlus aria-hidden="true" />
             Add your first link
           </button>
         </div>
       ) : (
-        <div className={styles.linkList}>
+        <div className={styles.linkList} ref={listRef}>
           {linkGroups.map((group) => (
             <LinkSectionBlock
               canUploadMedia={canUploadMedia}
-              draggedLinkId={draggedLinkId}
-              dropTarget={dropTarget}
               group={group}
               hasSections={hasSections}
               key={group.section?.id ?? "ungrouped"}
               profile={profile}
               onAddLink={onAddLink}
               onDropLink={dropLink}
-              onDragTarget={setDropTarget}
+              onDragOverLink={allowLinkDragOver}
               onLinkUrlChange={onLinkUrlChange}
               onMoveLink={onMoveLink}
               onMoveSection={onMoveSection}
@@ -169,8 +245,6 @@ type LinkSectionBlockProps = {
   hasSections: boolean;
   profile: ProfileConfig;
   canUploadMedia: boolean;
-  draggedLinkId: string | null;
-  dropTarget: string | null;
   onAddLink: (sectionId?: string) => void;
   onUpdateSection: LinksEditorProps["onUpdateSection"];
   onMoveSection: LinksEditorProps["onMoveSection"];
@@ -183,7 +257,10 @@ type LinkSectionBlockProps = {
   onUploadSectionMedia: LinksEditorProps["onUploadSectionMedia"];
   onStartLinkDrag: (event: DragEvent<HTMLElement>, linkId: string) => void;
   onFinishLinkDrag: () => void;
-  onDragTarget: (target: string | null) => void;
+  onDragOverLink: (
+    event: DragEvent<HTMLElement>,
+    options: { targetKey: string; ignoreLinkId?: string },
+  ) => void;
   onDropLink: (
     event: DragEvent<HTMLElement>,
     targetLinkId: string | null,
@@ -196,8 +273,6 @@ function LinkSectionBlock({
   hasSections,
   profile,
   canUploadMedia,
-  draggedLinkId,
-  dropTarget,
   onAddLink,
   onUpdateSection,
   onMoveSection,
@@ -210,7 +285,7 @@ function LinkSectionBlock({
   onUploadSectionMedia,
   onStartLinkDrag,
   onFinishLinkDrag,
-  onDragTarget,
+  onDragOverLink,
   onDropLink,
 }: LinkSectionBlockProps) {
   const section = group.section;
@@ -227,14 +302,19 @@ function LinkSectionBlock({
       {section ? (
         <>
           <header className={styles.linkSectionHeader}>
-            <input
-              aria-label={`Section title for ${section.title}`}
-              className={styles.linkSectionTitle}
-              maxLength={60}
-              placeholder="Section heading"
-              value={section.title}
-              onChange={(event) => onUpdateSection(section.id, { title: event.target.value })}
-            />
+            <div className={styles.linkSectionHeading}>
+              <input
+                aria-label={`Section title for ${section.title}`}
+                className={styles.linkSectionTitle}
+                maxLength={60}
+                placeholder="Section heading"
+                value={section.title}
+                onChange={(event) => onUpdateSection(section.id, { title: event.target.value })}
+              />
+              <span className={styles.linkSectionMeta}>
+                {group.links.length} {group.links.length === 1 ? "link" : "links"}
+              </span>
+            </div>
             <SectionIconActions
               canMoveDown={sectionIndex < sections.length - 1}
               canMoveUp={sectionIndex > 0}
@@ -246,6 +326,7 @@ function LinkSectionBlock({
           <div className={styles.linkSectionCustomization}>
             <MediaControls
               canUpload={canUploadMedia}
+              compact
               hideTitle={section.hideTitle}
               label={`Heading image for ${section.title || "section"}`}
               mediaType={section.mediaType}
@@ -258,11 +339,24 @@ function LinkSectionBlock({
         </>
       ) : showUngroupedHeader ? (
         <header className={styles.linkSectionHeader}>
-          <span className={styles.linkSectionTitleStatic}>Other links</span>
+          <div className={styles.linkSectionHeading}>
+            <span className={styles.linkSectionTitleStatic}>Other links</span>
+            <span className={styles.linkSectionMeta}>
+              {group.links.length} {group.links.length === 1 ? "link" : "links"}
+            </span>
+          </div>
         </header>
       ) : null}
 
-      <div className={styles.linkSectionBody} data-dragging={Boolean(draggedLinkId)}>
+      <div
+        className={styles.linkSectionBody}
+        data-drop-key={`end:${sectionKey}`}
+        data-active="false"
+        onDragOver={(event) =>
+          onDragOverLink(event, { targetKey: `end:${sectionKey}` })
+        }
+        onDrop={(event) => onDropLink(event, null, sectionId)}
+      >
         {group.links.length === 0 ? (
           <p className={styles.linkSectionEmpty}>No links in this section yet.</p>
         ) : (
@@ -271,18 +365,17 @@ function LinkSectionBlock({
               canMoveDown={index < group.links.length - 1}
               canMoveUp={index > 0}
               canUploadMedia={canUploadMedia}
-              dropTarget={dropTarget === `link:${link.id}`}
-              dragged={draggedLinkId === link.id}
               hasSections={hasSections}
               key={link.id}
               link={link}
               sections={sections}
               onDrop={(event) => onDropLink(event, link.id, sectionId)}
               onDragOver={(event) => {
-                if (!draggedLinkId || draggedLinkId === link.id) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                onDragTarget(`link:${link.id}`);
+                onDragOverLink(event, {
+                  targetKey: `link:${link.id}`,
+                  ignoreLinkId: link.id,
+                });
+                event.stopPropagation();
               }}
               onLinkUrlChange={onLinkUrlChange}
               onMoveDown={() => onMoveLink(link.id, 1)}
@@ -297,28 +390,13 @@ function LinkSectionBlock({
           ))
         )}
 
-        {draggedLinkId ? (
-          <div
-            className={styles.linkDropZone}
-            data-active={dropTarget === `end:${sectionKey}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-              onDragTarget(`end:${sectionKey}`);
-            }}
-            onDrop={(event) => onDropLink(event, null, sectionId)}
-          >
-            Place at end of {section?.title || "other links"}
-          </div>
-        ) : null}
-
         <button
           className={styles.linkSectionAdd}
           type="button"
           onClick={() => onAddLink(sectionId)}
         >
           <FiPlus aria-hidden="true" />
-          {section ? `Add link to ${section.title || "section"}` : "Add link"}
+          {section ? "Add link to section" : "Add link"}
         </button>
       </div>
     </section>
@@ -365,8 +443,6 @@ type LinkCardProps = {
   canMoveUp: boolean;
   canMoveDown: boolean;
   canUploadMedia: boolean;
-  dragged: boolean;
-  dropTarget: boolean;
   onUpdate: (patch: Partial<ProfileLink>) => void;
   onLinkUrlChange: (linkId: string, url: string) => void | Promise<void>;
   onMoveUp: () => void;
@@ -387,8 +463,6 @@ function LinkCard({
   canMoveUp,
   canMoveDown,
   canUploadMedia,
-  dragged,
-  dropTarget,
   onUpdate,
   onLinkUrlChange,
   onMoveUp,
@@ -404,6 +478,7 @@ function LinkCard({
   const hasDescription =
     Boolean(link.description?.trim()) && !isAutoLinkDescription(link.description);
   const [showDescription, setShowDescription] = useState(hasDescription);
+  const host = linkHostLabel(link.url);
 
   useEffect(() => {
     if (hasDescription) setShowDescription(true);
@@ -414,107 +489,115 @@ function LinkCard({
   return (
     <article
       className={`${styles.linkCard}${link.enabled ? "" : ` ${styles.linkCardHidden}`}`}
-      data-dragging={dragged}
-      data-drop-target={dropTarget}
+      data-drop-key={`link:${link.id}`}
+      data-link-id={link.id}
+      data-dragging="false"
+      data-active="false"
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
       <div className={styles.linkCardTop}>
-        <div className={styles.linkCardIdentity}>
-          <button
-            aria-describedby="link-order-help"
-            aria-label={`Drag ${label} to reorder`}
-            className={styles.linkDragHandle}
-            draggable
-            title="Drag to reorder"
-            type="button"
-            onDragEnd={onFinishDrag}
-            onDragStart={onStartDrag}
-          >
-            <FiMove aria-hidden="true" />
-          </button>
-          <span className={styles.linkCardStatus}>{link.enabled ? "Visible" : "Hidden"}</span>
+        <div
+          aria-describedby="link-order-help"
+          aria-label={`Drag ${label} to reorder`}
+          className={styles.linkDragHandle}
+          draggable
+          role="button"
+          tabIndex={0}
+          title="Drag to reorder"
+          onDragEnd={onFinishDrag}
+          onDragStart={onStartDrag}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+            }
+          }}
+        >
+          <span aria-hidden="true" className={styles.linkDragGrip} />
         </div>
-        <div className={styles.linkIconActions}>
-          <button aria-label={`Move ${label} up`} disabled={!canMoveUp} type="button" onClick={onMoveUp}>
-            <FiArrowUp aria-hidden="true" />
-          </button>
-          <button
-            aria-label={`Move ${label} down`}
-            disabled={!canMoveDown}
-            type="button"
-            onClick={onMoveDown}
-          >
-            <FiArrowDown aria-hidden="true" />
-          </button>
-          {hasSections ? (
-            <LinkMoveMenu
-              currentSectionId={link.sectionId}
-              label={label}
-              sections={sections}
-              onMove={(sectionId) => onUpdate({ sectionId: sectionId || undefined })}
+
+        <div className={styles.linkCardMain}>
+          <div className={styles.linkCardTitleRow}>
+            <input
+              aria-label={`Title for ${label}`}
+              className={styles.linkTitleInput}
+              maxLength={100}
+              placeholder="Link title"
+              value={link.title}
+              onChange={(event) => onUpdate({ title: event.target.value })}
             />
-          ) : null}
+            <span
+              className={styles.linkCardStatus}
+              data-state={link.enabled ? "visible" : "hidden"}
+            >
+              {link.enabled ? "Shown" : "Hidden"}
+            </span>
+          </div>
+
+          <label className={styles.linkUrlField}>
+            <span className="sr-only">URL</span>
+            <input
+              placeholder="https:// or email@example.com"
+              value={link.url}
+              onChange={(event) => void onLinkUrlChange(link.id, event.target.value)}
+            />
+            {host ? <small>{host}</small> : null}
+          </label>
+
+          {showDescription ? (
+            <label className={styles.linkDescriptionField}>
+              <span className="sr-only">Description</span>
+              <input
+                maxLength={160}
+                placeholder="Short description (optional)"
+                value={link.description || ""}
+                onChange={(event) => onUpdate({ description: event.target.value })}
+              />
+            </label>
+          ) : (
+            <button
+              className={styles.linkAddDescription}
+              type="button"
+              onClick={() => setShowDescription(true)}
+            >
+              Add description
+            </button>
+          )}
+
+          <MediaControls
+            canUpload={canUploadMedia}
+            compact
+            label={`Image for ${label}`}
+            mediaType={link.mediaType}
+            mediaUrl={link.mediaUrl}
+            onPatch={onUpdate}
+            onUpload={onUploadMedia}
+          />
+        </div>
+
+        <div className={styles.linkCardActions}>
           <button
             aria-label={link.enabled ? `Hide ${label}` : `Show ${label}`}
+            title={link.enabled ? "Hide on profile" : "Show on profile"}
             type="button"
             onClick={onToggleEnabled}
           >
             {link.enabled ? <FiEye aria-hidden="true" /> : <FiEyeOff aria-hidden="true" />}
           </button>
-          <button aria-label={`Delete ${label}`} type="button" onClick={onRemove}>
-            <FiTrash2 aria-hidden="true" />
-          </button>
+          <LinkOverflowMenu
+            canMoveDown={canMoveDown}
+            canMoveUp={canMoveUp}
+            currentSectionId={link.sectionId}
+            hasSections={hasSections}
+            label={label}
+            sections={sections}
+            onMoveDown={onMoveDown}
+            onMoveSection={(sectionId) => onUpdate({ sectionId: sectionId || undefined })}
+            onMoveUp={onMoveUp}
+            onRemove={onRemove}
+          />
         </div>
       </div>
-
-      <div className={styles.linkCardFields}>
-        <label className={styles.linkField}>
-          <span>URL</span>
-          <input
-            placeholder="https:// or email@example.com"
-            value={link.url}
-            onChange={(event) => void onLinkUrlChange(link.id, event.target.value)}
-          />
-        </label>
-        <label className={styles.linkField}>
-          <span>Title</span>
-          <input
-            maxLength={100}
-            placeholder="What visitors see"
-            value={link.title}
-            onChange={(event) => onUpdate({ title: event.target.value })}
-          />
-        </label>
-        {showDescription ? (
-          <label className={styles.linkField}>
-            <span>Description</span>
-            <input
-              maxLength={160}
-              placeholder="Optional, one short line"
-              value={link.description || ""}
-              onChange={(event) => onUpdate({ description: event.target.value })}
-            />
-          </label>
-        ) : (
-          <button
-            className={styles.linkAddDescription}
-            type="button"
-            onClick={() => setShowDescription(true)}
-          >
-            + Add description
-          </button>
-        )}
-      </div>
-
-      <MediaControls
-        canUpload={canUploadMedia}
-        label={`Image for ${label}`}
-        mediaType={link.mediaType}
-        mediaUrl={link.mediaUrl}
-        onPatch={onUpdate}
-        onUpload={onUploadMedia}
-      />
     </article>
   );
 }
@@ -525,6 +608,7 @@ function MediaControls({
   mediaType,
   hideTitle,
   supportsMediaOnly = false,
+  compact = false,
   canUpload,
   onPatch,
   onUpload,
@@ -534,6 +618,7 @@ function MediaControls({
   mediaType?: ProfileMediaType;
   hideTitle?: boolean;
   supportsMediaOnly?: boolean;
+  compact?: boolean;
   canUpload: boolean;
   onPatch: (patch: MediaPatch) => void;
   onUpload: (file: File) => Promise<void>;
@@ -558,17 +643,17 @@ function MediaControls({
   }
 
   return (
-    <details className={styles.linkMediaEditor}>
+    <details className={styles.linkMediaEditor} data-compact={compact ? "true" : undefined}>
       <summary>
-        <span><FiImage aria-hidden="true" /> Icon or thumbnail</span>
-        <small>{hasMedia ? "Added" : "Optional"}</small>
+        <span><FiImage aria-hidden="true" /> {hasMedia ? "Custom image" : "Add image"}</span>
+        <small>{hasMedia ? "On" : "Optional"}</small>
       </summary>
       <div className={styles.linkMediaEditorBody}>
         <div className={styles.linkMediaPreview} data-type={mediaType ?? "icon"}>
-          {hasMedia ? (
+          {hasMedia && isSafeProfileMediaUrl(mediaUrl) ? (
             // User-provided media URLs are rendered as decorative link imagery.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl} alt="" />
+            <img src={coerceProfileMediaUrl(mediaUrl!)} alt="" />
           ) : (
             <FiImage aria-hidden="true" />
           )}
@@ -579,33 +664,51 @@ function MediaControls({
             <input
               id={`${inputId}-url`}
               inputMode="url"
-              placeholder="https://... or /image.png"
+              placeholder="https://…/image.svg or /image.png"
               value={mediaUrl || ""}
               onChange={(event) => {
                 const value = event.target.value;
                 onPatch(value ? { mediaUrl: value } : { mediaUrl: undefined, hideTitle: false });
                 setMessage("");
               }}
+              onBlur={(event) => {
+                const value = event.target.value.trim();
+                if (!value) return;
+                const coerced = value.startsWith("/")
+                  ? value
+                  : value.match(/^https?:\/\//i)
+                    ? value.replace(/^http:\/\//i, "https://")
+                    : /^[a-z][a-z0-9+.-]*:/i.test(value)
+                      ? value
+                      : `https://${value}`;
+                if (coerced !== mediaUrl) {
+                  onPatch({ mediaUrl: coerced });
+                }
+              }}
             />
           </label>
-          <label className={styles.linkField} htmlFor={`${inputId}-type`}>
-            <span>Display</span>
-            <select
+          <div className={styles.linkField}>
+            <span id={`${inputId}-type-label`}>Display</span>
+            <CustomSelect
+              aria-label="Display"
               id={`${inputId}-type`}
+              options={[
+                { value: "icon", label: "Compact icon" },
+                { value: "thumbnail", label: "Wide thumbnail" },
+              ]}
               value={mediaType ?? "icon"}
-              onChange={(event) => onPatch({
-                mediaType: event.target.value === "thumbnail" ? "thumbnail" : "icon",
-              })}
-            >
-              <option value="icon">Compact icon</option>
-              <option value="thumbnail">Wide thumbnail</option>
-            </select>
-          </label>
+              onChange={(next) =>
+                onPatch({
+                  mediaType: next === "thumbnail" ? "thumbnail" : "icon",
+                })
+              }
+            />
+          </div>
         </div>
         <div className={styles.linkMediaActions}>
           <label className={styles.linkMediaUpload}>
             <input
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
               disabled={!canUpload || uploading}
               id={inputId}
               type="file"
@@ -651,21 +754,34 @@ function MediaControls({
   );
 }
 
-function LinkMoveMenu({
+function LinkOverflowMenu({
+  label,
+  canMoveUp,
+  canMoveDown,
+  hasSections,
   sections,
   currentSectionId,
-  label,
-  onMove,
+  onMoveUp,
+  onMoveDown,
+  onMoveSection,
+  onRemove,
 }: {
+  label: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  hasSections: boolean;
   sections: ProfileSection[];
   currentSectionId?: string;
-  label: string;
-  onMove: (sectionId: string) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onMoveSection: (sectionId: string) => void;
+  onRemove: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-  const options = [{ id: "", title: "Other links" }, ...sections];
+  const sectionOptions = [{ id: "", title: "Other links" }, ...sections];
+  const currentId = currentSectionId ?? "";
 
   useEffect(() => {
     if (!open) return;
@@ -689,30 +805,83 @@ function LinkMoveMenu({
         aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`Move ${label} to section`}
+        aria-label={`More actions for ${label}`}
         type="button"
         onClick={() => setOpen((current) => !current)}
       >
         <FiMoreHorizontal aria-hidden="true" />
       </button>
       {open ? (
-        <ul className={styles.linkMoveMenuList} id={menuId} role="menu">
-          {options.map((option) => (
-            <li key={option.id || "ungrouped"} role="none">
-              <button
-                aria-current={(currentSectionId ?? "") === option.id ? "true" : undefined}
-                role="menuitem"
-                type="button"
-                onClick={() => {
-                  onMove(option.id);
-                  setOpen(false);
-                }}
-              >
-                {option.title}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className={styles.linkMoveMenuList} id={menuId} role="menu">
+          <div className={styles.linkMenuGroup} role="group" aria-label="Reorder">
+            <button
+              disabled={!canMoveUp}
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                onMoveUp();
+                setOpen(false);
+              }}
+            >
+              <FiArrowUp aria-hidden="true" />
+              <span>Move up</span>
+            </button>
+            <button
+              disabled={!canMoveDown}
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                onMoveDown();
+                setOpen(false);
+              }}
+            >
+              <FiArrowDown aria-hidden="true" />
+              <span>Move down</span>
+            </button>
+          </div>
+
+          {hasSections ? (
+            <div className={styles.linkMenuGroup} role="group" aria-label="Move to section">
+              <p className={styles.linkMenuLabel}>Move to section</p>
+              {sectionOptions.map((option) => {
+                const isCurrent = currentId === option.id;
+                return (
+                  <button
+                    aria-current={isCurrent ? "true" : undefined}
+                    disabled={isCurrent}
+                    key={option.id || "ungrouped"}
+                    role="menuitem"
+                    title={option.title}
+                    type="button"
+                    onClick={() => {
+                      onMoveSection(option.id);
+                      setOpen(false);
+                    }}
+                  >
+                    <FiFolder aria-hidden="true" />
+                    <span>{option.title}</span>
+                    {isCurrent ? <FiCheck aria-hidden="true" className={styles.linkMenuCheck} /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className={styles.linkMenuGroup} role="group" aria-label="Danger zone">
+            <button
+              className={styles.linkMenuDanger}
+              role="menuitem"
+              type="button"
+              onClick={() => {
+                onRemove();
+                setOpen(false);
+              }}
+            >
+              <FiTrash2 aria-hidden="true" />
+              <span>Delete link</span>
+            </button>
+          </div>
+        </div>
       ) : null}
     </div>
   );
