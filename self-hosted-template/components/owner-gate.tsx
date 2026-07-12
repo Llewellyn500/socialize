@@ -49,8 +49,8 @@ export function OwnerGate({ children }: { children: ReactNode }) {
       <main className="gate-page">
         <div className="gate-panel">
           <ShieldCheck aria-hidden="true" size={34} weight="duotone" />
-          <h1>Connect Firebase first</h1>
-          <p>The private workspace stays closed until the Firebase environment values are present.</p>
+          <h1>Connect your backend first</h1>
+          <p>The private workspace stays closed until the backend environment values are present.</p>
           <Link className="primary-button" href="/">Return to profile</Link>
         </div>
       </main>

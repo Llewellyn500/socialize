@@ -762,13 +762,11 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .skipLink,
-  .actionPrimary,
-  .actionSecondary,
-  .pageNav a,
-  .resourceLinks svg {
-    scroll-behavior: auto;
-    transition-duration: 0.01ms;
-  }
+:global(html[data-reduce-motion]) .skipLink,
+:global(html[data-reduce-motion]) .actionPrimary,
+:global(html[data-reduce-motion]) .actionSecondary,
+:global(html[data-reduce-motion]) .pageNav a,
+:global(html[data-reduce-motion]) .resourceLinks svg {
+  scroll-behavior: auto;
+  transition-duration: 0.01ms;
 }

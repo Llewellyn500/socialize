@@ -154,7 +154,7 @@ const sections: LegalSection[] = [
       <>
         <p>
           A self-hosted deployment is operated by the person who deploys it, not by
-          the managed Socialize service. That operator controls Firebase, hosting,
+          the managed Socialize service. That operator controls backend infrastructure, hosting,
           domains, security rules, backups, content, and legal compliance.
         </p>
         <p>
@@ -177,7 +177,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          Socialize relies on providers such as Firebase and Vercel and may let you
+          Socialize relies on infrastructure providers such as cloud hosting and Vercel and may let you
           sign in with Google or GitHub. Public profile links lead to websites we
           do not operate. Those services have their own terms, privacy practices,
           availability, and security controls.
@@ -265,7 +265,7 @@ const sections: LegalSection[] = [
         <p>
           We may update these Terms. Material changes will receive reasonable
           notice and will apply prospectively where required. Questions can be sent
-          to <a href="mailto:legal@socialize.dev">legal@socialize.dev</a>.
+          to <a href="mailto:legal@socialize.you">legal@socialize.you</a>.
         </p>
       </>
     ),
@@ -275,7 +275,7 @@ const sections: LegalSection[] = [
 export default function TermsPage() {
   return (
     <LegalPage
-      contactEmail="legal@socialize.dev"
+      contactEmail="legal@socialize.you"
       sections={sections}
       summary="These draft terms describe accounts, hosted profiles, user content, handles, and the boundary between the managed service and independent deployments."
       title="Terms of Service"

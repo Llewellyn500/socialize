@@ -20,7 +20,7 @@ import {
 export const metadata: Metadata = {
   title: "Self-host Socialize",
   description:
-    "Deploy the stripped Socialize profile and private link manager with your own Firebase project and domain.",
+    "Deploy the stripped Socialize profile and private link manager on your own infrastructure and domain.",
   alternates: { canonical: "/self-host" },
 };
 
@@ -37,7 +37,7 @@ export default function SelfHostPage() {
     <ServiceShell>
       <PageHero
         section="Self-host"
-        title="Your profile. Your Firebase. Your rules."
+        title="Your profile. Your stack. Your rules."
         summary="The self-hosted edition keeps only the public profile, owner sign-in, and private link manager. It removes Socialize accounts, service marketing, and shared multi-user infrastructure."
         tone="moss"
         actions={
@@ -57,7 +57,7 @@ export default function SelfHostPage() {
           <div className={styles.asideStatement}>
             <span>Self-hosted footprint</span>
             <strong>One public page. One private workspace. One profile document.</strong>
-            <p>Next.js on the front, Firebase Authentication and Firestore behind it.</p>
+            <p>Next.js on the front, secure sign-in and a profile database behind it.</p>
           </div>
         }
       />
@@ -79,7 +79,7 @@ export default function SelfHostPage() {
               { label: "Public route", value: <code>/</code> },
               { label: "Owner workspace", value: <code>/manage</code> },
               { label: "Sign-in route", value: <code>/login</code> },
-              { label: "Firestore document", value: <code>profiles/main</code> },
+              { label: "Profile document", value: <code>profiles/main</code> },
             ]}
           />
           <CheckList>
@@ -88,8 +88,8 @@ export default function SelfHostPage() {
               socials, accent, and fallback profile.
             </CheckItem>
             <CheckItem>
-              Email/password, Google, and GitHub owner sign-in through Firebase
-              Authentication.
+              Email/password, Google, and GitHub owner sign-in through your
+              configured authentication provider.
             </CheckItem>
             <CheckItem>
               Public reads and owner-only writes enforced in
@@ -103,8 +103,8 @@ export default function SelfHostPage() {
           <Notice title="The config remains your recovery path">
             <p>
               The profile in <code>profile.config.ts</code> renders immediately
-              and remains the fallback when Firebase is unavailable. After the
-              first successful save, the Firestore document becomes the live
+              and remains the fallback when the cloud backend is unavailable. After the
+              first successful save, the saved profile record becomes the live
               source.
             </p>
           </Notice>
@@ -113,13 +113,13 @@ export default function SelfHostPage() {
         <ContentSection
           id="before-you-start"
           title="Before you start"
-          lead="Allow about twenty minutes for Firebase and the first deployment."
+          lead="Allow about twenty minutes for backend setup and the first deployment."
         >
           <CheckList>
             <CheckItem>Node.js 20 or newer and npm installed locally.</CheckItem>
             <CheckItem>A GitHub account, a fork of the repository, and a Vercel account.</CheckItem>
             <CheckItem>
-              A Firebase project. Choose its Firestore location carefully because
+              A cloud backend project. Choose your database location carefully because
               that location cannot be changed later.
             </CheckItem>
             <CheckItem>
@@ -127,10 +127,10 @@ export default function SelfHostPage() {
             </CheckItem>
           </CheckList>
           <p>
-            The Firebase web configuration uses public client identifiers;
-            security comes from Authentication, authorized domains, and Firestore
+            The backend web configuration uses public client identifiers;
+            security comes from sign-in setup, authorized domains, and database
             rules, not from hiding those values. This starter does not need a
-            Firebase Admin service-account key.
+            server admin credential.
           </p>
         </ContentSection>
 
@@ -170,13 +170,13 @@ export default function SelfHostPage() {
                 label: "profile.config.ts",
               },
               {
-                title: "Create the Firebase web app",
+                title: "Connect the backend",
                 body: (
                   <>
                     <p>
-                      In Firebase Console, create a project, add a Web app, then
-                      create a Firestore database. Copy the six web-app values into
-                      a local environment file.
+                      In your backend project dashboard, create a project, add a Web
+                      app, then create a profile database. Copy the six web-app values
+                      into a local environment file.
                     </p>
                     <p>
                       Copy <code>.env.example</code> to <code>.env.local</code> and
@@ -186,23 +186,23 @@ export default function SelfHostPage() {
                   </>
                 ),
                 code:
-                  "cp .env.example .env.local\n# Add the Firebase Web app values to .env.local",
+                  "cp .env.example .env.local\n# Add the backend web-app values to .env.local",
               },
               {
                 title: "Enable an owner sign-in method",
                 body: (
                   <>
                     <p>
-                      In Firebase Console, open Authentication, then enable at
+                      In your sign-in settings, enable at
                       least one of Email/Password, Google, or GitHub. For GitHub,
-                      create an OAuth app and use Firebase&apos;s exact redirect URI,
-                      such as
+                      create an OAuth app and use the exact redirect URI shown in
+                      your provider dashboard, such as
                       <code>https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler</code>,
                       as the GitHub authorization callback URL.
                     </p>
                     <p>
                       Add <code>localhost</code> and your production hostname to
-                      Firebase Authentication&apos;s authorized domains where
+                      your sign-in provider&apos;s authorized domains where
                       required.
                     </p>
                   </>
@@ -212,8 +212,8 @@ export default function SelfHostPage() {
                 title: "Create the owner account",
                 body: (
                   <p>
-                    Create an email/password user in Firebase Console, or attempt
-                    Google or GitHub sign-in once so Firebase creates that user.
+                    Create an email/password owner account in your dashboard, or attempt
+                    Google or GitHub sign-in once so the provider creates that user.
                     Copy its UID from Authentication → Users. The first OAuth
                     attempt can be rejected by the manager until the allowlist
                     entry in the next step exists.
@@ -221,10 +221,10 @@ export default function SelfHostPage() {
                 ),
               },
               {
-                title: "Add the owner UID to Firestore",
+                title: "Add the owner UID to the database",
                 body: (
                   <p>
-                    In Firestore, create <code>owners/USER_UID</code> with a small
+                    In the database, create <code>owners/USER_UID</code> with a small
                     marker field such as <code>enabled: true</code>. The document
                     ID—not its field value—is the access grant. Browser clients
                     cannot create or change owner records under the included
@@ -232,11 +232,11 @@ export default function SelfHostPage() {
                   </p>
                 ),
                 code:
-                  "owners\n└── YOUR_FIREBASE_UID\n    └── enabled: true",
-                label: "Firestore",
+                  "owners\n└── YOUR_OWNER_UID\n    └── enabled: true",
+                label: "Database",
               },
               {
-                title: "Deploy the Firestore rules",
+                title: "Deploy the database rules",
                 body: (
                   <p>
                     The included rules allow anyone to read the public profile and
@@ -266,7 +266,7 @@ export default function SelfHostPage() {
         <ContentSection
           id="deploy"
           title="Deploy on Vercel"
-          lead="Vercel runs the Next.js application; Firebase continues to own authentication and profile data."
+          lead="Vercel runs the Next.js application; your backend continues to own authentication and profile data."
         >
           <p>
             Push your configured fork to GitHub, then import it in Vercel. Set the
@@ -288,18 +288,18 @@ export default function SelfHostPage() {
           </p>
           <Notice title="Two deployments protect two different things" tone="signal">
             <p>
-              Vercel deploys the Next.js application. The Firebase CLI deploys
+              Vercel deploys the Next.js application. The backend CLI deploys
               <code>firestore.rules</code>. A successful Vercel deployment does
-              not publish a local Firebase rule change.
+              not publish a local database rule change.
             </p>
           </Notice>
           <h3>Connect a custom domain</h3>
           <p>
             Add the domain in Vercel after the first successful deployment and
             apply the DNS records it supplies. Then add both the production domain
-            and any Vercel preview domains you intend to use to Firebase
-            Authentication&apos;s authorized domains. GitHub sign-in still uses
-            Firebase&apos;s <code>firebaseapp.com/__/auth/handler</code> callback URL.
+            and any Vercel preview domains you intend to use to your sign-in
+            provider&apos;s authorized domains. GitHub sign-in still uses the
+            provider&apos;s <code>firebaseapp.com/__/auth/handler</code> callback URL.
           </p>
           <ResourceLinks
             links={[
@@ -318,13 +318,13 @@ export default function SelfHostPage() {
               {
                 external: true,
                 href: "https://firebase.google.com/docs/auth/web/github-auth",
-                title: "Firebase GitHub Authentication",
+                title: "GitHub sign-in setup",
                 description: "Provider setup and the required OAuth callback URL.",
               },
               {
                 external: true,
                 href: "https://firebase.google.com/docs/rules/manage-deploy",
-                title: "Deploy Firebase Security Rules",
+                title: "Deploy database security rules",
                 description: "Official CLI commands and rule deployment guidance.",
               },
             ]}
@@ -339,7 +339,7 @@ export default function SelfHostPage() {
           <h3>Back up the profile</h3>
           <p>
             Keep <code>profile.config.ts</code> current enough to serve as a useful
-            fallback. For production data, schedule Firestore exports or keep a
+            fallback. For production data, schedule database exports or keep a
             separate machine-readable export in a private, access-controlled
             location.
           </p>
@@ -347,7 +347,7 @@ export default function SelfHostPage() {
           <p>
             Never create an <code>owners/&#123;uid&#125;</code> document for a visitor.
             Revoke old owners promptly, use multi-factor authentication where your
-            provider supports it, and regularly review Firebase authorized domains
+            provider supports it, and regularly review authorized sign-in domains
             and Vercel project access.
           </p>
           <h3>Take upstream updates deliberately</h3>
@@ -368,7 +368,7 @@ export default function SelfHostPage() {
 
       <ActionBand
         title="Prefer the managed route?"
-        copy="Use Socialize hosting when you want the same profile model without operating Firebase, Vercel deployments, or an owner allowlist yourself."
+        copy="Use Socialize hosting when you want the same profile model without operating your own backend, deployments, or owner allowlist yourself."
         links={[
           { href: "/sign-up", label: "Create a hosted page" },
           { href: "/docs", label: "Compare both paths" },

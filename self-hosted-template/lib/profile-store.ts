@@ -31,7 +31,7 @@ export async function saveProfile(profile: Profile): Promise<void> {
   const services = getFirebaseServices();
 
   if (!services) {
-    throw new Error("Firebase is not configured.");
+    throw new Error("Accounts are not configured.");
   }
 
   const reference = doc(services.db, selfHostedConfig.firestoreDocumentPath);

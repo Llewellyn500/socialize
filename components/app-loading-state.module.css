@@ -1,0 +1,116 @@
+.screen {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  background: #ebe8de;
+  color: #191a18;
+}
+
+.screenEmbedded {
+  min-height: 100dvh;
+  background: transparent;
+}
+
+.screenInline {
+  min-height: auto;
+  padding: 3rem 1rem;
+  background: transparent;
+}
+
+.inner {
+  max-width: 540px;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: appLoadReveal 560ms ease forwards;
+}
+
+.title {
+  margin: 1rem 0;
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+.description {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.58);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1.35rem;
+}
+
+.progress span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #8a2be2;
+  animation: appLoadPulse 920ms ease-in-out infinite;
+}
+
+.progress span:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.progress span:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+@keyframes appLoadReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes appLoadPulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.28;
+    transform: translateY(0) scale(0.92);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1);
+  }
+}
+
+:global(html:not([data-app-theme="light"])) .screen {
+  background: #0e0c12;
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .screen :global(.brand-lockup) {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .description {
+  color: rgba(247, 243, 251, 0.58);
+}
+
+:global(html[data-reduce-motion]) .reveal {
+  opacity: 1;
+  transform: none;
+  animation: none;
+}
+
+:global(html[data-reduce-motion]) .progress span {
+  animation: none;
+  opacity: 0.65;
+}

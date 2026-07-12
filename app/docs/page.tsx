@@ -20,7 +20,7 @@ import {
 export const metadata: Metadata = {
   title: "Documentation",
   description:
-    "Learn how Socialize hosted profiles, self-hosted profiles, Firebase authentication, and the portable profile model work.",
+    "Learn how Socialize hosted profiles, self-hosted profiles, account sign-in, and the portable profile model work.",
   alternates: { canonical: "/docs" },
 };
 
@@ -63,7 +63,7 @@ export default function DocsPage() {
       <PageHero
         section="Docs"
         title="Know what runs your page."
-        summary="Socialize has two delivery paths and one portable profile shape. Start with the managed editor, or own the small Firebase stack yourself."
+        summary="Socialize has two delivery paths and one portable profile shape. Start with the managed editor, or run the compact self-hosted stack yourself."
         tone="ink"
         actions={
           <>
@@ -96,7 +96,7 @@ export default function DocsPage() {
               },
               {
                 label: "Self-hosted",
-                value: "Your repository, Firebase project, domain, and operations",
+                value: "Your repository, backend project, domain, and operations",
               },
               {
                 label: "Shared core",
@@ -111,7 +111,7 @@ export default function DocsPage() {
           <p>
             Hosted mode is for developers who want to sign in, arrange their work,
             and share a URL. Self-hosted mode is a stripped Next.js application
-            with a public profile, a private manager, and Firebase as its backend.
+            with a public profile, a private manager, and a cloud backend you control.
           </p>
           <Notice title="The service and template are related, not identical">
             <p>
@@ -177,7 +177,7 @@ export default function DocsPage() {
           <p>
             Keep at least one sign-in method available and protect the identity
             provider behind it. Socialize support should never ask for your
-            password, OAuth secret, recovery code, or Firebase service-account key.
+            password, OAuth secret, recovery code, or server admin credentials.
           </p>
         </ContentSection>
 
@@ -187,18 +187,18 @@ export default function DocsPage() {
           lead="A compact single-owner application for developers who want the repository and runtime."
         >
           <p>
-            The template uses Next.js, Firebase Authentication, and Cloud
-            Firestore. Your profile renders from <code>profile.config.ts</code>
-            until Firestore has a saved profile. The private manager writes to the
-            configured document only after Firebase finds the signed-in UID in the
-            private <code>owners</code> allowlist.
+            The template uses Next.js with secure sign-in and a profile database. Your
+            profile renders from <code>profile.config.ts</code> until the database
+            has a saved profile. The private manager writes to the configured
+            document only after the backend finds the signed-in UID in the private
+            <code>owners</code> allowlist.
           </p>
           <CheckList>
             <CheckItem>
               Configure identity and fallback data in <code>profile.config.ts</code>.
             </CheckItem>
             <CheckItem>
-              Put Firebase Web app values in <code>.env.local</code> locally and in
+              Put backend web-app values in <code>.env.local</code> locally and in
               your hosting environment for production.
             </CheckItem>
             <CheckItem>
@@ -215,7 +215,7 @@ export default function DocsPage() {
               {
                 href: "/self-host#setup",
                 title: "Complete setup guide",
-                description: "Fork, Firebase, owner allowlist, rules, and local verification.",
+                description: "Fork, backend setup, owner allowlist, rules, and local verification.",
               },
               {
                 href: "/self-host#deploy",
@@ -274,16 +274,15 @@ export default function DocsPage() {
         >
           <h3>Hosted service</h3>
           <p>
-            Firebase Authentication handles email, Google, and GitHub identities.
-            The service associates the authenticated Firebase user ID with a
-            profile. A valid session alone must never grant access to another
-            account&apos;s profile.
+            Socialize sign-in handles email, Google, and GitHub identities. The
+            service associates the authenticated account ID with a profile. A valid
+            session alone must never grant access to another account&apos;s profile.
           </p>
           <h3>Self-hosted edition</h3>
           <p>
             The template checks for an <code>owners/&#123;uid&#125;</code> document in
-            both the interface gate and Firestore rules. The interface check helps
-            the owner understand access state; the Firestore rule remains the
+            both the interface gate and database rules. The interface check helps
+            the owner understand access state; the database rule remains the
             security boundary.
           </p>
           <CodeBlock label="firestore.rules">
@@ -293,8 +292,8 @@ export default function DocsPage() {
           </CodeBlock>
           <Notice title="Client checks are not access control" tone="signal">
             <p>
-              Hiding a button or redirecting a visitor does not protect Firestore.
-              Keep authorization in Firebase Security Rules and test the rejected
+              Hiding a button or redirecting a visitor does not protect the database.
+              Keep authorization in server-side security rules and test the rejected
               path as carefully as the successful one.
             </p>
           </Notice>
@@ -343,12 +342,12 @@ export default function DocsPage() {
                 description: "Reproducible bugs and public feature discussions. Never include secrets.",
               },
               {
-                href: "mailto:support@socialize.dev",
+                href: "mailto:support@socialize.you",
                 title: "Hosted account support",
                 description: "Account access, handle, publishing, or billing questions.",
               },
               {
-                href: "mailto:security@socialize.dev",
+                href: "mailto:security@socialize.you",
                 title: "Private security reports",
                 description: "Vulnerabilities, exposed credentials, or abuse of service infrastructure.",
               },

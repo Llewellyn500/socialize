@@ -72,7 +72,7 @@ export default function SponsorPage() {
           <p>
             Socialize offers a managed product and a smaller self-hosted edition.
             The open edition gives developers a practical route to their own
-            Firebase project and domain, without carrying the hosted service&apos;s
+            backend project and domain, without carrying the hosted service&apos;s
             accounts, marketing pages, or multi-user operations.
           </p>
           <p>
@@ -100,7 +100,7 @@ export default function SponsorPage() {
             facts={[
               {
                 label: "Maintenance",
-                value: "Next.js, Firebase, and dependency updates",
+                value: "Next.js, backend maintenance, and dependency updates",
               },
               {
                 label: "Security",
@@ -121,7 +121,7 @@ export default function SponsorPage() {
               Reproduce and fix defects that affect the public template.
             </CheckItem>
             <CheckItem>
-              Keep Firebase Authentication and Firestore rules guidance aligned
+              Keep sign-in and database rules guidance aligned
               with the implementation.
             </CheckItem>
             <CheckItem>
@@ -153,7 +153,7 @@ export default function SponsorPage() {
                 description: "Choose the amount and visibility through GitHub Sponsors.",
               },
               {
-                href: "mailto:sponsors@socialize.dev?subject=Socialize%20organization%20sponsorship",
+                href: "mailto:sponsors@socialize.you?subject=Socialize%20organization%20sponsorship",
                 title: "Organization sponsorship",
                 description: "Discuss an invoice, public acknowledgement, or a larger contribution.",
               },
@@ -174,7 +174,7 @@ export default function SponsorPage() {
           <p>
             Before sending code, open a focused issue for substantial changes so
             scope and direction can be agreed first. Never include user data,
-            Firebase credentials, or unpublished vulnerability details in a public
+            backend credentials, or unpublished vulnerability details in a public
             issue.
           </p>
         </ContentSection>
@@ -228,7 +228,7 @@ export default function SponsorPage() {
           <p>
             GitHub provides payment records for GitHub Sponsors transactions.
             Organizations that need different paperwork should email
-            <a href="mailto:sponsors@socialize.dev"> sponsors@socialize.dev</a>
+            <a href="mailto:sponsors@socialize.you"> sponsors@socialize.you</a>
             before paying.
           </p>
           <h3>Is a sponsorship tax deductible?</h3>

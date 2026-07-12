@@ -23,7 +23,7 @@ const sections: LegalSection[] = [
           abuse.
         </p>
         <p>
-          A self-hosted Socialize operator controls their own Firebase project,
+          A self-hosted Socialize operator controls their own backend project,
           deployment, domain, and visitor data. Their privacy practices are not
           controlled by the managed Socialize service. Review the policy published
           by that operator before using a self-hosted instance.
@@ -40,7 +40,7 @@ const sections: LegalSection[] = [
       <>
         <h3>Account and sign-in information</h3>
         <p>
-          Firebase Authentication may provide a user ID, email address, display
+          Account sign-in may provide a user ID, email address, display
           name, avatar, verified-email status, and the sign-in provider you chose.
           Google and GitHub authenticate you directly; Socialize does not receive
           your password for those providers.
@@ -141,8 +141,8 @@ const sections: LegalSection[] = [
             available to anyone who opens or discovers the public URL.
           </li>
           <li>
-            <strong>Service providers.</strong> Google Firebase provides account
-            and profile infrastructure, Vercel hosts and delivers the Next.js
+            <strong>Service providers.</strong> Cloud infrastructure providers handle
+            account and profile storage, Vercel hosts and delivers the Next.js
             application, and Google Analytics provides optional aggregate traffic
             measurement after consent. Email, domain, and error-monitoring providers
             may also process information to operate the service under their terms
@@ -231,7 +231,7 @@ const sections: LegalSection[] = [
           Withdrawing consent stops future analytics collection from Socialize.
         </p>
         <p>
-          Send a request to <a href="mailto:privacy@socialize.dev">privacy@socialize.dev</a>.
+          Send a request to <a href="mailto:privacy@socialize.you">privacy@socialize.you</a>.
           We may need to verify account control before acting. You may also complain
           to the data-protection authority available in your jurisdiction.
         </p>
@@ -273,7 +273,7 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Privacy questions and rights requests can be sent to
-          <a href="mailto:privacy@socialize.dev"> privacy@socialize.dev</a>. The
+          <a href="mailto:privacy@socialize.you"> privacy@socialize.you</a>. The
           legal name, registration details, and postal address of the service
           operator must be inserted here before public launch.
         </p>
@@ -285,7 +285,7 @@ const sections: LegalSection[] = [
 export default function PrivacyPage() {
   return (
     <LegalPage
-      contactEmail="privacy@socialize.dev"
+      contactEmail="privacy@socialize.you"
       sections={sections}
       summary="This draft explains the information Socialize expects to handle for developer accounts, public profiles, service operations, and consented analytics."
       title="Privacy Policy"

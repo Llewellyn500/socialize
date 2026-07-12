@@ -43,9 +43,9 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
   const profilePath = `/${handle}`;
   const subject = encodeURIComponent(`Report @${handle} on Socialize`);
   const body = encodeURIComponent(
-    `Profile: https://socialize.dev/${handle}\n\nReason:\n\nSpecific link or content:\n\nContext or evidence:\n`,
+    `Profile: https://socialize.you/${handle}\n\nReason:\n\nSpecific link or content:\n\nContext or evidence:\n`,
   );
-  const reportEmail = `mailto:safety@socialize.dev?subject=${subject}&body=${body}`;
+  const reportEmail = `mailto:safety@socialize.you?subject=${subject}&body=${body}`;
 
   const pageNav = [
     { href: "#report-form", label: "Report details" },
@@ -91,7 +91,7 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
               {
                 href: reportEmail,
                 title: "Send a report by email",
-                description: `A prefilled message for @${handle} to safety@socialize.dev.`,
+                description: `A prefilled message for @${handle} to safety@socialize.you.`,
               },
               {
                 href: "/acceptable-use#reporting",
@@ -135,9 +135,9 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
           </p>
           <p>
             Copyright or trademark notices that require formal legal statements can
-            be sent to <a href="mailto:legal@socialize.dev">legal@socialize.dev</a>.
+            be sent to <a href="mailto:legal@socialize.you">legal@socialize.you</a>.
             A security weakness in Socialize itself belongs at
-            <a href="mailto:security@socialize.dev"> security@socialize.dev</a>.
+            <a href="mailto:security@socialize.you"> security@socialize.you</a>.
           </p>
         </ContentSection>
 
@@ -175,7 +175,7 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
           <p>
             Contact the emergency service or appropriate authority in your location
             first. Then send the profile URL and reference information to
-            <a href="mailto:safety@socialize.dev?subject=Urgent%20hosted-profile%20safety%20report"> safety@socialize.dev</a>.
+            <a href="mailto:safety@socialize.you?subject=Urgent%20hosted-profile%20safety%20report"> safety@socialize.you</a>.
           </p>
           <h3>Credentials or active compromise</h3>
           <p>

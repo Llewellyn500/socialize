@@ -15,7 +15,7 @@ const routes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.dev";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you";
   return routes.map((route) => ({
     url: `${base}${route}`,
     lastModified: new Date(),

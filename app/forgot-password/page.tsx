@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell
       title="A clean way back in."
-      description="Request a time-limited reset link from Firebase. Your existing profile and links stay exactly where you left them."
+      description="Request a time-limited reset link by email. Your existing profile and links stay exactly where you left them."
       context="Account recovery"
     >
       <ForgotPasswordForm />

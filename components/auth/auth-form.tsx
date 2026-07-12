@@ -23,8 +23,10 @@ import {
   FiInfo,
 } from "react-icons/fi";
 import { auth, db, isFirebaseConfigured } from "@/lib/firebase";
+import { readPendingProviderLink, type PendingProviderLink } from "@/lib/auth-linking";
 import { loadProfile } from "@/lib/profile-store";
 import { getFirebaseAuthError } from "./firebase-errors";
+import { LinkAccountPrompt } from "./link-account-prompt";
 import styles from "./auth.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
@@ -72,6 +74,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
   const [showPassword, setShowPassword] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingLink, setPendingLink] = useState<PendingProviderLink | null>(null);
 
   const isBusy = pendingAction !== null;
   const isReady = isFirebaseConfigured && Boolean(auth);
@@ -98,7 +101,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
 
     const firebaseAuth = auth;
     if (!firebaseAuth) {
-      setError("Firebase is not configured for this deployment.");
+      setError("Accounts are not configured for this deployment.");
       return;
     }
 
@@ -141,10 +144,21 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
       const route = await getPostAuthRoute(credential.user);
       router.push(returnTo && route === "/dashboard" ? returnTo : route);
     } catch (authError) {
-      setError(getFirebaseAuthError(authError));
+      const linkPrompt = await readPendingProviderLink(authError);
+      if (linkPrompt) {
+        setPendingLink(linkPrompt);
+        setError(null);
+      } else {
+        setError(getFirebaseAuthError(authError));
+      }
     } finally {
       setPendingAction(null);
     }
+  }
+
+  async function finishLinkedSignIn(user: User) {
+    const route = await getPostAuthRoute(user);
+    router.push(returnTo && route === "/dashboard" ? returnTo : route);
   }
 
   async function handleProvider(providerName: ProviderName) {
@@ -152,7 +166,7 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
 
     const firebaseAuth = auth;
     if (!firebaseAuth) {
-      setError("Firebase is not configured for this deployment.");
+      setError("Accounts are not configured for this deployment.");
       return;
     }
     if (isSignUp && !acceptedTerms) {
@@ -179,7 +193,13 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
       const route = isNewUser ? "/onboarding" : await getPostAuthRoute(result.user);
       router.push(returnTo && route === "/dashboard" ? returnTo : route);
     } catch (authError) {
-      setError(getFirebaseAuthError(authError));
+      const linkPrompt = await readPendingProviderLink(authError);
+      if (linkPrompt) {
+        setPendingLink(linkPrompt);
+        setError(null);
+      } else {
+        setError(getFirebaseAuthError(authError));
+      }
     } finally {
       setPendingAction(null);
     }
@@ -200,9 +220,8 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
         <div className={`${styles.notice} ${styles.noticeInfo}`} role="status">
           <FiInfo aria-hidden="true" />
           <p>
-            Authentication is not configured yet. Add the public Firebase values
-            to this deployment, then enable Email, Google, and GitHub providers in
-            Firebase Authentication.
+            Authentication is not configured yet. Add the public environment values
+            to this deployment, then enable Email, Google, and GitHub sign-in.
           </p>
         </div>
       ) : null}
@@ -214,6 +233,23 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
         </div>
       ) : null}
 
+      {pendingLink ? (
+        <LinkAccountPrompt
+          pendingLink={pendingLink}
+          emailPassword={
+            isSignUp
+              ? { email: email.trim(), password }
+              : undefined
+          }
+          onComplete={() => {
+            setPendingLink(null);
+            const currentUser = auth?.currentUser;
+            if (currentUser) void finishLinkedSignIn(currentUser);
+          }}
+          onCancel={() => setPendingLink(null)}
+        />
+      ) : (
+        <>
       <div className={styles.providerGrid}>
         <button
           className={styles.providerButton}
@@ -384,6 +420,8 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
           {isSignUp ? "Sign in" : "Create an account"}
         </Link>
       </p>
+        </>
+      )}
     </>
   );
 }

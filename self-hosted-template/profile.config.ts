@@ -3,8 +3,8 @@ import type { SelfHostedConfig } from "@/types/profile";
 /**
  * The one file a new owner needs to edit.
  *
- * `profile` is rendered immediately and is also the fallback when Firebase is
- * unavailable. Once you save from /manage, the Firestore document takes over.
+ * `profile` is rendered immediately and is also the fallback when the cloud backend is
+ * unavailable. Once you save from /manage, the saved profile record takes over.
  */
 export const selfHostedConfig: SelfHostedConfig = {
   ownerEmail: "you@example.com",

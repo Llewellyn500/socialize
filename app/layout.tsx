@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { AnalyticsConsent } from "@/components/analytics/analytics-consent";
+import { SiteCursor } from "@/components/site-cursor";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.dev";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you";
 const analyticsMeasurementId =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
   process.env.NEXT_PUBLIC_MEASURING_ID;
@@ -13,6 +14,17 @@ const appThemeScript = `
   } catch (error) {
     document.documentElement.dataset.appTheme = "dark";
   }
+  try {
+    var motionPref = window.localStorage.getItem("socialize-motion") || "system";
+    if (motionPref !== "full" && motionPref !== "reduce" && motionPref !== "system") {
+      motionPref = "system";
+    }
+    document.documentElement.dataset.motion = motionPref;
+    var systemReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var reduce = motionPref === "reduce" || (motionPref === "system" && systemReduce);
+    if (reduce) document.documentElement.setAttribute("data-reduce-motion", "");
+    else document.documentElement.removeAttribute("data-reduce-motion");
+  } catch (error) {}
 `;
 
 export const metadata: Metadata = {
@@ -73,6 +85,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: appThemeScript }} />
       </head>
       <body>
+        <SiteCursor />
         {children}
         <AnalyticsConsent measurementId={analyticsMeasurementId} />
       </body>

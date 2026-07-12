@@ -24,6 +24,11 @@
   transform: scale(0.98);
 }
 
+.toggle:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
 .toggle svg {
   flex: 0 0 auto;
   color: var(--signal);
@@ -51,8 +56,6 @@
   padding-inline: 0;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .toggle {
-    transition-duration: 0.01ms;
-  }
+:global(html[data-reduce-motion]) .toggle {
+  transition-duration: 0.01ms;
 }

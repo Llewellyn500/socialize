@@ -21,7 +21,7 @@ export function ForgotPasswordForm() {
 
     const firebaseAuth = auth;
     if (!firebaseAuth) {
-      setError("Firebase is not configured for this deployment.");
+      setError("Accounts are not configured for this deployment.");
       return;
     }
 
@@ -55,7 +55,7 @@ export function ForgotPasswordForm() {
         </span>
         <h2>Check your inbox</h2>
         <p>
-          If an account exists for this address, Firebase has sent a password reset
+          If an account exists for this address, we have sent a password reset
           link. It may take a minute to arrive.
         </p>
         <span className={styles.emailBadge}>{submittedEmail}</span>
@@ -80,7 +80,7 @@ export function ForgotPasswordForm() {
       <div className={styles.formHeading}>
         <h2>Reset your password</h2>
         <p>
-          Enter the email on your account. Firebase will send a secure reset link if
+          Enter the email on your account. We will send a secure reset link if
           it recognizes the address.
         </p>
       </div>
@@ -90,7 +90,7 @@ export function ForgotPasswordForm() {
           <FiInfo aria-hidden="true" />
           <p>
             Password reset is unavailable until this deployment is connected to a
-            Firebase project.
+            cloud account service.
           </p>
         </div>
       ) : null}

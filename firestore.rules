@@ -27,7 +27,7 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
           'location', 'availability', 'theme', 'accent', 'published',
-          'socials', 'links', 'updatedAt'
+          'socials', 'sections', 'links', 'updatedAt'
         ])
         && request.resource.data.keys().hasAll([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'theme',
@@ -59,6 +59,9 @@ service cloud.firestore {
         && request.resource.data.socials.keys().hasOnly([
           'github', 'gitlab', 'linkedin', 'x', 'email', 'website'
         ])
+        && (!('sections' in request.resource.data)
+          || (request.resource.data.sections is list
+            && request.resource.data.sections.size() <= 12))
         && request.resource.data.links is list
         && request.resource.data.links.size() <= 50
         && request.resource.data.updatedAt == request.time;

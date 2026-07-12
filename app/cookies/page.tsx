@@ -22,7 +22,7 @@ const sections: LegalSection[] = [
           not loaded.
         </p>
         <p>
-          Signed-in areas use browser storage required by Firebase Authentication
+          Signed-in areas use browser storage required by account sign-in
           to maintain a session, complete OAuth flows, prevent abuse, and remember
           limited product preferences. The production deployment must be scanned
           before launch and after material provider changes to verify this policy.
@@ -44,7 +44,7 @@ const sections: LegalSection[] = [
         </p>
         <h3>Local storage and IndexedDB</h3>
         <p>
-          Firebase Authentication may use browser databases to remember the signed-in
+          Account sign-in may use browser databases to remember the signed-in
           user and refresh the session. Socialize also stores your analytics choice
           under <code>socialize-analytics-consent</code> so it survives a browser
           restart.
@@ -74,7 +74,7 @@ const sections: LegalSection[] = [
           It may be used to:
         </p>
         <ul>
-          <li>Keep a user signed in through Firebase Authentication.</li>
+          <li>Keep a user signed in through account authentication.</li>
           <li>Complete and validate Google or GitHub OAuth redirects.</li>
           <li>Protect against cross-site request forgery, replay, or session abuse.</li>
           <li>Route requests reliably and detect operational failures.</li>
@@ -135,7 +135,7 @@ const sections: LegalSection[] = [
           account fields permitted by the sign-in flow, not the provider password.
         </p>
         <p>
-          Firebase Authentication can persist its own state in the browser so you
+          Account sign-in can persist its own state in the browser so you
           do not need to sign in on every page. Signing out clears the active
           Socialize session, but it does not sign you out of Google, GitHub, or other
           websites.
@@ -162,7 +162,7 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Questions or requests can be sent to
-          <a href="mailto:privacy@socialize.dev"> privacy@socialize.dev</a>.
+          <a href="mailto:privacy@socialize.you"> privacy@socialize.you</a>.
         </p>
       </>
     ),
@@ -173,7 +173,7 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          The operator of a self-hosted Socialize instance selects its Firebase
+          The operator of a self-hosted Socialize instance selects its backend
           project, domain, hosting, integrations, and any additional analytics. That
           operator is responsible for scanning the deployed site, publishing an
           accurate cookie notice, and collecting consent where required.
@@ -209,7 +209,7 @@ const sections: LegalSection[] = [
 export default function CookiesPage() {
   return (
     <LegalPage
-      contactEmail="privacy@socialize.dev"
+      contactEmail="privacy@socialize.you"
       sections={sections}
       summary="This draft describes browser storage used for sign-in, security, preferences, and consented Google Analytics, with no advertising trackers at launch."
       title="Cookie Policy"

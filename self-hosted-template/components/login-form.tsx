@@ -36,7 +36,7 @@ function readableAuthError(error: unknown): string {
     "auth/too-many-requests": "Too many attempts. Wait a moment and try again."
   };
 
-  return messages[error.code] ?? "Firebase could not complete sign-in. Check the provider configuration.";
+  return messages[error.code] ?? "Sign-in could not complete. Check the provider configuration.";
 }
 
 export function LoginForm() {
@@ -104,8 +104,8 @@ export function LoginForm() {
     return (
       <section className="auth-card setup-card" aria-live="polite">
         <LockKey aria-hidden="true" size={30} weight="duotone" />
-        <h2>Firebase setup needed</h2>
-        <p>Copy <code>.env.example</code> to <code>.env.local</code>, then add the web app values from Firebase Console.</p>
+        <h2>Backend setup needed</h2>
+        <p>Copy <code>.env.example</code> to <code>.env.local</code>, then add the web app values from your backend dashboard.</p>
       </section>
     );
   }

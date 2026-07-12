@@ -7,7 +7,7 @@ import {
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
-import { isSafeExternalUrl, type ProfileConfig, type SocialKey } from "@/lib/profile";
+import { groupLinksBySection, isSafeExternalUrl, type ProfileConfig, type SocialKey } from "@/lib/profile";
 
 const socialIcons: Record<SocialKey, React.ReactNode> = {
   github: <FaGithub />,
@@ -92,27 +92,42 @@ export function ProfilePreview({
       </div>
 
       <div className="profile-preview__links">
-        {profile.links
-          .filter((link) => link.enabled && isSafeExternalUrl(link.url))
-          .map((link, index) => (
-            <a
-              href={link.url}
-              key={link.id}
-              target="_blank"
-              rel="noreferrer"
-              tabIndex={interactive ? undefined : -1}
-              className="profile-link"
+        {groupLinksBySection(profile).map((group) => {
+          const visibleLinks = group.links.filter(
+            (link) => link.enabled && isSafeExternalUrl(link.url),
+          );
+          if (visibleLinks.length === 0) return null;
+
+          return (
+            <section
+              className="profile-link-section"
+              key={group.section?.id ?? "ungrouped"}
             >
-              <span className="profile-link__number">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="profile-link__copy">
-                <strong>{link.title}</strong>
-                {link.description ? <small>{link.description}</small> : null}
-              </span>
-              <FiArrowUpRight aria-hidden="true" />
-            </a>
-          ))}
+              {group.section ? (
+                <h2 className="profile-link-section__title">{group.section.title}</h2>
+              ) : null}
+              {visibleLinks.map((link, index) => (
+                <a
+                  href={link.url}
+                  key={link.id}
+                  target="_blank"
+                  rel="noreferrer"
+                  tabIndex={interactive ? undefined : -1}
+                  className="profile-link"
+                >
+                  <span className="profile-link__number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="profile-link__copy">
+                    <strong>{link.title}</strong>
+                    {link.description ? <small>{link.description}</small> : null}
+                  </span>
+                  <FiArrowUpRight aria-hidden="true" />
+                </a>
+              ))}
+            </section>
+          );
+        })}
       </div>
 
       {branded ? (

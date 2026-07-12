@@ -2,14 +2,23 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsPath(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidAvatar() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    }
+
     match /avatars/{uid}/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == uid
-        && (request.resource == null || (
-          request.resource.size < 5 * 1024 * 1024
-          && request.resource.contentType.matches('image/(jpeg|png|webp|gif)')
-        ));
+      allow create, update: if ownsPath(uid) && isValidAvatar();
+      allow delete: if ownsPath(uid);
     }
 
     match /{allPaths=**} {

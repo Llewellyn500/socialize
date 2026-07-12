@@ -214,13 +214,13 @@ const sections: LegalSection[] = [
         <p>
           Use the report route for the affected handle, for example
           <Link href="/report/example"> /report/example</Link>, or email
-          <a href="mailto:safety@socialize.dev"> safety@socialize.dev</a>. Include
+          <a href="mailto:safety@socialize.you"> safety@socialize.you</a>. Include
           the profile URL, specific link or content, reason for the report, and any
           supporting context that can be shared safely.
         </p>
         <p>
           Send vulnerabilities privately to
-          <a href="mailto:security@socialize.dev"> security@socialize.dev</a> instead
+          <a href="mailto:security@socialize.you"> security@socialize.you</a> instead
           of the abuse queue. For immediate danger, contact the emergency service
           or appropriate authority in your location first.
         </p>
@@ -238,7 +238,7 @@ const sections: LegalSection[] = [
 export default function AcceptableUsePage() {
   return (
     <LegalPage
-      contactEmail="safety@socialize.dev"
+      contactEmail="safety@socialize.you"
       sections={sections}
       summary="These draft rules protect people from harmful links, impersonation, security abuse, privacy violations, and infrastructure misuse."
       title="Acceptable Use Policy"

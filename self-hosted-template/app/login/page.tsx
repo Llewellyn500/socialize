@@ -15,7 +15,7 @@ export default function LoginPage() {
           <section className="auth-intro" aria-labelledby="login-title">
             <p className="eyebrow">Owner access</p>
             <h1 id="login-title">Keep your profile current.</h1>
-            <p>Sign in with the Firebase account on your private owner allowlist. Visitors never see this workspace.</p>
+            <p>Sign in with the owner account on your private allowlist. Visitors never see this workspace.</p>
           </section>
           <Suspense fallback={<div className="auth-card auth-card-loading" aria-label="Loading sign-in form" />}>
             <LoginForm />

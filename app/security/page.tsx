@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "Security",
   description:
-    "Socialize security boundaries, Firebase authorization model, self-hosting responsibilities, and private vulnerability reporting guidance.",
+    "Socialize security boundaries, authorization model, self-hosting responsibilities, and private vulnerability reporting guidance.",
   alternates: { canonical: "/security" },
 };
 
@@ -38,11 +38,11 @@ export default function SecurityPage() {
       <PageHero
         section="Security"
         title="Protect the owner boundary."
-        summary="Profiles are public. Editing is not. Socialize uses Firebase identity and database authorization to keep that distinction enforceable, and provides a private path for responsible reports."
+        summary="Profiles are public. Editing is not. Socialize uses account identity and database authorization to keep that distinction enforceable, and provides a private path for responsible reports."
         tone="ink"
         actions={
           <>
-            <PageAction href="mailto:security@socialize.dev?subject=Private%20Socialize%20security%20report">
+            <PageAction href="mailto:security@socialize.you?subject=Private%20Socialize%20security%20report">
               Email a private report
             </PageAction>
             <PageAction href="/self-host#operate" secondary>
@@ -54,7 +54,7 @@ export default function SecurityPage() {
           <div className={styles.asideStatement}>
             <span>Security boundary</span>
             <strong>Public reads. Authenticated ownership. Server-enforced writes.</strong>
-            <p>The interface explains access; Firebase Security Rules must enforce it.</p>
+            <p>The interface explains access; server-side security rules must enforce it.</p>
           </div>
         }
       />
@@ -63,7 +63,7 @@ export default function SecurityPage() {
         <Notice title="Pre-launch security statement" tone="warning">
           <p>
             This page describes the intended launch posture and disclosure process.
-            Every claim must be verified against the deployed Firebase project,
+            Every claim must be verified against the deployed backend project,
             hosting configuration, domain, logs, and incident process before launch.
           </p>
         </Notice>
@@ -77,8 +77,8 @@ export default function SecurityPage() {
             facts={[
               { label: "Public data", value: "Published profile fields and enabled links" },
               { label: "Private action", value: "Creating, editing, exporting, and deleting account data" },
-              { label: "Identity", value: "Firebase Authentication user ID and provider session" },
-              { label: "Authorization", value: "Firestore rules tied to account ownership or an owner allowlist" },
+              { label: "Identity", value: "Authenticated account ID and provider session" },
+              { label: "Authorization", value: "Database rules tied to account ownership or an owner allowlist" },
             ]}
           />
           <CheckList>
@@ -87,7 +87,7 @@ export default function SecurityPage() {
               run the service.
             </CheckItem>
             <CheckItem>
-              Keep service-account credentials and privileged Firebase operations
+              Keep server admin credentials and privileged backend operations
               out of browser code.
             </CheckItem>
             <CheckItem>
@@ -114,27 +114,27 @@ export default function SecurityPage() {
         >
           <h3>Authentication</h3>
           <p>
-            Email, Google, and GitHub sign-in are handled through Firebase
-            Authentication. OAuth providers authenticate users on provider-controlled
+            Email, Google, and GitHub sign-in are handled through Socialize&apos;s
+            authentication layer. OAuth providers authenticate users on provider-controlled
             pages. Socialize should not receive or store Google or GitHub passwords.
           </p>
           <h3>Authorization</h3>
           <p>
-            A Firebase session proves which user is present. Firestore Security
-            Rules and trusted server operations must verify that the user owns the
+            A signed-in session proves which user is present. Database security
+            rules and trusted server operations must verify that the user owns the
             requested profile before a write, export, account change, or deletion.
             A guessed handle or document path must not grant access.
           </p>
           <h3>Operational access</h3>
           <p>
-            Production console, Firebase, domain, deployment, and support access
+            Production console, backend, domain, deployment, and support access
             should use individual accounts, multi-factor authentication where
             available, least privilege, and prompt removal when access is no longer
             needed. Privileged actions should leave an auditable provider record.
           </p>
           <h3>Transport and storage</h3>
           <p>
-            Production traffic should use HTTPS. Firebase and hosting providers
+            Production traffic should use HTTPS. Cloud and hosting providers
             supply platform-level transport and storage protections. Socialize must
             still configure access rules, retention, backups, secrets, and provider
             permissions correctly.
@@ -148,15 +148,15 @@ export default function SecurityPage() {
         >
           <p>
             The self-hosted edition uses a private
-            <code>owners/&#123;uid&#125;</code> Firestore allowlist for private writes.
+            <code>owners/&#123;uid&#125;</code> database allowlist for private writes.
             The included rules allow public reads from the profile collection and
             deny writes unless the signed-in UID has a matching owner document.
-            The public interface renders a configured fallback when Firebase is
+            The public interface renders a configured fallback when the cloud backend is
             unavailable.
           </p>
           <CheckList>
             <CheckItem>
-              Create owner allowlist documents only from Firebase Console or other
+              Create owner allowlist documents only from your backend dashboard or other
               trusted administration tooling; browser clients cannot grant access.
             </CheckItem>
             <CheckItem>
@@ -168,12 +168,12 @@ export default function SecurityPage() {
               immediately when that identity is lost or compromised.
             </CheckItem>
             <CheckItem>
-              Add only the required Firebase Authentication domains and keep GitHub
+              Add only the required authorized sign-in domains and keep GitHub
               OAuth callback URLs exact.
             </CheckItem>
             <CheckItem>
-              Patch Next.js, Firebase, and other dependencies; monitor your hosting
-              and Firebase usage for unexpected activity.
+              Patch Next.js, backend dependencies, and other packages; monitor your hosting
+              and backend usage for unexpected activity.
             </CheckItem>
             <CheckItem>
               Back up profile data and test restoration without exposing it in a
@@ -194,7 +194,7 @@ export default function SecurityPage() {
           lead="Give us enough detail to reproduce the issue without increasing harm."
         >
           <p>
-            Email <a href="mailto:security@socialize.dev?subject=Private%20Socialize%20security%20report">security@socialize.dev</a>
+            Email <a href="mailto:security@socialize.you?subject=Private%20Socialize%20security%20report">security@socialize.you</a>
             with a clear subject. Do not open a public issue for an unpatched
             vulnerability. If ordinary email is unsuitable, ask for an encrypted
             reporting channel before sending sensitive evidence.
@@ -242,7 +242,7 @@ export default function SecurityPage() {
           <ul>
             <li>Denial-of-service, load, stress, or resource-exhaustion testing.</li>
             <li>Social engineering, phishing, bribery, threats, or physical intrusion.</li>
-            <li>Testing Google, GitHub, Firebase, a hosting provider, or another third party.</li>
+            <li>Testing Google, GitHub, a hosting provider, or another third party.</li>
             <li>Accessing another user&apos;s account, private data, or linked service.</li>
             <li>Testing a self-hosted instance without permission from its operator.</li>
             <li>Automated scanning that generates excessive traffic or creates accounts in bulk.</li>
@@ -300,12 +300,12 @@ export default function SecurityPage() {
           <ResourceLinks
             links={[
               {
-                href: "mailto:security@socialize.dev?subject=Private%20Socialize%20security%20report",
+                href: "mailto:security@socialize.you?subject=Private%20Socialize%20security%20report",
                 title: "Private vulnerability report",
                 description: "Technical security weaknesses and exposed credentials.",
               },
               {
-                href: "mailto:safety@socialize.dev?subject=Urgent%20Socialize%20abuse%20report",
+                href: "mailto:safety@socialize.you?subject=Urgent%20Socialize%20abuse%20report",
                 title: "Urgent hosted-profile abuse",
                 description: "Phishing, malware, threats, impersonation, or privacy harm.",
               },
@@ -325,7 +325,7 @@ export default function SecurityPage() {
         copy="Send it privately, minimize the data you touch, and give the project enough detail to reproduce it."
         links={[
           {
-            href: "mailto:security@socialize.dev?subject=Private%20Socialize%20security%20report",
+            href: "mailto:security@socialize.you?subject=Private%20Socialize%20security%20report",
             label: "Email security",
           },
           { href: "/acceptable-use", label: "Read the abuse rules" },

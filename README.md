@@ -3,19 +3,19 @@
 Socialize is a developer-first link page with two ways to use it:
 
 - **Hosted service:** create an account, claim a handle, edit visually, and publish on the Socialize domain.
-- **Self-hosted edition:** run the stripped profile and owner dashboard on your own Firebase project and domain.
+- **Self-hosted edition:** run the stripped profile and owner dashboard on your own infrastructure and domain.
 
 The hosted product and self-hosted starter share the same portable `ProfileConfig` shape. That makes export a real exit path instead of a marketing promise.
 
 ## What is in this repository
 
 - Editorial SaaS landing page with hosted and self-hosted paths
-- Email/password, Google, and GitHub Firebase Auth flows
+- Email/password, Google, and GitHub sign-in flows
 - Onboarding with transactional handle reservation
 - Profile, links, appearance, publish, preview, and data-export dashboard
-- Public `/{handle}` profiles backed by Firestore
+- Public `/{handle}` profiles backed by cloud storage
 - Product documentation, self-hosting guide, sponsorship, trust, and legal routes
-- Firebase Firestore and Storage rules
+- Database and avatar storage rules
 - Vercel-first deployment guidance, optional Docker build, and CI workflow
 - A complete stripped starter in [`self-hosted-template`](./self-hosted-template)
 
@@ -29,7 +29,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without Firebase environment values, the marketing site and dashboard run in a clearly labeled local demo mode. Authentication and cloud persistence activate when Firebase is configured.
+Open [http://localhost:3000](http://localhost:3000). Without backend environment values, the marketing site and dashboard run in a clearly labeled local demo mode. Authentication and cloud persistence activate when the backend is configured.
 
 Useful commands:
 

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { FiAlertCircle, FiCheck, FiInfo } from "react-icons/fi";
+import { FiAlertCircle, FiCheck, FiImage, FiInfo } from "react-icons/fi";
+import { uploadUserAvatar } from "@/lib/avatar-upload";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import {
   isValidHandle,
@@ -12,6 +13,7 @@ import {
   type ProfileConfig,
 } from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { AppLoadingState } from "@/components/app-loading-state";
 import { getFirebaseAuthError } from "./firebase-errors";
 import styles from "./auth.module.css";
 
@@ -34,6 +36,9 @@ export function OnboardingForm() {
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [handleTouched, setHandleTouched] = useState(false);
@@ -56,6 +61,9 @@ export function OnboardingForm() {
       setDisplayName(
         nextUser.displayName?.trim() || nextUser.email?.split("@")[0] || "",
       );
+      if (nextUser.photoURL) {
+        setAvatarUrl(nextUser.photoURL);
+      }
       try {
         const profile = await loadProfile(nextUser.uid);
         setExistingProfile(profile);
@@ -80,6 +88,25 @@ export function OnboardingForm() {
       user.providerData.some((provider) => provider.providerId === "password"),
   );
 
+  async function handleAvatarChange(file: File | undefined) {
+    if (!file || !user) return;
+    setError(null);
+    setIsUploadingAvatar(true);
+    try {
+      const url = await uploadUserAvatar(user.uid, file);
+      setAvatarUrl(url);
+      setAvatarFileName(file.name);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "The avatar upload failed. Try again.",
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -103,12 +130,17 @@ export function OnboardingForm() {
       setError("Enter the name you want visitors to see.");
       return;
     }
+    if (isUploadingAvatar) {
+      setError("Wait for the avatar upload to finish before continuing.");
+      return;
+    }
 
     const initialProfile: ProfileConfig = {
       handle,
       displayName: displayName.trim(),
       role: role.trim(),
       bio: bio.trim(),
+      ...(avatarUrl ? { avatarUrl } : {}),
       theme: "paper",
       accent: "#8a2be2",
       published: false,
@@ -137,7 +169,7 @@ export function OnboardingForm() {
         <div className={`${styles.notice} ${styles.noticeInfo}`} role="status">
           <FiInfo aria-hidden="true" />
           <p>
-            Onboarding is unavailable until Firebase Authentication and Firestore are
+            Onboarding is unavailable until sign-in and profile storage are
             configured for this deployment.
           </p>
         </div>
@@ -147,11 +179,12 @@ export function OnboardingForm() {
 
   if (isLoadingUser) {
     return (
-      <div className={styles.loadingBlock} aria-label="Loading your account">
-        <span className={styles.skeletonLine} />
-        <span className={styles.skeletonLine} />
-        <span className={styles.skeletonLine} />
-      </div>
+      <AppLoadingState
+        description="Checking your account and any existing profile…"
+        inline
+        label="Loading account"
+        title="Loading your account."
+      />
     );
   }
 
@@ -224,7 +257,7 @@ export function OnboardingForm() {
               Profile address
             </label>
             <div className={styles.inputWrap}>
-              <span className={styles.prefix}>socialize.dev/</span>
+              <span className={styles.prefix}>socialize.you/</span>
               <input
                 className={`${styles.input} ${styles.prefixedInput}`}
                 id="handle"
@@ -309,10 +342,48 @@ export function OnboardingForm() {
             </div>
           </div>
 
+          <div className={styles.field}>
+            <span className={styles.label}>Profile photo</span>
+            <div className={styles.filePicker}>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.filePreview} src={avatarUrl} alt="" />
+              ) : (
+                <span className={styles.filePreviewFallback} aria-hidden="true">
+                  {initials(displayName)}
+                </span>
+              )}
+              <div className={styles.filePickerCopy}>
+                <label className={styles.fileButton}>
+                  <input
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    disabled={isSaving || isUploadingAvatar || usesUnverifiedPassword}
+                    type="file"
+                    onChange={(event) => {
+                      void handleAvatarChange(event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
+                  />
+                  <FiImage aria-hidden="true" />
+                  {isUploadingAvatar
+                    ? "Uploading…"
+                    : avatarUrl
+                      ? "Replace photo"
+                      : "Choose photo"}
+                </label>
+                <p className={styles.hint}>
+                  {avatarFileName
+                    ? avatarFileName
+                    : "Optional. JPEG, PNG, WebP, or GIF up to 5 MB."}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <button
             className={styles.primaryButton}
             type="submit"
-            disabled={isSaving || usesUnverifiedPassword}
+            disabled={isSaving || isUploadingAvatar || usesUnverifiedPassword}
           >
             {isSaving ? <span className={styles.spinner} aria-hidden="true" /> : null}
             {isSaving ? "Reserving your handle..." : "Create my profile"}
@@ -325,7 +396,12 @@ export function OnboardingForm() {
             <span className={styles.previewDot} aria-hidden="true" />
           </div>
           <div className={styles.previewBody}>
-            <span className={styles.previewAvatar}>{initials(displayName)}</span>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className={styles.previewAvatarImage} src={avatarUrl} alt="" />
+            ) : (
+              <span className={styles.previewAvatar}>{initials(displayName)}</span>
+            )}
             <p className={styles.previewHandle}>@{handle || "your-handle"}</p>
             <h3 className={styles.previewName}>{displayName || "Your name"}</h3>
             <p className={styles.previewRole}>{role || "Developer · builder · human"}</p>

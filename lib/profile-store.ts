@@ -34,7 +34,7 @@ export async function loadPublicProfile(handle: string) {
 
 export async function saveProfile(uid: string, profile: ProfileConfig) {
   const firestore = db;
-  if (!firestore) throw new Error("Firebase is not configured.");
+  if (!firestore) throw new Error("Accounts are not configured.");
   const cleanProfile = sanitizeProfile(profile);
   const handleRef = doc(firestore, "handles", cleanProfile.handle);
   const profileRef = doc(firestore, "profiles", uid);

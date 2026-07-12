@@ -24,8 +24,11 @@ import {
   FiTerminal,
 } from "react-icons/fi";
 import { ProfilePreview } from "@/components/profile-preview";
+import { SignalTicker } from "@/components/signal-ticker";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { MotionNotice } from "@/components/motion-notice";
+import { isMotionReduced } from "@/lib/motion";
 import { demoProfile, type ProfileConfig, type ProfileTheme } from "@/lib/profile";
 
 const editorTabs = [
@@ -41,20 +44,6 @@ const themes: { id: ProfileTheme; label: string; color: string }[] = [
   { id: "mono", label: "Mono", color: "#111111" },
 ];
 
-function Cursor() {
-  useEffect(() => {
-    const cursor = document.querySelector<HTMLElement>(".custom-cursor");
-    if (!cursor || !window.matchMedia("(hover: hover)").matches) return;
-    const onMove = (event: PointerEvent) => {
-      cursor.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
-  }, []);
-
-  return <span className="custom-cursor" aria-hidden="true" />;
-}
-
 export function LandingPage() {
   const [activeEditorTab, setActiveEditorTab] = useState<(typeof editorTabs)[number]["id"]>("links");
   const [copied, setCopied] = useState(false);
@@ -62,23 +51,63 @@ export function LandingPage() {
 
   useEffect(() => {
     const targets = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+
+    function revealAll() {
       targets.forEach((target) => target.classList.add("is-visible"));
-      return;
     }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            observer.unobserve(entry.target);
-          }
+
+    function observe() {
+      if (isMotionReduced()) {
+        revealAll();
+        return null;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.08, rootMargin: "0px 0px -8% 0px" },
+      );
+
+      targets.forEach((target) => {
+        const rect = target.getBoundingClientRect();
+        const alreadyVisible = rect.top < window.innerHeight * 0.92 && rect.bottom > 0;
+        if (alreadyVisible) target.classList.add("is-visible");
+        else observer.observe(target);
+      });
+
+      // Safety net: never leave reveal nodes stuck invisible.
+      const safety = window.setTimeout(() => {
+        targets.forEach((target) => {
+          if (!target.classList.contains("is-visible")) target.classList.add("is-visible");
         });
-      },
-      { threshold: 0.14 },
-    );
-    targets.forEach((target) => observer.observe(target));
-    return () => observer.disconnect();
+      }, 2500);
+
+      return () => {
+        observer.disconnect();
+        window.clearTimeout(safety);
+      };
+    }
+
+    let cleanup = observe();
+    const onMotionChange = () => {
+      cleanup?.();
+      cleanup = observe();
+    };
+    window.addEventListener("socialize:motion-change", onMotionChange);
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    media.addEventListener("change", onMotionChange);
+
+    return () => {
+      cleanup?.();
+      window.removeEventListener("socialize:motion-change", onMotionChange);
+      media.removeEventListener("change", onMotionChange);
+    };
   }, []);
 
   const activeTheme = useMemo(
@@ -94,7 +123,7 @@ export function LandingPage() {
 
   return (
     <div className="marketing-shell">
-      <Cursor />
+      <MotionNotice />
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -156,22 +185,7 @@ export function LandingPage() {
           </a>
         </section>
 
-        <div className="signal-ticker" aria-hidden="true">
-          <div>
-            <span>HOSTED WHEN YOU WANT IT</span>
-            <i>✳</i>
-            <span>SELF-HOSTED WHEN YOU DON&apos;T</span>
-            <i>✳</i>
-            <span>FIREBASE READY</span>
-            <i>✳</i>
-            <span>DATA PORTABLE</span>
-            <i>✳</i>
-            <span>HOSTED WHEN YOU WANT IT</span>
-            <i>✳</i>
-            <span>SELF-HOSTED WHEN YOU DON&apos;T</span>
-            <i>✳</i>
-          </div>
-        </div>
+        <SignalTicker />
 
         <section id="product" className="manifesto-section section-pad">
           <div className="section-index" data-reveal>
@@ -196,7 +210,7 @@ export function LandingPage() {
             <div>
               <FiDatabase aria-hidden="true" />
               <strong>Your data, in one shape</strong>
-              <p>Firestore in hosted mode. A portable config file when you self-host.</p>
+              <p>Saved to your account when hosted. Export a portable config file when you self-host.</p>
             </div>
           </div>
         </section>
@@ -208,8 +222,8 @@ export function LandingPage() {
             <p className="eyebrow">The no-ops route</p>
             <h2>We host it.</h2>
             <p className="path-panel__copy">
-              Sign in, claim your handle, arrange your work, and publish. Firebase
-              handles the account and profile data; Socialize handles the details.
+              Sign in, claim your handle, arrange your work, and publish. We handle
+              accounts, storage, and the details—you handle the work.
             </p>
             <ul>
               <li><FiCheck /> Email, Google, and GitHub sign-in</li>
@@ -231,7 +245,7 @@ export function LandingPage() {
             </p>
             <ul>
               <li><FiCheck /> One portable configuration file</li>
-              <li><FiCheck /> Your Firebase project and domain</li>
+              <li><FiCheck /> Your infrastructure and domain</li>
               <li><FiCheck /> Docker and one-click deploy paths</li>
             </ul>
             <Link href="/self-host">
@@ -255,7 +269,7 @@ export function LandingPage() {
           <div className="editor-window" data-reveal>
             <div className="editor-window__chrome">
               <span><i /><i /><i /></span>
-              <code>app.socialize.dev/dashboard</code>
+              <code>socialize.you/dashboard</code>
               <span className="editor-window__saved"><FiCheck /> Saved</span>
             </div>
             <div className="editor-workspace">
@@ -398,7 +412,7 @@ export function LandingPage() {
             <div className="terminal-card__body">
               <p><span>$</span> git clone github.com/Llewellyn500/socialize</p>
               <p className="terminal-muted">◇ Open self-hosted-template</p>
-              <p className="terminal-success">◆ Firebase project connected</p>
+              <p className="terminal-success">◆ Cloud backend connected</p>
               <p className="terminal-success">◆ Owner account secured</p>
               <p className="terminal-success">◆ Ready at localhost:3000</p>
               <button type="button" onClick={copyInstallCommand}>

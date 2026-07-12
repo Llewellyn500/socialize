@@ -12,6 +12,7 @@ import {
 import { FiAlertCircle, FiCheck, FiInfo, FiMail } from "react-icons/fi";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { loadProfile } from "@/lib/profile-store";
+import { AppLoadingState } from "@/components/app-loading-state";
 import { getFirebaseAuthError } from "./firebase-errors";
 import styles from "./auth.module.css";
 
@@ -56,7 +57,7 @@ export function VerifyEmailPanel() {
       const refreshedUser = auth?.currentUser;
       if (!refreshedUser?.emailVerified) {
         setError(
-          "Firebase has not marked this address as verified yet. Open the newest email, then check again.",
+          "This address is not verified yet. Open the newest email, then check again.",
         );
         return;
       }
@@ -116,7 +117,7 @@ export function VerifyEmailPanel() {
           <FiInfo aria-hidden="true" />
           <p>
             Verification is unavailable until this deployment is connected to a
-            Firebase project.
+            cloud account service.
           </p>
         </div>
       </>
@@ -125,11 +126,12 @@ export function VerifyEmailPanel() {
 
   if (isLoadingUser) {
     return (
-      <div className={styles.loadingBlock} aria-label="Loading account">
-        <span className={styles.skeletonLine} />
-        <span className={styles.skeletonLine} />
-        <span className={styles.skeletonLine} />
-      </div>
+      <AppLoadingState
+        description="Checking your sign-in session…"
+        inline
+        label="Loading account"
+        title="Loading your account."
+      />
     );
   }
 
@@ -171,7 +173,7 @@ export function VerifyEmailPanel() {
       <div className={styles.formHeading}>
         <h2>Check your inbox</h2>
         <p>
-          Open the verification email from Firebase, then return here to continue.
+          Open the verification email we sent, then return here to continue.
           Check spam or promotions if it does not arrive.
         </p>
       </div>

@@ -63,6 +63,222 @@
   color: #f4f0e5;
 }
 
+.topbarActions button,
+.topbarActions a {
+  transition: transform 120ms ease, background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, box-shadow 160ms ease;
+}
+
+.topbarActions button:hover:not(:disabled),
+.topbarActions a:hover {
+  border-color: rgba(25, 26, 24, 0.45);
+  background: rgba(25, 26, 24, 0.06);
+}
+
+.topbarActions button:active:not(:disabled),
+.topbarActions a:active {
+  transform: scale(0.97);
+  background: rgba(25, 26, 24, 0.12);
+}
+
+.topbarActions button:focus-visible,
+.topbarActions a:focus-visible {
+  outline: 2px solid #8a2be2;
+  outline-offset: 2px;
+}
+
+.topbarActions .publish:hover:not(:disabled) {
+  border-color: #2a2b28;
+  background: #2a2b28;
+}
+
+.topbarActions .publish:active:not(:disabled) {
+  transform: scale(0.97);
+  border-color: #000;
+  background: #000;
+}
+
+.topbarActions .actionSuccess,
+.topbarActions .actionSuccess:hover:not(:disabled) {
+  border-color: rgba(40, 124, 59, 0.55);
+  background: rgba(40, 124, 59, 0.14);
+  color: #287c3b;
+}
+
+.topbarActions .actionSuccess:active:not(:disabled) {
+  background: rgba(40, 124, 59, 0.22);
+}
+
+.sidebar button:active:not(.active) {
+  transform: scale(0.99);
+  background: rgba(25, 26, 24, 0.12);
+}
+
+.panelHeading button,
+.primaryAction,
+.linksPrimaryAction,
+.linksSecondaryAction,
+.linkIconActions button,
+.linkActions button,
+.sectionActions button,
+.linkMoveMenuList button,
+.linkSectionTrigger,
+.linkSectionOption,
+.linkSectionAdd,
+.linkAddDescription,
+.themeButton,
+.settingsBlock button,
+.settingsBlock a,
+.signInMethodRow button,
+.signInMethodForm button,
+.signInMethodUnlink button {
+  transition: transform 120ms ease, background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, box-shadow 160ms ease;
+}
+
+.panelHeading button:hover:not(:disabled),
+.primaryAction:hover:not(:disabled),
+.linksPrimaryAction:hover:not(:disabled) {
+  background: #7520c9;
+}
+
+.panelHeading button:active:not(:disabled),
+.primaryAction:active:not(:disabled),
+.linksPrimaryAction:active:not(:disabled) {
+  transform: scale(0.97);
+  background: #5f1aa8;
+}
+
+.linksSecondaryAction:hover:not(:disabled) {
+  border-color: rgba(25, 26, 24, 0.38);
+  background: rgba(25, 26, 24, 0.06);
+}
+
+.linksSecondaryAction:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgba(25, 26, 24, 0.12);
+}
+
+.linkIconActions button:hover:not(:disabled),
+.linkActions button:hover:not(:disabled),
+.sectionActions button:hover:not(:disabled) {
+  border-color: rgba(25, 26, 24, 0.38);
+  background: rgba(25, 26, 24, 0.08);
+}
+
+.linkIconActions button:active:not(:disabled),
+.linkActions button:active:not(:disabled),
+.sectionActions button:active:not(:disabled),
+.linkMoveMenuList button:active {
+  transform: scale(0.94);
+  background: rgba(25, 26, 24, 0.14);
+}
+
+.linkSectionTrigger:active,
+.linkSectionOption:active,
+.linkMoveMenuList button:active {
+  transform: scale(0.99);
+}
+
+.linkSectionAdd:hover,
+.linkAddDescription:hover {
+  color: #7520c9;
+}
+
+.linkSectionAdd:active,
+.linkAddDescription:active {
+  transform: scale(0.98);
+  color: #5f1aa8;
+}
+
+.themeButton:hover {
+  box-shadow: inset 0 0 0 1px rgba(138, 43, 226, 0.35);
+}
+
+.themeButton:active {
+  transform: scale(0.98);
+}
+
+.settingsBlock button:hover:not(:disabled),
+.settingsBlock a:hover {
+  border-color: rgba(25, 26, 24, 0.45);
+  background: rgba(25, 26, 24, 0.06);
+}
+
+.settingsBlock button:active:not(:disabled),
+.settingsBlock a:active {
+  transform: scale(0.97);
+  background: rgba(25, 26, 24, 0.12);
+}
+
+.signInMethodRow button:hover:not(:disabled),
+.signInMethodForm button:hover:not(:disabled),
+.signInMethodUnlink button:hover:not(:disabled) {
+  border-color: rgba(25, 26, 24, 0.45);
+  background: rgba(25, 26, 24, 0.06);
+}
+
+.signInMethodRow button:active:not(:disabled),
+.signInMethodForm button:active:not(:disabled),
+.signInMethodUnlink button:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgba(25, 26, 24, 0.12);
+}
+
+.shell button:focus-visible,
+.shell a:focus-visible {
+  outline: 2px solid #8a2be2;
+  outline-offset: 2px;
+}
+
+:global(html[data-reduce-motion]) .topbarActions button,
+:global(html[data-reduce-motion]) .topbarActions a,
+:global(html[data-reduce-motion]) .sidebar button,
+:global(html[data-reduce-motion]) .panelHeading button,
+:global(html[data-reduce-motion]) .primaryAction,
+:global(html[data-reduce-motion]) .linksPrimaryAction,
+:global(html[data-reduce-motion]) .linksSecondaryAction,
+:global(html[data-reduce-motion]) .linkIconActions button,
+:global(html[data-reduce-motion]) .linkActions button,
+:global(html[data-reduce-motion]) .sectionActions button,
+:global(html[data-reduce-motion]) .linkMoveMenuList button,
+:global(html[data-reduce-motion]) .linkSectionTrigger,
+:global(html[data-reduce-motion]) .linkSectionOption,
+:global(html[data-reduce-motion]) .linkSectionAdd,
+:global(html[data-reduce-motion]) .linkAddDescription,
+:global(html[data-reduce-motion]) .themeButton,
+:global(html[data-reduce-motion]) .settingsBlock button,
+:global(html[data-reduce-motion]) .settingsBlock a,
+:global(html[data-reduce-motion]) .signInMethodRow button,
+:global(html[data-reduce-motion]) .signInMethodForm button,
+:global(html[data-reduce-motion]) .signInMethodUnlink button {
+  transition-duration: 0.01ms;
+}
+
+:global(html[data-reduce-motion]) .topbarActions button:active:not(:disabled),
+:global(html[data-reduce-motion]) .topbarActions a:active,
+:global(html[data-reduce-motion]) .sidebar button:active:not(.active),
+:global(html[data-reduce-motion]) .panelHeading button:active:not(:disabled),
+:global(html[data-reduce-motion]) .primaryAction:active:not(:disabled),
+:global(html[data-reduce-motion]) .linksPrimaryAction:active:not(:disabled),
+:global(html[data-reduce-motion]) .linksSecondaryAction:active:not(:disabled),
+:global(html[data-reduce-motion]) .linkIconActions button:active:not(:disabled),
+:global(html[data-reduce-motion]) .linkActions button:active:not(:disabled),
+:global(html[data-reduce-motion]) .sectionActions button:active:not(:disabled),
+:global(html[data-reduce-motion]) .linkMoveMenuList button:active,
+:global(html[data-reduce-motion]) .linkSectionTrigger:active,
+:global(html[data-reduce-motion]) .linkSectionOption:active,
+:global(html[data-reduce-motion]) .linkSectionAdd:active,
+:global(html[data-reduce-motion]) .linkAddDescription:active,
+:global(html[data-reduce-motion]) .themeButton:active,
+:global(html[data-reduce-motion]) .settingsBlock button:active:not(:disabled),
+:global(html[data-reduce-motion]) .settingsBlock a:active,
+:global(html[data-reduce-motion]) .signInMethodRow button:active:not(:disabled),
+:global(html[data-reduce-motion]) .signInMethodForm button:active:not(:disabled),
+:global(html[data-reduce-motion]) .signInMethodUnlink button:active:not(:disabled) {
+  transform: none;
+}
+
 .workspace {
   display: grid;
   min-height: calc(100dvh - 68px);
@@ -70,11 +286,18 @@
 }
 
 .sidebar {
+  position: sticky;
+  z-index: 25;
+  top: 68px;
   display: flex;
   flex-direction: column;
+  align-self: start;
+  height: calc(100dvh - 68px);
+  overflow-y: auto;
   gap: 0.35rem;
   padding: 1.2rem 0.8rem;
   border-right: 1px solid rgba(25, 26, 24, 0.16);
+  background: #ebe8de;
 }
 
 .account {
@@ -91,9 +314,11 @@
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
+  overflow: hidden;
   border-radius: 0.6rem;
   background: #8a2be2;
   color: #f7f3fb;
+  object-fit: cover;
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -267,7 +492,418 @@
 
 .checklist small { color: rgba(25, 26, 24, 0.4); }
 
-.linkList { display: grid; gap: 0.65rem; }
+.linkList { display: grid; gap: 1rem; }
+
+.linksIntro {
+  margin: -0.35rem 0 1rem;
+  max-width: 34rem;
+  color: rgba(25, 26, 24, 0.52);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.linksToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.linksPrimaryAction,
+.linksSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.linksPrimaryAction {
+  border-color: rgba(138, 43, 226, 0.45);
+  background: #8a2be2;
+  color: #f7f3fb;
+}
+
+.linksSecondaryAction {
+  border-color: rgba(25, 26, 24, 0.18);
+  background: transparent;
+  color: #191a18;
+}
+
+.linksEmpty {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: start;
+  padding: 1.5rem 1.1rem;
+  border: 1px dashed rgba(25, 26, 24, 0.22);
+  background: rgba(25, 26, 24, 0.03);
+}
+
+.linksEmpty p {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.74rem;
+}
+
+.linkSectionCard {
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: rgba(25, 26, 24, 0.03);
+}
+
+.linkSectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.linkSectionTitle {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
+  color: #191a18;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  outline: 0;
+}
+
+.linkSectionTitleStatic {
+  color: rgba(25, 26, 24, 0.52);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.linkSectionBody {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+}
+
+.linkSectionEmpty {
+  margin: 0;
+  padding: 0.35rem 0.15rem;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.68rem;
+}
+
+.linkSectionAdd {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.35rem 0.15rem;
+  border: 0;
+  background: transparent;
+  color: rgba(138, 43, 226, 0.92);
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.linkCard {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: #ece9df;
+}
+
+.linkCardHidden {
+  opacity: 0.62;
+}
+
+.linkCardTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.linkCardStatus {
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.linkIconActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.linkIconActions button {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: transparent;
+  color: rgba(25, 26, 24, 0.72);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.linkIconActions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.linkCardFields {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.linkField {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.linkField span {
+  color: rgba(25, 26, 24, 0.48);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.linkField input {
+  width: 100%;
+  padding: 0.55rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.2);
+  background: transparent;
+  color: #191a18;
+  font-size: 0.74rem;
+  outline: 0;
+}
+
+.linkField input::placeholder {
+  color: rgba(25, 26, 24, 0.34);
+}
+
+.linkField input:focus {
+  border-bottom-color: rgba(138, 43, 226, 0.45);
+}
+
+.linkAddDescription {
+  justify-self: start;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: rgba(25, 26, 24, 0.48);
+  cursor: pointer;
+  font-size: 0.64rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.linkMoveMenu {
+  position: relative;
+}
+
+.linkMoveMenuList {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 8;
+  min-width: 9.5rem;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: #f4f1e8;
+  box-shadow: 0 10px 28px rgba(25, 26, 24, 0.12);
+}
+
+.linkMoveMenuList button {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  background: transparent;
+  color: #191a18;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.linkMoveMenuList button:hover,
+.linkMoveMenuList button[aria-current="true"] {
+  background: rgba(138, 43, 226, 0.1);
+  color: #6b21c8;
+}
+
+/* Legacy link row styles kept for reference during migration */
+.linkPanelActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.linkSection {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0 0.35rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.18);
+}
+
+.sectionTitleInput {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.35rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.22);
+  background: transparent;
+  color: #191a18;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  outline: 0;
+}
+
+.sectionLabel {
+  color: rgba(25, 26, 24, 0.48);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sectionActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.sectionActions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.linkSectionSelect {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.linkSectionLabel {
+  color: rgba(25, 26, 24, 0.48);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.linkSectionTrigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  background: rgba(25, 26, 24, 0.04);
+  color: #191a18;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.linkSectionTrigger:hover {
+  border-color: rgba(138, 43, 226, 0.35);
+  background: rgba(138, 43, 226, 0.06);
+}
+
+.linkSectionTrigger svg {
+  flex: 0 0 auto;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.85rem;
+  transition: transform 180ms ease;
+}
+
+.linkSectionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.linkSectionMenu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  background: #ece9df;
+  box-shadow: 0 14px 36px rgba(24, 25, 23, 0.14);
+  list-style: none;
+}
+
+.linkSectionOption {
+  display: block;
+  width: 100%;
+  padding: 0.52rem 0.55rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #191a18;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: left;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.linkSectionOption:hover,
+.linkSectionOption[aria-selected="true"] {
+  background: rgba(138, 43, 226, 0.14);
+  color: #6b21c8;
+}
 
 .linkRow {
   display: grid;
@@ -321,8 +957,143 @@
 .formField { display: grid; gap: 0.35rem; }
 .formFieldWide { grid-column: 1 / -1; }
 .formField label { color: rgba(25, 26, 24, 0.51); font-size: 0.64rem; font-weight: 700; }
+
+.socialProfiles {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.35rem;
+}
+
+.socialProfilesIntro h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.socialProfilesIntro p {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.48);
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.socialProfilesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.socialProfileField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.socialProfileLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.socialProfileLabel svg {
+  font-size: 0.82rem;
+}
+
+.socialProfileField input {
+  width: 100%;
+  padding: 0.65rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.22);
+  background: transparent;
+  color: #191a18;
+  font-size: 0.72rem;
+  outline: 0;
+}
+
+.socialProfileField input::placeholder {
+  color: rgba(25, 26, 24, 0.34);
+}
+
 .formField textarea { min-height: 7rem; resize: vertical; }
 .fieldHint { color: rgba(25, 26, 24, 0.4); font-size: 0.57rem; }
+
+.filePicker {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.85rem 0 0.35rem;
+}
+
+.filePreview,
+.filePreviewFallback {
+  display: grid;
+  width: 3.4rem;
+  height: 3.4rem;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  border-radius: 0.85rem;
+  background: rgba(138, 43, 226, 0.12);
+  color: #8a2be2;
+  font-size: 1.1rem;
+}
+
+.filePreview {
+  object-fit: cover;
+}
+
+.filePickerCopy {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.fileButton {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.95rem;
+  border: 1px solid rgba(138, 43, 226, 0.35);
+  background: color-mix(in srgb, #8a2be2 12%, transparent);
+  color: #8a2be2;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.fileButton:hover {
+  border-color: #8a2be2;
+  background: color-mix(in srgb, #8a2be2 22%, transparent);
+}
+
+.fileButton:active {
+  transform: scale(0.98);
+}
+
+.fileButton:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fileButton input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+  border: 0 !important;
+  padding: 0 !important;
+}
 
 .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
 .themeButton {
@@ -357,13 +1128,157 @@
 }
 .settingsBlock h3 { margin: 0; font-size: 0.85rem; }
 .settingsBlock p { max-width: 32rem; margin: 0.3rem 0 0; color: rgba(25, 26, 24, 0.51); font-size: 0.68rem; }
-.settingsBlock button {
+.settingsBlock button,
+.settingsBlock a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid rgba(25, 26, 24, 0.22);
   background: transparent;
   cursor: pointer;
   font-size: 0.65rem;
   font-weight: 700;
+}
+
+.signInMethods {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.14);
+}
+
+.signInMethodsHint {
+  max-width: 36rem;
+  margin: 0 0 1rem;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.signInMethodsStatus {
+  margin: 0 0 1rem;
+  font-size: 0.68rem;
+}
+
+.signInMethodsStatus[data-tone="success"] { color: #287c3b; }
+.signInMethodsStatus[data-tone="error"] { color: #b42318; }
+
+.signInMethodsList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signInMethodRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.signInMethodCopy {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.signInMethodIcon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid rgba(25, 26, 24, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.95rem;
+}
+
+.signInMethodCopy strong {
+  display: block;
+  font-size: 0.74rem;
+}
+
+.signInMethodCopy small {
+  display: block;
+  margin-top: 0.15rem;
+  color: rgba(25, 26, 24, 0.48);
+  font-size: 0.62rem;
+}
+
+.signInMethodRow button,
+.signInMethodForm button,
+.signInMethodUnlink button {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.22);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.signInMethodLinked,
+.signInMethodPending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.signInMethodLinked { color: #287c3b; }
+
+.signInMethodForm {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.signInMethodForm strong {
+  font-size: 0.76rem;
+}
+
+.signInMethodForm p {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.52);
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.signInMethodForm label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.signInMethodForm input {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  background: #f7f4ec;
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.signInMethodUnlink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.signInMethodUnlink button {
+  color: rgba(25, 26, 24, 0.62);
 }
 
 .previewPane {
@@ -477,6 +1392,61 @@
   background: rgba(247, 243, 251, 0.08);
 }
 
+:global(html:not([data-app-theme="light"])) .topbarActions button:active:not(:disabled),
+:global(html:not([data-app-theme="light"])) .topbarActions a:active,
+:global(html:not([data-app-theme="light"])) .linkActions button:active:not(:disabled),
+:global(html:not([data-app-theme="light"])) .settingsBlock button:active:not(:disabled),
+:global(html:not([data-app-theme="light"])) .settingsBlock a:active {
+  background: rgba(247, 243, 251, 0.16);
+}
+
+:global(html:not([data-app-theme="light"])) .topbarActions .publish:hover:not(:disabled) {
+  border-color: #9d4dff;
+  background: #9d4dff;
+}
+
+:global(html:not([data-app-theme="light"])) .topbarActions .publish:active:not(:disabled) {
+  border-color: #6a1fb8;
+  background: #6a1fb8;
+}
+
+:global(html:not([data-app-theme="light"])) .topbarActions .actionSuccess,
+:global(html:not([data-app-theme="light"])) .topbarActions .actionSuccess:hover:not(:disabled) {
+  border-color: rgba(141, 224, 170, 0.55);
+  background: rgba(141, 224, 170, 0.14);
+  color: #8de0aa;
+}
+
+:global(html:not([data-app-theme="light"])) .topbarActions .actionSuccess:active:not(:disabled) {
+  background: rgba(141, 224, 170, 0.22);
+}
+
+:global(html:not([data-app-theme="light"])) .sidebar button:active:not(.active) {
+  background: rgba(138, 43, 226, 0.24);
+}
+
+:global(html:not([data-app-theme="light"])) .linkIconActions button:hover:not(:disabled),
+:global(html:not([data-app-theme="light"])) .sectionActions button:hover:not(:disabled) {
+  border-color: rgba(247, 243, 251, 0.34);
+  background: rgba(247, 243, 251, 0.08);
+}
+
+:global(html:not([data-app-theme="light"])) .linkIconActions button:active:not(:disabled),
+:global(html:not([data-app-theme="light"])) .sectionActions button:active:not(:disabled),
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button:active {
+  background: rgba(138, 43, 226, 0.28);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionTrigger:active {
+  border-color: rgba(180, 121, 235, 0.72);
+  background: rgba(138, 43, 226, 0.32);
+}
+
+:global(html:not([data-app-theme="light"])) .settingsBlock a:hover {
+  border-color: rgba(247, 243, 251, 0.46);
+  background: rgba(247, 243, 251, 0.08);
+}
+
 :global(html:not([data-app-theme="light"])) .topbarActions .publish {
   border-color: #8a2be2;
   background: #8a2be2;
@@ -518,6 +1488,28 @@
   color: rgba(247, 243, 251, 0.64);
 }
 
+:global(html:not([data-app-theme="light"])) .filePreview,
+:global(html:not([data-app-theme="light"])) .filePreviewFallback {
+  border-color: rgba(180, 121, 235, 0.28);
+  background: rgba(138, 43, 226, 0.18);
+  color: #c9a0ff;
+}
+
+:global(html:not([data-app-theme="light"])) .fileButton {
+  border-color: rgba(180, 121, 235, 0.45);
+  background: rgba(138, 43, 226, 0.2);
+  color: #e8d4ff;
+}
+
+:global(html:not([data-app-theme="light"])) .fileButton:hover {
+  border-color: #b479eb;
+  background: rgba(138, 43, 226, 0.34);
+}
+
+:global(html:not([data-app-theme="light"])) .fieldHint {
+  color: rgba(247, 243, 251, 0.42);
+}
+
 :global(html:not([data-app-theme="light"])) .notice {
   border-color: rgba(138, 43, 226, 0.5);
   background: rgba(138, 43, 226, 0.12);
@@ -541,6 +1533,155 @@
 :global(html:not([data-app-theme="light"])) .linkRow {
   border-color: rgba(247, 243, 251, 0.14);
   background: #1b1720;
+}
+
+:global(html:not([data-app-theme="light"])) .linksIntro,
+:global(html:not([data-app-theme="light"])) .linksEmpty p,
+:global(html:not([data-app-theme="light"])) .linkSectionEmpty,
+:global(html:not([data-app-theme="light"])) .linkCardStatus {
+  color: rgba(247, 243, 251, 0.55);
+}
+
+:global(html:not([data-app-theme="light"])) .linksSecondaryAction {
+  border-color: rgba(247, 243, 251, 0.18);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linksEmpty {
+  border-color: rgba(247, 243, 251, 0.18);
+  background: rgba(247, 243, 251, 0.04);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionCard {
+  border-color: rgba(247, 243, 251, 0.12);
+  background: rgba(247, 243, 251, 0.03);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionHeader {
+  border-color: rgba(247, 243, 251, 0.12);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionTitle,
+:global(html:not([data-app-theme="light"])) .linkSectionTitleStatic {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionAdd {
+  color: rgba(180, 121, 235, 0.95);
+}
+
+:global(html:not([data-app-theme="light"])) .linkCard {
+  border-color: rgba(247, 243, 251, 0.14);
+  background: #1b1720;
+}
+
+:global(html:not([data-app-theme="light"])) .linkIconActions button {
+  border-color: rgba(247, 243, 251, 0.16);
+  color: rgba(247, 243, 251, 0.78);
+}
+
+:global(html:not([data-app-theme="light"])) .linkField span {
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkField input {
+  border-color: rgba(247, 243, 251, 0.2);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkField input::placeholder {
+  color: rgba(247, 243, 251, 0.34);
+}
+
+:global(html:not([data-app-theme="light"])) .linkAddDescription {
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList {
+  border-color: rgba(247, 243, 251, 0.16);
+  background: #1f1a24;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button:hover,
+:global(html:not([data-app-theme="light"])) .linkMoveMenuList button[aria-current="true"] {
+  background: rgba(138, 43, 226, 0.18);
+  color: #e9d5ff;
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfilesIntro h3 {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfilesIntro p,
+:global(html:not([data-app-theme="light"])) .socialProfileLabel {
+  color: rgba(247, 243, 251, 0.55);
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfileField input {
+  border-color: rgba(247, 243, 251, 0.22);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .socialProfileField input::placeholder {
+  color: rgba(247, 243, 251, 0.34);
+}
+
+:global(html:not([data-app-theme="light"])) .sectionHeader {
+  border-color: rgba(247, 243, 251, 0.14);
+}
+
+:global(html:not([data-app-theme="light"])) .sectionTitleInput {
+  border-color: rgba(247, 243, 251, 0.22);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionLabel {
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionTrigger {
+  border-color: rgba(180, 121, 235, 0.28);
+  background: rgba(138, 43, 226, 0.1);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionTrigger:hover {
+  border-color: rgba(180, 121, 235, 0.55);
+  background: rgba(138, 43, 226, 0.2);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionTrigger svg {
+  color: rgba(247, 243, 251, 0.55);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionMenu {
+  border-color: rgba(180, 121, 235, 0.32);
+  background: #1b1720;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionOption {
+  color: rgba(247, 243, 251, 0.88);
+}
+
+:global(html:not([data-app-theme="light"])) .linkSectionOption:hover,
+:global(html:not([data-app-theme="light"])) .linkSectionOption[aria-selected="true"] {
+  background: rgba(138, 43, 226, 0.32);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .sectionLabel {
+  color: rgba(247, 243, 251, 0.48);
+}
+
+:global(html:not([data-app-theme="light"])) .sectionActions button {
+  border-color: rgba(247, 243, 251, 0.18);
+  color: #f7f3fb;
 }
 
 :global(html:not([data-app-theme="light"])) .linkFields input,
@@ -591,6 +1732,46 @@
   color: #8de0aa;
 }
 
+:global(html:not([data-app-theme="light"])) .signInMethods {
+  border-color: rgba(247, 243, 251, 0.13);
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodsHint,
+:global(html:not([data-app-theme="light"])) .signInMethodCopy small,
+:global(html:not([data-app-theme="light"])) .signInMethodForm p,
+:global(html:not([data-app-theme="light"])) .signInMethodLinked,
+:global(html:not([data-app-theme="light"])) .signInMethodPending,
+:global(html:not([data-app-theme="light"])) .signInMethodUnlink button {
+  color: rgba(247, 243, 251, 0.58);
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodRow,
+:global(html:not([data-app-theme="light"])) .signInMethodForm {
+  border-color: rgba(247, 243, 251, 0.13);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodIcon {
+  border-color: rgba(247, 243, 251, 0.13);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodForm input,
+:global(html:not([data-app-theme="light"])) .signInMethodRow button,
+:global(html:not([data-app-theme="light"])) .signInMethodForm button {
+  border-color: rgba(247, 243, 251, 0.18);
+  background: #151219;
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodsStatus[data-tone="success"] {
+  color: #8de0aa;
+}
+
+:global(html:not([data-app-theme="light"])) .signInMethodsStatus[data-tone="error"] {
+  color: #ff9dad;
+}
+
 @media (max-width: 1160px) {
   .workspace { grid-template-columns: 88px 1fr 1fr; }
   .account { grid-template-columns: 1fr; }
@@ -605,7 +1786,20 @@
   .topbar { grid-template-columns: 1fr auto; }
   .topbarCenter { display: none; }
   .workspace { display: flex; flex-direction: column; }
-  .sidebar { position: sticky; z-index: 20; top: 68px; display: grid; grid-template-columns: repeat(5,1fr); padding: .45rem; border-right: 0; border-bottom: 1px solid rgba(25,26,24,.16); background: #ebe8de; }
+  .sidebar {
+    position: sticky;
+    z-index: 20;
+    top: 68px;
+    align-self: auto;
+    height: auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 0.45rem;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid rgba(25, 26, 24, 0.16);
+    background: #ebe8de;
+  }
   .account,.sidebarBottom { display:none; }
   .sidebar button { padding: .65rem .2rem; }
   .panel { border-right:0; }
@@ -621,8 +1815,9 @@
   .panelHeading h1 { font-size: 2.35rem; }
   .overviewGrid,.formGrid,.themes { grid-template-columns: 1fr; }
   .formFieldWide { grid-column:auto; }
-  .linkRow { grid-template-columns: auto 1fr; }
-  .linkActions { grid-column: 2; flex-direction: row; }
+  .socialProfilesGrid { grid-template-columns: 1fr; }
+  .linkCardTop { align-items: flex-start; }
+  .linkIconActions { width: 100%; justify-content: flex-end; }
   .previewPane { min-height: 700px; padding-inline: .5rem; }
   .phone { width: 98%; }
 }

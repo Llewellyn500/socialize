@@ -4,31 +4,49 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import {
-  FiArrowDown,
-  FiArrowUp,
   FiCheck,
   FiCopy,
   FiDownload,
   FiEye,
   FiFileText,
+  FiImage,
   FiLink,
   FiLogOut,
   FiMonitor,
-  FiPlus,
   FiSave,
   FiSettings,
   FiSliders,
-  FiTrash2,
   FiUser,
 } from "react-icons/fi";
 import { Brand } from "@/components/brand";
+import { AppLoadingState } from "@/components/app-loading-state";
 import { ProfilePreview } from "@/components/profile-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { auth, isFirebaseConfigured, storage } from "@/lib/firebase";
-import { demoProfile, isSafeExternalUrl, type ProfileConfig, type ProfileTheme } from "@/lib/profile";
+import { MotionToggle } from "@/components/motion-toggle";
+import { uploadUserAvatar } from "@/lib/avatar-upload";
+import { auth, isFirebaseConfigured } from "@/lib/firebase";
+import {
+  demoProfile,
+  groupLinksBySection,
+  isAutoLinkDescription,
+  isAutoLinkTitle,
+  isSafeExternalUrl,
+  titleFromUrl,
+  type ProfileConfig,
+  type ProfileTheme,
+} from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { normalizeLinkUrl } from "@/lib/email-link";
+import {
+  fetchEnrichedLinkMetadata,
+  isEnrichableLinkUrl,
+} from "@/lib/link-metadata";
+import { isLinkedInUrl } from "@/lib/linkedin-url";
+import { LINKEDIN_LINK_TITLE } from "@/lib/linkedin-headline";
+import { LinksEditor } from "./links-editor";
+import { LinkedSignInMethods } from "./linked-sign-in-methods";
+import { SocialProfilesFields } from "./social-profiles-fields";
 import styles from "./dashboard-app.module.css";
 
 type Tab = "overview" | "links" | "profile" | "appearance" | "settings";
@@ -54,30 +72,61 @@ export function DashboardApp() {
   const [tab, setTab] = useState<Tab>("overview");
   const [profile, setProfile] = useState<ProfileConfig>(demoProfile);
   const [user, setUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(!isFirebaseConfigured);
-  const [host, setHost] = useState("socialize.dev");
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [host, setHost] = useState("socialize.you");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [status, setStatus] = useState<Status>(null);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   useEffect(() => {
     setHost(window.location.host);
+
     if (!auth) {
       const localProfile = window.localStorage.getItem("socialize-demo-profile");
       if (localProfile) {
-        try { setProfile(JSON.parse(localProfile) as ProfileConfig); } catch { /* keep demo */ }
+        try {
+          setProfile(JSON.parse(localProfile) as ProfileConfig);
+        } catch {
+          setProfile(demoProfile);
+        }
+      } else {
+        setProfile(demoProfile);
       }
+      setWorkspaceReady(true);
       return;
     }
-    return onAuthStateChanged(auth, async (nextUser) => {
+
+    return onAuthStateChanged(auth, (nextUser) => {
       setUser(nextUser);
-      setAuthReady(true);
-      if (nextUser) {
-        const stored = await loadProfile(nextUser.uid);
-        if (stored) setProfile(stored);
+
+      if (!nextUser) {
+        setLoadingProfile(false);
+        setWorkspaceReady(true);
+        return;
       }
+
+      setWorkspaceReady(false);
+      setLoadingProfile(true);
+
+      void loadProfile(nextUser.uid)
+        .then((stored) => {
+          if (!stored) {
+            router.replace("/onboarding");
+            return;
+          }
+          setProfile(stored);
+          setWorkspaceReady(true);
+        })
+        .catch(() => {
+          router.replace("/onboarding");
+        })
+        .finally(() => {
+          setLoadingProfile(false);
+        });
     });
-  }, []);
+  }, [router]);
 
   const pageUrl = useMemo(() => {
     return `${host}/${profile.handle}`;
@@ -88,84 +137,215 @@ export function DashboardApp() {
     setStatus(null);
   }
 
-  function addLink() {
+  function addSection() {
+    const sections = [
+      ...(profile.sections ?? []),
+      { id: `section-${Date.now()}`, title: "New section" },
+    ];
+    update("sections", sections);
+  }
+
+  function updateSectionTitle(sectionId: string, title: string) {
+    update(
+      "sections",
+      (profile.sections ?? []).map((section) =>
+        section.id === sectionId ? { ...section, title } : section,
+      ),
+    );
+  }
+
+  function moveSection(sectionId: string, direction: -1 | 1) {
+    const sections = [...(profile.sections ?? [])];
+    const index = sections.findIndex((section) => section.id === sectionId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= sections.length) return;
+    [sections[index], sections[target]] = [sections[target], sections[index]];
+    update("sections", sections);
+  }
+
+  function removeSection(sectionId: string) {
+    setProfile((current) => ({
+      ...current,
+      sections: (current.sections ?? []).filter((section) => section.id !== sectionId),
+      links: current.links.map((link) =>
+        link.sectionId === sectionId ? { ...link, sectionId: undefined } : link,
+      ),
+    }));
+    setStatus(null);
+  }
+
+  function addLink(sectionId?: string) {
     update("links", [
       ...profile.links,
       {
         id: `link-${Date.now()}`,
-        title: "Untitled link",
-        description: "Add a short reason to click.",
-        url: "https://example.com",
+        title: "",
+        description: "",
+        url: "",
         enabled: true,
         kind: "link",
+        ...(sectionId ? { sectionId } : {}),
       },
     ]);
   }
 
-  function updateLink(index: number, key: "title" | "description" | "url" | "enabled", value: string | boolean) {
-    const links = profile.links.map((link, linkIndex) =>
-      linkIndex === index ? { ...link, [key]: value } : link,
-    );
+  function updateLink(
+    linkId: string,
+    key: "title" | "description" | "url" | "enabled" | "sectionId",
+    value: string | boolean,
+  ) {
+    const links = profile.links.map((link) => {
+      if (link.id !== linkId) return link;
+
+      if (key === "sectionId") {
+        const sectionId = typeof value === "string" && value ? value : undefined;
+        return { ...link, sectionId };
+      }
+
+      return { ...link, [key]: value };
+    });
     update("links", links);
   }
 
-  function moveLink(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= profile.links.length) return;
+  async function handleLinkUrlChange(linkId: string, rawUrl: string) {
+    const currentLink = profile.links.find((link) => link.id === linkId);
+    if (!currentLink) return;
+
+    const url = normalizeLinkUrl(rawUrl);
+    const shouldAutofillTitle = isAutoLinkTitle(currentLink.title, currentLink.url);
+    const shouldAutofillDescription = isAutoLinkDescription(currentLink.description);
+    const derived = isLinkedInUrl(url)
+      ? LINKEDIN_LINK_TITLE
+      : isEnrichableLinkUrl(url)
+        ? ""
+        : titleFromUrl(url);
+
+    setProfile((current) => ({
+      ...current,
+      links: current.links.map((link) => {
+        if (link.id !== linkId) return link;
+        return {
+          ...link,
+          url,
+          ...(shouldAutofillTitle && derived ? { title: derived } : {}),
+        };
+      }),
+    }));
+    setStatus(null);
+
+    if (!isEnrichableLinkUrl(url)) return;
+
+    const metadata = await fetchEnrichedLinkMetadata(url);
+    if (!metadata) return;
+
+    setProfile((current) => {
+      const link = current.links.find((item) => item.id === linkId);
+      if (!link || link.url.trim() !== url.trim()) return current;
+
+      const autofillTitle = isAutoLinkTitle(link.title, url);
+      const autofillDescription = isAutoLinkDescription(link.description);
+
+      return {
+        ...current,
+        links: current.links.map((item) => {
+          if (item.id !== linkId) return item;
+          return {
+            ...item,
+            ...(autofillTitle && metadata.title ? { title: metadata.title } : {}),
+            ...(autofillDescription && metadata.description
+              ? { description: metadata.description }
+              : {}),
+          };
+        }),
+      };
+    });
+  }
+
+  function moveLink(linkId: string, direction: -1 | 1) {
     const links = [...profile.links];
-    [links[index], links[target]] = [links[target], links[index]];
+    const index = links.findIndex((link) => link.id === linkId);
+    if (index < 0) return;
+
+    const sectionKey = links[index].sectionId ?? "";
+    const sectionIndices = links
+      .map((link, linkIndex) =>
+        (link.sectionId ?? "") === sectionKey ? linkIndex : -1,
+      )
+      .filter((linkIndex) => linkIndex >= 0);
+    const position = sectionIndices.indexOf(index);
+    const targetPosition = position + direction;
+    if (targetPosition < 0 || targetPosition >= sectionIndices.length) return;
+
+    const targetIndex = sectionIndices[targetPosition];
+    [links[index], links[targetIndex]] = [links[targetIndex], links[index]];
     update("links", links);
   }
 
-  function removeLink(index: number) {
-    update("links", profile.links.filter((_, linkIndex) => linkIndex !== index));
+  function removeLink(linkId: string) {
+    update("links", profile.links.filter((link) => link.id !== linkId));
   }
 
-  async function persistProfile() {
+  const linkGroups = useMemo(() => groupLinksBySection(profile), [profile]);
+
+  async function persistProfile(
+    nextProfile: ProfileConfig = profile,
+    successMessage?: string,
+  ) {
     setSaving(true);
     setStatus(null);
     try {
-      const invalidLink = profile.links.find((link) => !isSafeExternalUrl(link.url));
+      const invalidLink = nextProfile.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
       if (auth && user) {
-        const saved = await saveProfile(user.uid, profile);
+        const saved = await saveProfile(user.uid, nextProfile);
         setProfile(saved);
       } else {
-        window.localStorage.setItem("socialize-demo-profile", JSON.stringify(profile));
+        window.localStorage.setItem("socialize-demo-profile", JSON.stringify(nextProfile));
+        setProfile(nextProfile);
       }
-      setStatus({ tone: "success", message: auth && user ? "Saved to Firebase." : "Saved in this browser demo." });
+      setStatus({
+        tone: "success",
+        message:
+          successMessage ?? "Saved",
+      });
+      return true;
     } catch (error) {
       setStatus({ tone: "error", message: error instanceof Error ? error.message : "We could not save your profile." });
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
+  async function togglePublished() {
+    const previous = profile;
+    const nextProfile = { ...profile, published: !profile.published };
+    setProfile(nextProfile);
+    const saved = await persistProfile(
+      nextProfile,
+      nextProfile.published ? "Your profile is live." : "Your profile is unpublished.",
+    );
+    if (!saved) setProfile(previous);
+  }
+
   async function uploadAvatar(file: File | undefined) {
     if (!file) return;
-    if (!storage || !user) {
-      setStatus({ tone: "error", message: "Connect Firebase and sign in before uploading an avatar." });
-      return;
-    }
-    if (!file.type.match(/^image\/(jpeg|png|webp|gif)$/)) {
-      setStatus({ tone: "error", message: "Use a JPEG, PNG, WebP, or GIF image." });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setStatus({ tone: "error", message: "Avatar images must be smaller than 5 MB." });
+    if (!user) {
+      setStatus({ tone: "error", message: "Sign in to your account before uploading an avatar." });
       return;
     }
 
     setUploadingAvatar(true);
     setStatus(null);
     try {
-      const avatarRef = ref(storage, `avatars/${user.uid}/avatar`);
-      await uploadBytes(avatarRef, file, { contentType: file.type });
-      const avatarUrl = await getDownloadURL(avatarRef);
+      const avatarUrl = await uploadUserAvatar(user.uid, file);
       update("avatarUrl", avatarUrl);
-      setStatus({ tone: "success", message: "Avatar uploaded. Save changes to publish it with your profile." });
-    } catch {
-      setStatus({ tone: "error", message: "The avatar upload failed. Check Firebase Storage and its deployed rules." });
+      setStatus({ tone: "success", message: "Avatar uploaded. Save changes to keep it on your profile." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message: error instanceof Error ? error.message : "The avatar upload failed. Try again.",
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -173,7 +353,9 @@ export function DashboardApp() {
 
   async function copyPageUrl() {
     await navigator.clipboard.writeText(`${window.location.protocol}//${pageUrl}`);
+    setUrlCopied(true);
     setStatus({ tone: "success", message: "Profile URL copied." });
+    window.setTimeout(() => setUrlCopied(false), 2000);
   }
 
   function exportProfile() {
@@ -191,8 +373,18 @@ export function DashboardApp() {
     router.push("/sign-in");
   }
 
-  if (!authReady) {
-    return <div className={styles.emptyAuth}><div><Brand /><h1>Loading your workspace.</h1><p>Connecting to your Socialize account…</p></div></div>;
+  if (!workspaceReady) {
+    return (
+      <AppLoadingState
+        description={
+          loadingProfile
+            ? "Fetching your links, profile, and settings…"
+            : "Connecting to your Socialize account…"
+        }
+        label="Loading workspace"
+        title={loadingProfile ? "Loading your profile." : "Loading your workspace."}
+      />
+    );
   }
 
   if (isFirebaseConfigured && !user) {
@@ -210,16 +402,31 @@ export function DashboardApp() {
         <div className={styles.topbarCenter}><i /> {profile.published ? "Published" : "Private draft"} · {pageUrl}</div>
         <div className={styles.topbarActions}>
           <ThemeToggle compact />
-          <button type="button" onClick={copyPageUrl} aria-label="Copy profile URL"><FiCopy /> Copy URL</button>
+          <MotionToggle compact />
+          <button
+            type="button"
+            onClick={copyPageUrl}
+            className={urlCopied ? styles.actionSuccess : undefined}
+            aria-label={urlCopied ? "Profile URL copied" : "Copy profile URL"}
+          >
+            {urlCopied ? <><FiCheck /> Copied!</> : <><FiCopy /> Copy URL</>}
+          </button>
           <Link href={`/${profile.handle}`} target="_blank"><FiEye /> Preview</Link>
-          <button className={styles.publish} type="button" onClick={() => update("published", !profile.published)}>{profile.published ? "Unpublish" : "Publish"}</button>
+          <button className={styles.publish} type="button" onClick={togglePublished} disabled={saving}>
+            {profile.published ? "Unpublish" : "Publish"}
+          </button>
         </div>
       </header>
 
       <div className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="Dashboard navigation">
           <div className={styles.account}>
-            <span className={styles.accountAvatar}>{profile.displayName.slice(0, 2).toUpperCase()}</span>
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className={styles.accountAvatar} src={profile.avatarUrl} alt="" />
+            ) : (
+              <span className={styles.accountAvatar}>{profile.displayName.slice(0, 2).toUpperCase()}</span>
+            )}
             <div><strong>{profile.displayName}</strong><small>{user?.email || "local demo"}</small></div>
           </div>
           <span className={styles.navLabel}>Workspace</span>
@@ -235,12 +442,12 @@ export function DashboardApp() {
           {tab === "overview" ? (
             <>
               <PanelHeading eyebrow="WORKSPACE / OVERVIEW" title="Good to see you." />
-              {!isFirebaseConfigured ? <div className={styles.notice}>This is the local demo workspace. Add your Firebase environment values to enable real accounts and cloud saves.</div> : null}
+              {!isFirebaseConfigured ? <div className={styles.notice}>This is the local demo workspace. Add your environment values to enable real accounts and cloud saves.</div> : null}
               <div className={styles.overviewGrid}>
                 <div className={styles.overviewCard}><span>Profile status</span><strong>{profile.published ? "Live" : "Draft"}</strong><p>@{profile.handle}</p></div>
                 <div className={styles.overviewCard}><span>Active links</span><strong>{profile.links.filter((link) => link.enabled).length}</strong><p>of {profile.links.length} total</p></div>
                 <div className={styles.overviewCard}><span>Theme</span><strong>{profile.theme}</strong><p>{profile.accent} accent</p></div>
-                <div className={styles.overviewCard}><span>Data mode</span><strong>{user ? "Cloud" : "Local"}</strong><p>{user ? "Firebase" : "browser demo"}</p></div>
+                <div className={styles.overviewCard}><span>Data mode</span><strong>{user ? "Cloud" : "Local"}</strong><p>{user ? "Synced" : "browser demo"}</p></div>
               </div>
               <div className={styles.checklist}>
                 <div><FiCheck /><span>Claim your handle</span><small>@{profile.handle}</small></div>
@@ -252,25 +459,20 @@ export function DashboardApp() {
 
           {tab === "links" ? (
             <>
-              <PanelHeading eyebrow="CONTENT / LINKS" title="Arrange your work." action={<button type="button" onClick={addLink}><FiPlus /> Add link</button>} />
-              <div className={styles.linkList}>
-                {profile.links.map((link, index) => (
-                  <article className={styles.linkRow} key={link.id}>
-                    <span className={styles.linkRowNumber}>{String(index + 1).padStart(2,"0")}</span>
-                    <div className={styles.linkFields}>
-                      <input aria-label={`Title for link ${index + 1}`} value={link.title} onChange={(event) => updateLink(index,"title",event.target.value)} />
-                      <input aria-label={`Description for link ${index + 1}`} value={link.description || ""} onChange={(event) => updateLink(index,"description",event.target.value)} />
-                      <input aria-label={`URL for link ${index + 1}`} value={link.url} onChange={(event) => updateLink(index,"url",event.target.value)} />
-                    </div>
-                    <div className={styles.linkActions}>
-                      <button type="button" aria-label={`Move ${link.title} up`} onClick={() => moveLink(index,-1)} disabled={index === 0}><FiArrowUp /></button>
-                      <button type="button" aria-label={`Move ${link.title} down`} onClick={() => moveLink(index,1)} disabled={index === profile.links.length - 1}><FiArrowDown /></button>
-                      <button type="button" aria-label={`${link.enabled ? "Hide" : "Show"} ${link.title}`} onClick={() => updateLink(index,"enabled",!link.enabled)}>{link.enabled ? <FiEye /> : <FiLink />}</button>
-                      <button type="button" aria-label={`Delete ${link.title}`} onClick={() => removeLink(index)}><FiTrash2 /></button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <PanelHeading eyebrow="CONTENT / LINKS" title="Your links." />
+              <LinksEditor
+                linkGroups={linkGroups}
+                profile={profile}
+                onAddLink={addLink}
+                onAddSection={addSection}
+                onLinkUrlChange={handleLinkUrlChange}
+                onMoveLink={moveLink}
+                onMoveSection={moveSection}
+                onRemoveLink={removeLink}
+                onRemoveSection={removeSection}
+                onUpdateLink={updateLink}
+                onUpdateSectionTitle={updateSectionTitle}
+              />
             </>
           ) : null}
 
@@ -282,10 +484,41 @@ export function DashboardApp() {
                 <Field label="Handle" hint="3–30 lowercase letters, numbers, or hyphens"><input value={profile.handle} onChange={(event) => update("handle",event.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))} /></Field>
                 <Field label="Role" wide><input value={profile.role} onChange={(event) => update("role",event.target.value)} /></Field>
                 <Field label="Bio" wide><textarea maxLength={240} value={profile.bio} onChange={(event) => update("bio",event.target.value)} /></Field>
+                <div className={styles.formFieldWide}>
+                  <SocialProfilesFields
+                    socials={profile.socials}
+                    onChange={(socials) => update("socials", socials)}
+                  />
+                </div>
                 <Field label="Location"><input value={profile.location || ""} onChange={(event) => update("location",event.target.value)} /></Field>
                 <Field label="Availability"><input value={profile.availability || ""} onChange={(event) => update("availability",event.target.value)} /></Field>
-                <Field label="Avatar image" wide hint="JPEG, PNG, WebP, or GIF up to 5 MB. Files are stored under your Firebase user path."><input accept="image/jpeg,image/png,image/webp,image/gif" disabled={!user || uploadingAvatar} type="file" onChange={(event) => uploadAvatar(event.target.files?.[0])} /></Field>
-                <Field label="Avatar URL" wide hint="You can also use an HTTPS image URL."><input value={profile.avatarUrl || ""} onChange={(event) => update("avatarUrl",event.target.value)} /></Field>
+                <Field label="Avatar image" wide hint="JPEG, PNG, WebP, or GIF up to 5 MB.">
+                  <div className={styles.filePicker}>
+                    {profile.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className={styles.filePreview} src={profile.avatarUrl} alt="" />
+                    ) : (
+                      <span className={styles.filePreviewFallback} aria-hidden="true"><FiImage /></span>
+                    )}
+                    <div className={styles.filePickerCopy}>
+                      <label className={styles.fileButton}>
+                        <input
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          disabled={!user || uploadingAvatar}
+                          type="file"
+                          onChange={(event) => {
+                            void uploadAvatar(event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                        <FiImage aria-hidden="true" />
+                        {uploadingAvatar ? "Uploading…" : profile.avatarUrl ? "Replace image" : "Choose image"}
+                      </label>
+                      <span className={styles.fieldHint}>Stored securely with your account.</span>
+                    </div>
+                  </div>
+                </Field>
+                <Field label="Avatar URL" wide hint="You can also paste an HTTPS image URL."><input value={profile.avatarUrl || ""} onChange={(event) => update("avatarUrl",event.target.value)} /></Field>
               </div>
             </>
           ) : null}
@@ -303,13 +536,20 @@ export function DashboardApp() {
           {tab === "settings" ? (
             <>
               <PanelHeading eyebrow="ACCOUNT / SETTINGS" title="Keep the exits visible." />
+              <div className={styles.settingsBlock}>
+                <div>
+                  <h3>Sign-in methods</h3>
+                  <p>Connect email, Google, and GitHub so any of them can open this account.</p>
+                </div>
+              </div>
+              <LinkedSignInMethods />
               <div className={styles.settingsBlock}><div><h3>Export profile data</h3><p>Download the portable JSON used by the self-hosted edition.</p></div><button type="button" onClick={exportProfile}><FiDownload /> Export</button></div>
-              <div className={styles.settingsBlock}><div><h3>Authentication</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut}><FiLogOut /> Sign out</button></div>
-              <div className={styles.settingsBlock}><div><h3>Self-host this profile</h3><p>Use your export with the stripped edition and your own Firebase project.</p></div><Link href="/self-host">Open guide</Link></div>
+              <div className={styles.settingsBlock}><div><h3>Session</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut}><FiLogOut /> Sign out</button></div>
+              <div className={styles.settingsBlock}><div><h3>Self-host this profile</h3><p>Use your export with the stripped edition and run it on your own infrastructure.</p></div><Link href="/self-host">Open guide</Link></div>
             </>
           ) : null}
 
-          <button className={styles.primaryAction} type="button" onClick={persistProfile} disabled={saving}><FiSave /> {saving ? "Saving…" : "Save changes"}</button>
+          <button className={styles.primaryAction} type="button" onClick={() => void persistProfile()} disabled={saving}><FiSave /> {saving ? "Saving…" : "Save changes"}</button>
           {status ? <p className={styles.status} data-tone={status.tone}>{status.message}</p> : null}
         </main>
 

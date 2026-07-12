@@ -108,7 +108,7 @@ export function ManageProfile() {
       setMessage("Profile published.");
     } catch {
       setSaveState("error");
-      setMessage("Firebase could not save the profile. Check the owner document and Firestore rules.");
+      setMessage("Could not save the profile. Check the owner document and database rules.");
     }
   }
 
@@ -141,7 +141,7 @@ export function ManageProfile() {
           <div>
             <p className="eyebrow">Private workspace</p>
             <h1>Manage your profile</h1>
-            <p>Edits publish to the public page as soon as Firebase confirms the save.</p>
+            <p>Edits publish to the public page as soon as the save is confirmed.</p>
           </div>
           <button className="primary-button save-button" disabled={saveState === "saving"} type="submit">
             <FloppyDisk aria-hidden="true" size={19} weight="bold" />

@@ -493,6 +493,25 @@
   color: rgba(24, 25, 23, 0.75);
 }
 
+.linkPrompt {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.linkPromptCancel {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(24, 25, 23, 0.62);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .noticeSpaced {
   margin-top: 1rem;
 }
@@ -685,6 +704,89 @@
   font-weight: 800;
 }
 
+.previewAvatarImage {
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid rgba(238, 234, 221, 0.18);
+}
+
+.filePicker {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.filePreview,
+.filePreviewFallback {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(24, 25, 23, 0.18);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--signal) 14%, transparent);
+  color: var(--signal-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.filePreview {
+  object-fit: cover;
+}
+
+.filePickerCopy {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.fileButton {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--signal) 45%, transparent);
+  background: color-mix(in srgb, var(--signal) 12%, transparent);
+  color: var(--signal-dark);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.fileButton:hover {
+  border-color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 22%, transparent);
+}
+
+.fileButton:active {
+  transform: scale(0.98);
+}
+
+.fileButton:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fileButton input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
 .previewHandle {
   margin: 1.5rem 0 0.25rem;
   color: var(--signal);
@@ -794,6 +896,24 @@
 
 :global(html:not([data-app-theme="light"])) .primaryButton:hover:not(:disabled) {
   background: var(--signal-hover);
+}
+
+:global(html:not([data-app-theme="light"])) .filePreview,
+:global(html:not([data-app-theme="light"])) .filePreviewFallback {
+  border-color: rgba(180, 121, 235, 0.3);
+  background: rgba(138, 43, 226, 0.2);
+  color: #e8d4ff;
+}
+
+:global(html:not([data-app-theme="light"])) .fileButton {
+  border-color: rgba(180, 121, 235, 0.5);
+  background: rgba(138, 43, 226, 0.22);
+  color: #e8d4ff;
+}
+
+:global(html:not([data-app-theme="light"])) .fileButton:hover {
+  border-color: #b479eb;
+  background: rgba(138, 43, 226, 0.36);
 }
 
 :global(html:not([data-app-theme="light"])) .divider {
@@ -988,10 +1108,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .formWrap,
-  .spinner {
-    animation-duration: 0.01ms;
-    animation-iteration-count: 1;
-  }
+html[data-reduce-motion] .formWrap,
+html[data-reduce-motion] .spinner {
+  animation-duration: 0.01ms;
+  animation-iteration-count: 1;
 }

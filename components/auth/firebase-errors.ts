@@ -25,35 +25,48 @@ export function getFirebaseAuthError(error: unknown) {
     case "auth/cancelled-popup-request":
       return "A newer sign-in window replaced this one. Finish the open sign-in request.";
     case "auth/account-exists-with-different-credential":
-      return "An account already exists with this email. Use its original sign-in method first.";
+      return "An account already exists with this email. Sign in with your existing method to link the new one.";
+    case "auth/credential-already-in-use":
+      return "That sign-in method is already linked to another account.";
+    case "auth/provider-already-linked":
+      return "That sign-in method is already linked to this account.";
     case "auth/operation-not-allowed":
-      return "That sign-in method is not enabled in Firebase yet.";
+      return "That sign-in method is not enabled yet.";
     case "auth/unauthorized-domain":
-      return "This domain is not authorized in Firebase Authentication yet.";
+      return "This domain is not authorized for sign-in yet.";
     case "auth/too-many-requests":
       return "Too many attempts were made. Wait a few minutes before trying again.";
     case "auth/network-request-failed":
-      return "The request could not reach Firebase. Check your connection and try again.";
+      return "The request could not reach the server. Check your connection and try again.";
     case "auth/requires-recent-login":
       return "For security, sign in again before continuing.";
     case "permission-denied":
     case "firestore/permission-denied":
-      return "Firestore denied this change. Check the project rules for signed-in profile owners.";
+      return "You do not have permission to make this change.";
     case "unavailable":
     case "firestore/unavailable":
-      return "Firestore is temporarily unavailable. Check your connection and try again.";
+      return "Profile storage is temporarily unavailable. Check your connection and try again.";
     case "aborted":
     case "firestore/aborted":
       return "Another profile update happened at the same time. Try saving again.";
+    case "invalid-argument":
+    case "firestore/invalid-argument":
+      return "The profile data was rejected. Check the fields and try again.";
     default:
       if (error instanceof Error) {
         if (error.message === "That handle is already taken.") {
           return error.message;
         }
-        if (error.message === "Firebase is not configured.") {
-          return "Firebase is not configured for this deployment.";
+        if (
+          error.message === "Firebase is not configured." ||
+          error.message === "Accounts are not configured."
+        ) {
+          return "Accounts are not configured for this deployment.";
+        }
+        if (/Unsupported field value: undefined/i.test(error.message)) {
+          return "The profile data was rejected. Check the fields and try again.";
         }
       }
-      return "Something went wrong while contacting Firebase. Try again.";
+      return "Something went wrong. Try again.";
   }
 }

@@ -6,7 +6,7 @@ product
 
 ## Users
 
-Socialize serves developers, open-source maintainers, technical writers, and independent builders who need one durable URL for their work. They use the hosted editor when they want to publish quickly, or the self-hosted edition when they want to own the deployment, Firebase project, domain, and data path.
+Socialize serves developers, open-source maintainers, technical writers, and independent builders who need one durable URL for their work. They use the hosted editor when they want to publish quickly, or the self-hosted edition when they want to own the deployment, backend, domain, and data path.
 
 ## Product Purpose
 

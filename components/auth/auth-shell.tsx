@@ -3,6 +3,7 @@ import { FiCheck, FiCode, FiGlobe } from "react-icons/fi";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MotionToggle } from "@/components/motion-toggle";
 import styles from "./auth.module.css";
 
 type AuthShellProps = {
@@ -69,11 +70,11 @@ export function AuthShell({
           </div>
           <div className={styles.introFoot}>
             <span>Hosted by Socialize</span>
-            <code>socialize.dev/your-handle</code>
+            <code>socialize.you/your-handle</code>
           </div>
         </section>
         <section className={styles.formPane} aria-label="Account details">
-          <div className={styles.formToolbar}><ThemeToggle /></div>
+          <div className={styles.formToolbar}><ThemeToggle /><MotionToggle /></div>
           <div className={styles.formWrap}>{children}</div>
         </section>
       </main>

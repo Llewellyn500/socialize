@@ -1,4 +1,4 @@
-import { LogoMark } from "@/components/logo-mark";
+import { Brand } from "@/components/brand";
 
 export default function Loading() {
   return (
@@ -13,7 +13,7 @@ export default function Loading() {
       }}
     >
       <div style={{ textAlign: "center" }}>
-        <span className="brand-mark" aria-hidden="true"><LogoMark /></span>
+        <Brand inverse />
         <p style={{ font: "700 .65rem ui-monospace", letterSpacing: ".1em", marginTop: "1.5rem" }}>LOADING THE WORKSPACE</p>
       </div>
     </main>
