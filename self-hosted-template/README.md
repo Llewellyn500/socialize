@@ -4,9 +4,10 @@ A stripped-down developer profile with three routes:
 
 | Route | Access | Purpose |
 | --- | --- | --- |
-| `/` | Public | Your profile, social accounts, and primary links |
+| `/` | Public | Your profile, links, and optional public GitHub activity |
 | `/login` | Owner only | Email, Google, or GitHub authentication through Firebase |
-| `/manage` | Owner only | Edit, reorder, hide, and publish links |
+| `/manage` | Owner only | Edit, reorder, hide, and publish profile content |
+| `/api/github-activity` | Public API | Cached public commit and coding activity data |
 
 There is no marketing homepage, customer signup, analytics, or legal-site bundle in this edition. It is intended for one owner and one public profile.
 
@@ -22,11 +23,25 @@ npm run dev
 
 On PowerShell, use `Copy-Item .env.example .env.local` instead of `cp`.
 
-Edit [`profile.config.ts`](./profile.config.ts) before you deploy. It is the single source for owner identity, the Firestore document path, profile copy, social accounts, and fallback links.
+Edit [`profile.config.ts`](./profile.config.ts) before you deploy. It is the single source for owner identity, the Firestore document path, profile copy, social accounts, fallback links, and developer activity defaults.
 
 For a local avatar, add `public/avatar.jpg` and set `avatarUrl` to `/avatar.jpg`. This avoids a third-party image request from every visitor.
 
 The profile in that file renders even before Firebase is configured. After the first save from `/manage`, Firestore becomes the live source. To return to the file-based profile, delete the configured document (default: `profiles/main`) in Firestore.
+
+## Show GitHub activity
+
+Open `/manage`, then use **Developer activity** to control:
+
+- whether the section is visible;
+- the GitHub username and placement before or after primary links;
+- automatic recent repositories, an include list, or an exclude list (up to five `owner/repository` names);
+- recent commit visibility, heading, 1 to 10 item limit, repository names, and dates;
+- contribution visibility, heading, total, yearly grid, month/weekday labels, legend, year selector, and language summary.
+
+The server route requests public commits and public repository metadata from GitHub. Commit data is cached for about 15 minutes and contribution calendars for about one hour; the route applies a best-effort limit of 30 requests per source IP per minute. Add a Vercel Firewall rate-limit rule for distributed production enforcement. Without a token, the yearly grid is a clearly labeled recent public sample. For a complete public contribution calendar, add an optional server-only `GITHUB_TOKEN` to `.env.local` and Vercel. Do not add `NEXT_PUBLIC_` to its name, and do not grant it private repository access.
+
+The language list counts primary languages in the account's recently pushed, non-archived public repositories. When GitHub returns more commits than the API sampling limit, the public profile labels the chart as a sample.
 
 ## Connect Firebase
 
@@ -107,5 +122,6 @@ npm run start      # Run the production build
 - Client route guards improve the experience, but `firestore.rules` is the real write boundary.
 - Firestore checks one owner allowlist document when authorizing a profile write.
 - A saved Firestore profile overrides the root config until the document is deleted.
+- Developer activity requests only public GitHub data and never sends `GITHUB_TOKEN` to the browser.
 - The template stores no analytics or visitor identifiers.
 - Revoke an owner by deleting `owners/{uid}` or disabling that Firebase user.

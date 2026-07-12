@@ -10,13 +10,14 @@ type GitHubMetadata = {
   description: string;
 };
 
-function githubHeaders() {
-  const token = process.env.GITHUB_TOKEN;
+function githubHeaders(includeAuthorization = true) {
+  const token = process.env.GITHUB_TOKEN?.trim();
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "SocializeBot/1.0",
+    "X-GitHub-Api-Version": "2026-03-10",
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (includeAuthorization && token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
@@ -28,10 +29,13 @@ async function fetchFromGitHubApi(
       const data = await safeExternalJson<{
         full_name?: string;
         description?: string | null;
+        private?: boolean;
       }>(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`, {
-        headers: githubHeaders(),
+        // Repository link previews must remain public-only even if the configured
+        // token was accidentally granted private repository access.
+        headers: githubHeaders(false),
       });
-      if (!data?.full_name) return null;
+      if (!data?.full_name || data.private !== false) return null;
       return {
         title: data.full_name.trim(),
         description: data.description?.trim() ?? "",

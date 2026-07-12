@@ -10,10 +10,12 @@ import { FiArrowUpRight, FiGlobe } from "react-icons/fi";
 import {
   groupLinksBySection,
   isSafeExternalUrl,
+  resolveDeveloperActivity,
   type ProfileConfig,
   type SocialKey,
 } from "@/lib/profile";
 import { recordProfileClick } from "@/lib/profile-stats";
+import { DeveloperActivity } from "@/components/developer-activity";
 
 const socialIcons: Record<SocialKey, React.ReactNode> = {
   github: <FaGithub />,
@@ -64,10 +66,15 @@ export function ProfilePreview({
     profile.avatarUrl?.startsWith("/") || profile.avatarUrl?.startsWith("https://")
       ? profile.avatarUrl
       : undefined;
+  const developerActivity = resolveDeveloperActivity(profile.developerActivity);
+  const activityBlock = developerActivity.enabled ? (
+    <DeveloperActivity config={developerActivity} interactive={interactive} />
+  ) : null;
 
   return (
     <article
       className={`profile-preview profile-preview--${profile.theme} ${className}`}
+      data-interactive={interactive}
       style={style}
     >
       <div className="profile-preview__topline">
@@ -113,6 +120,8 @@ export function ProfilePreview({
           ))}
       </div>
 
+      {developerActivity.placement === "before-links" ? activityBlock : null}
+
       <div className="profile-preview__links">
         {groupLinksBySection(profile).map((group) => {
           const visibleLinks = group.links.filter(
@@ -152,6 +161,8 @@ export function ProfilePreview({
           );
         })}
       </div>
+
+      {developerActivity.placement === "after-links" ? activityBlock : null}
 
       {branded ? (
         <a className="profile-preview__credit" href="/" tabIndex={interactive ? undefined : -1}>

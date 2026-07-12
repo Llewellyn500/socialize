@@ -18,6 +18,34 @@ export const selfHostedConfig: SelfHostedConfig = {
     availability: "Available for thoughtful frontend work",
     avatarUrl: "",
     accent: "#8a2be2",
+    developerActivity: {
+      enabled: false,
+      githubUsername: "your-handle",
+      placement: "before-links",
+      repositories: {
+        mode: "recent",
+        names: []
+      },
+      commits: {
+        enabled: true,
+        title: "Recent commits",
+        limit: 5,
+        showRepository: true,
+        showDate: true
+      },
+      coding: {
+        enabled: true,
+        title: "Contributions",
+        windowDays: 30,
+        showContributionCount: true,
+        showHeatmap: true,
+        showMonthLabels: true,
+        showWeekdayLabels: true,
+        showLegend: true,
+        showYearSelector: true,
+        showLanguages: true
+      }
+    },
     links: [
       {
         id: "github",

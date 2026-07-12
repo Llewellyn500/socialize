@@ -1986,7 +1986,7 @@
     align-self: auto;
     height: auto;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     padding: 0.45rem;
     overflow: visible;
     border-right: 0;

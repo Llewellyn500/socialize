@@ -5,14 +5,17 @@ Socialize is a developer-first link page with two ways to use it:
 - **Hosted service:** create an account, claim a handle, edit visually, and publish on the Socialize domain.
 - **Self-hosted edition:** run the stripped profile and owner dashboard on your own infrastructure and domain.
 
-The hosted product and self-hosted starter share the same portable `ProfileConfig` shape. That makes export a real exit path instead of a marketing promise.
+The hosted product and self-hosted starter use related profile models, but their
+top-level schemas are not interchangeable. A hosted JSON export is a backup and
+migration format rather than a file the stripped edition imports unchanged. The
+optional nested `developerActivity` shape is portable between both editions.
 
 ## What is in this repository
 
 - Editorial SaaS landing page with hosted and self-hosted paths
 - Email/password, Google, and GitHub sign-in flows
 - Onboarding with transactional handle reservation
-- Profile, links, appearance, publish, preview, and data-export dashboard
+- Profile, links, GitHub activity, appearance, publish, preview, and data-export dashboard
 - Public `/{handle}` profiles backed by cloud storage
 - Product documentation, self-hosting guide, sponsorship, trust, and legal routes
 - Database and avatar storage rules
@@ -74,7 +77,68 @@ reports/{id}       write-only abuse reports for future moderation tooling
 avatars/{uid}/*    user-owned Firebase Storage path
 ```
 
-`socialize.config.ts` documents the portable profile contract. Hosted accounts store that shape in Firestore. The self-hosted edition treats its root config as the initial seed and import/export format; a deployed browser editor cannot safely rewrite a TypeScript file on disk.
+`socialize.config.ts` documents the hosted profile contract, which hosted accounts
+store in Firestore. The stripped edition has its own top-level profile schema in
+`self-hosted-template/profile.config.ts`. Hosted exports are useful backups and a
+stable migration source, but identity, social, and link fields need conversion
+before they are used by the stripped template. The nested `developerActivity`
+object intentionally uses the same shape in both editions.
+
+## GitHub developer activity
+
+Profiles can optionally show recent public GitHub work. In the dashboard, an
+owner controls the GitHub username, placement before or after links, commit and
+coding visibility, section titles, a 1–10 commit display limit, repository/date
+labels, the contribution total, yearly heatmap, month and weekday labels,
+intensity legend, year selector, and language summary.
+
+Repository selection has three modes. **Recent** samples up to three repositories
+from the latest public push events. **Include** uses only selected public
+`owner/repository` slugs, and **Exclude** removes selected slugs from the automatic
+set. Include and exclude lists accept at most five normalized slugs. Selected
+repositories are checked against current public repository metadata; unavailable
+or private repositories are omitted. A sampling label is shown when upstream
+pagination or repository limits mean the result is incomplete.
+
+The server-side activity route sends the configured public username and selected
+repository names to the GitHub API. Repository filters apply to commits and
+languages; the contribution calendar is account-wide. With `GITHUB_TOKEN`, the
+route uses GitHub's GraphQL contribution calendar — the same yearly totals,
+week/day cells, and levels shown on a GitHub profile, including anonymized
+private contributions when the user has enabled that on GitHub. Private
+repository names and contents are never returned. Without a token it preserves the
+same calendar layout using a clearly labeled recent public-event sample. This is
+third-party data—not proof of ownership, endorsement, or private work.
+
+Public event responses are revalidated every five minutes. Contribution calendars,
+repository metadata, commit, and language lookups are cached for one hour. A successful route response
+is cached at the CDN for five minutes and can be served stale while it revalidates
+for up to one additional hour. GitHub's public event feed can itself lag by about
+30 seconds to six hours. Cache hits avoid a new upstream request, while a cold
+cache or refresh consumes GitHub API quota.
+
+The hosted route applies a best-effort limit of 30 requests per 60 seconds per
+source IP. This in-process control is not a complete distributed production
+boundary; configure Vercel Firewall rate limiting for `/api/github-activity` and
+monitor `429` responses. Without `GITHUB_TOKEN`, server requests share GitHub's
+unauthenticated limit of 60 requests per hour per source IP. A token typically
+raises the primary REST API limit to 5,000 requests per hour.
+
+`GITHUB_TOKEN` is optional and server-only. It enables the full yearly
+calendar and **must not have access to private repository contents**. Use a
+classic token with only `read:user` (no `repo` scope), or a fine-grained token
+with Profile read and no repository access — that is enough for GitHub’s
+anonymized private contribution counts on the graph. Add it under **Vercel
+Project Settings → Environment Variables** without a `NEXT_PUBLIC_` prefix, and
+redeploy. Never store it in Firestore, put it in exported profile data, or expose
+it to browser code.
+
+The `developerActivity` object is optional and included in hosted backup exports.
+The stripped template accepts that same nested shape, provides equivalent owner
+controls in `/manage`, and renders the public cards, but its surrounding profile
+schema is different. Its standalone GitHub route caches commits for about 15 minutes
+and contribution calendars for about one hour, with the same public-only token restriction. External requests
+remain off until the feature is enabled.
 
 ## Routes
 
@@ -116,6 +180,9 @@ redeploy. After the first deployment:
    backend access policy.
 4. Add your custom domain in Vercel, then add that final domain to Firebase
    Authentication too.
+5. If public GitHub activity will be enabled, optionally add the server-only
+   `GITHUB_TOKEN` for higher API limits. Do not prefix it with `NEXT_PUBLIC_`, and
+   do not grant the token private-repository access.
 
 For the stripped edition, import the same GitHub repository as a second Vercel
 project and set its Root Directory to `self-hosted-template`.
@@ -165,8 +232,9 @@ Pass Firebase public configuration through your deployment environment. Do not b
 - Firestore rules require owner-scoped writes and only expose published profiles.
 - User-supplied profile links accept `https:` and `mailto:` URLs.
 - OAuth or third-party integration secrets belong in trusted server infrastructure, never profile documents.
+- GitHub activity is public-only, sampled, cached, optional per profile, and keeps a public-data-only `GITHUB_TOKEN` on the server.
 - Google Analytics is optional, consent-gated, and configured without advertising storage or profile/account fields.
-- Before a public launch, add Firebase App Check, rate limiting for reports and handle attempts, email verification enforcement, moderation tooling, account deletion automation, and emulator tests for every rules branch.
+- Before a public launch, add Firebase App Check, Vercel Firewall limits for GitHub activity, rate limiting for reports and handle attempts, email verification enforcement, moderation tooling, account deletion automation, and emulator tests for every rules branch.
 
 The included legal pages are product-specific starter drafts, not legal advice. Review them for your operating entity, jurisdiction, retention schedule, subprocessors, and support contact before launch.
 

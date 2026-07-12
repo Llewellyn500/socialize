@@ -23,11 +23,118 @@ service cloud.firestore {
         ]);
     }
 
+    function validGitHubUsername(username) {
+      return username is string
+        && username.size() >= 1
+        && username.size() <= 39
+        && username.matches('^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$')
+        && !username.matches('.*--.*');
+    }
+
+    function validActivityTitle(title) {
+      return title is string
+        && title.size() >= 1
+        && title.size() <= 60
+        && title.matches('.*[^[:space:]].*');
+    }
+
+    function validRepositoryName(name) {
+      return name is string
+        && name.size() >= 1
+        && name.size() <= 140;
+    }
+
+    function validRepositoryNames(names) {
+      return names is list
+        && names.size() <= 5
+        && (names.size() < 1 || validRepositoryName(names[0]))
+        && (names.size() < 2 || validRepositoryName(names[1]))
+        && (names.size() < 3 || validRepositoryName(names[2]))
+        && (names.size() < 4 || validRepositoryName(names[3]))
+        && (names.size() < 5 || validRepositoryName(names[4]));
+    }
+
+    function validRepositorySelection(repositories) {
+      return repositories is map
+        && repositories.keys().hasOnly(['mode', 'names'])
+        && repositories.keys().hasAll(['mode', 'names'])
+        && repositories.mode is string
+        && repositories.mode in ['recent', 'include', 'exclude']
+        && validRepositoryNames(repositories.names);
+    }
+
+    function validCommitActivity(commits) {
+      return commits is map
+        && commits.keys().hasOnly([
+          'enabled', 'title', 'limit', 'showRepository', 'showDate'
+        ])
+        && commits.keys().hasAll([
+          'enabled', 'title', 'limit', 'showRepository', 'showDate'
+        ])
+        && commits.enabled is bool
+        && validActivityTitle(commits.title)
+        && commits.limit is int
+        && commits.limit >= 1
+        && commits.limit <= 10
+        && commits.showRepository is bool
+        && commits.showDate is bool;
+    }
+
+    function validCodingActivity(coding) {
+      return coding is map
+        && coding.keys().hasOnly([
+          'enabled', 'title', 'windowDays', 'showContributionCount',
+          'showHeatmap', 'showMonthLabels', 'showWeekdayLabels',
+          'showLegend', 'showYearSelector', 'showLanguages'
+        ])
+        && coding.keys().hasAll([
+          'enabled', 'title', 'windowDays', 'showContributionCount',
+          'showHeatmap', 'showMonthLabels', 'showWeekdayLabels',
+          'showLegend', 'showYearSelector', 'showLanguages'
+        ])
+        && coding.enabled is bool
+        && validActivityTitle(coding.title)
+        && coding.windowDays is int
+        && coding.windowDays in [7, 14, 30]
+        && coding.showContributionCount is bool
+        && coding.showHeatmap is bool
+        && coding.showMonthLabels is bool
+        && coding.showWeekdayLabels is bool
+        && coding.showLegend is bool
+        && coding.showYearSelector is bool
+        && coding.showLanguages is bool;
+    }
+
+    function validDeveloperActivity(activity) {
+      return activity is map
+        && activity.keys().hasOnly([
+          'enabled', 'githubUsername', 'placement', 'repositories', 'commits', 'coding'
+        ])
+        && activity.keys().hasAll([
+          'enabled', 'githubUsername', 'placement', 'repositories', 'commits', 'coding'
+        ])
+        && activity.enabled is bool
+        && activity.githubUsername is string
+        && activity.githubUsername.size() <= 39
+        && (activity.githubUsername == ''
+          || validGitHubUsername(activity.githubUsername))
+        && (!activity.enabled || validGitHubUsername(activity.githubUsername))
+        && activity.placement is string
+        && activity.placement in ['before-links', 'after-links']
+        && validRepositorySelection(activity.repositories)
+        && validCommitActivity(activity.commits)
+        && validCodingActivity(activity.coding)
+        && (!activity.enabled
+          || (!activity.commits.enabled && !activity.coding.enabled)
+          || activity.repositories.mode != 'include'
+          || activity.repositories.names.size() > 0);
+    }
+
     function validProfile(uid) {
       return request.resource.data.keys().hasOnly([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
           'ogImageUrl', 'location', 'availability', 'theme', 'accent', 'published',
-          'socials', 'sections', 'links', 'updatedAt'
+          'socials', 'sections', 'links', 'developerActivity', 'updatedAt'
         ])
         && request.resource.data.keys().hasAll([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'theme',
@@ -66,6 +173,8 @@ service cloud.firestore {
         && (!('sections' in request.resource.data)
           || (request.resource.data.sections is list
             && request.resource.data.sections.size() <= 12))
+        && (!('developerActivity' in request.resource.data)
+          || validDeveloperActivity(request.resource.data.developerActivity))
         && request.resource.data.links is list
         && request.resource.data.links.size() <= 50
         && request.resource.data.updatedAt == request.time;
@@ -133,6 +242,33 @@ service cloud.firestore {
         && request.resource.data.links.keys().size() >= resource.data.links.keys().size()
         && request.resource.data.socials.keys().size() >= resource.data.socials.keys().size();
       allow delete: if owns(uid);
+    }
+
+    function validContributionCache(usernameKey) {
+      return request.resource.data.keys().hasOnly([
+          'username', 'days', 'availableYears', 'updatedAt', 'version', 'source', 'syncedYears'
+        ])
+        && request.resource.data.username is string
+        && request.resource.data.username == usernameKey
+        && validGitHubUsername(request.resource.data.username)
+        && request.resource.data.days is map
+        && request.resource.data.days.keys().size() <= 5500
+        && request.resource.data.availableYears is list
+        && request.resource.data.availableYears.size() <= 15
+        && request.resource.data.syncedYears is list
+        && request.resource.data.syncedYears.size() <= 15
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.version is int
+        && request.resource.data.version >= 1
+        && request.resource.data.source in ['profile', 'github', 'events'];
+    }
+
+    // Public GitHub contribution day map. Past days are reused so GitHub is
+    // only queried for the current day (and for initial/full year fills).
+    match /githubContributionCaches/{usernameKey} {
+      allow read: if true;
+      allow create, update: if validContributionCache(usernameKey);
+      allow delete: if false;
     }
 
     match /{document=**} {

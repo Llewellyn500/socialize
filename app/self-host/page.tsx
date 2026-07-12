@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 const pageNav = [
   { href: "#what-you-get", label: "What you get" },
   { href: "#before-you-start", label: "Before you start" },
+  { href: "#activity", label: "GitHub activity" },
   { href: "#setup", label: "Setup guide" },
   { href: "#deploy", label: "Deploy" },
   { href: "#operate", label: "Operate safely" },
@@ -99,6 +100,10 @@ export default function SelfHostPage() {
               A focused editor for identity, link order, visibility, and social
               profiles.
             </CheckItem>
+            <CheckItem>
+              Optional public GitHub commit and coding activity with repository,
+              placement, sampling, and display controls.
+            </CheckItem>
           </CheckList>
           <Notice title="The config remains your recovery path">
             <p>
@@ -125,6 +130,10 @@ export default function SelfHostPage() {
             <CheckItem>
               A domain you control, if you want a custom production address.
             </CheckItem>
+            <CheckItem>
+              An optional fine-grained <code>GITHUB_TOKEN</code> with no access to
+              private repositories if you need higher public API limits.
+            </CheckItem>
           </CheckList>
           <p>
             The backend web configuration uses public client identifiers;
@@ -132,6 +141,52 @@ export default function SelfHostPage() {
             rules, not from hiding those values. This starter does not need a
             server admin credential.
           </p>
+        </ContentSection>
+
+        <ContentSection
+          id="activity"
+          title="Configure public GitHub activity"
+          lead="The profile can show sampled public work without putting a GitHub credential in the browser."
+        >
+          <p>
+            In <code>/manage</code>, enable developer activity, enter the public
+            GitHub username, choose placement before or after links, and control
+            commit history and coding activity independently. Commit controls cover
+            the heading, 1–10 item limit, repository labels, and dates. Contribution
+            controls cover the yearly total, calendar, month and weekday labels,
+            legend, year selector, and languages.
+          </p>
+          <h3>Select repositories deliberately</h3>
+          <p>
+            Recent mode automatically samples up to three currently public
+            repositories from recent push activity. Include mode uses only up to
+            five selected <code>owner/repository</code> slugs. Exclude mode removes
+            up to five selected slugs from the automatic set. Private or unavailable
+            repositories are omitted.
+          </p>
+          <p>
+            The server route processes the public username, commit SHA and first-line
+            message, repository and URL, commit date, push-day counts, and repository
+            languages. Results come from GitHub, are not ownership verification, and
+            may be sampled, delayed, incomplete, or unavailable. GitHub&apos;s public
+            event feed can lag by about 30 seconds to six hours.
+          </p>
+          <p>
+            The stripped edition caches commit data for about 15 minutes and full
+            contribution calendars for about one hour. Without a token, it shows a
+            clearly labeled recent public sample in the same yearly grid. Add a Vercel Firewall rate-limit rule for
+            <code> /api/github-activity</code> on a public deployment. If you add the
+            optional server-only <code>GITHUB_TOKEN</code>, it enables the complete
+            public contribution calendar, must not have private repository access,
+            and must never use a <code>NEXT_PUBLIC_</code> prefix.
+          </p>
+          <Notice title="GitHub remains a third-party source">
+            <p>
+              Activity cards do not prove account ownership, affiliation,
+              employment, endorsement, or a complete contribution history. Only
+              associate a GitHub identity you are authorized to represent.
+            </p>
+          </Notice>
         </ContentSection>
 
         <ContentSection
@@ -159,7 +214,8 @@ export default function SelfHostPage() {
                 body: (
                   <p>
                     Edit <code>profile.config.ts</code>. Replace the owner email,
-                    name, handle, links, social URLs, and accent color. Keep
+                    name, handle, links, social URLs, accent color, and optional
+                    developer-activity defaults. Keep
                     <code>firestoreDocumentPath</code> at
                     <code>profiles/main</code> unless you also update the rules and
                     understand the data-path change.
@@ -282,9 +338,11 @@ export default function SelfHostPage() {
           <p>
             In Vercel Project Settings → Environment Variables, add every
             <code>NEXT_PUBLIC_FIREBASE_*</code> value from <code>.env.example</code>
-            for Production, Preview, and Development as appropriate. Redeploy
-            after changing a value because public Next.js variables are embedded
-            into the browser bundle during the build.
+            for Production, Preview, and Development as appropriate. If developer
+            activity needs higher GitHub limits, also add the server-only
+            <code> GITHUB_TOKEN</code> with no private-repository access. Redeploy
+            after changing a public value because public Next.js variables are
+            embedded into the browser bundle during the build.
           </p>
           <Notice title="Two deployments protect two different things" tone="signal">
             <p>

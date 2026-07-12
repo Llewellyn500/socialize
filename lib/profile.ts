@@ -25,6 +25,38 @@ export type ProfileLink = {
   sectionId?: string;
 };
 
+export type ActivityWindowDays = 7 | 14 | 30;
+export type RepositoryMode = "recent" | "include" | "exclude";
+
+export type DeveloperActivityConfig = {
+  enabled: boolean;
+  githubUsername: string;
+  placement: "before-links" | "after-links";
+  repositories: {
+    mode: RepositoryMode;
+    names: string[];
+  };
+  commits: {
+    enabled: boolean;
+    title: string;
+    limit: number;
+    showRepository: boolean;
+    showDate: boolean;
+  };
+  coding: {
+    enabled: boolean;
+    title: string;
+    windowDays: ActivityWindowDays;
+    showContributionCount: boolean;
+    showHeatmap: boolean;
+    showMonthLabels: boolean;
+    showWeekdayLabels: boolean;
+    showLegend: boolean;
+    showYearSelector: boolean;
+    showLanguages: boolean;
+  };
+};
+
 export type ProfileConfig = {
   handle: string;
   displayName: string;
@@ -39,6 +71,7 @@ export type ProfileConfig = {
   accent: string;
   published: boolean;
   socials: Partial<Record<SocialKey, string>>;
+  developerActivity?: DeveloperActivityConfig;
   sections?: ProfileSection[];
   links: ProfileLink[];
   updatedAt?: string;
@@ -47,6 +80,35 @@ export type ProfileConfig = {
 export type LinkSectionGroup = {
   section: ProfileSection | null;
   links: ProfileLink[];
+};
+
+export const DEFAULT_DEVELOPER_ACTIVITY: DeveloperActivityConfig = {
+  enabled: false,
+  githubUsername: "",
+  placement: "before-links",
+  repositories: {
+    mode: "recent",
+    names: [],
+  },
+  commits: {
+    enabled: true,
+    title: "Recent commits",
+    limit: 5,
+    showRepository: true,
+    showDate: true,
+  },
+  coding: {
+    enabled: true,
+    title: "Contributions",
+    windowDays: 30,
+    showContributionCount: true,
+    showHeatmap: true,
+    showMonthLabels: true,
+    showWeekdayLabels: true,
+    showLegend: true,
+    showYearSelector: true,
+    showLanguages: true,
+  },
 };
 
 export const RESERVED_HANDLES = new Set([
@@ -151,6 +213,111 @@ export function isSafeExternalUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+export function normalizeGitHubUsername(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  try {
+    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    if (url.hostname.toLowerCase().replace(/^www\./, "") === "github.com") {
+      return (url.pathname.split("/").filter(Boolean)[0] || "").slice(0, 39);
+    }
+  } catch {
+    // Treat non-URL input as a GitHub username below.
+  }
+
+  return trimmed.replace(/^@/, "").slice(0, 39);
+}
+
+export function isValidGitHubUsername(value: string) {
+  const username = normalizeGitHubUsername(value);
+  return /^(?!.*--)(?:[a-z\d]|[a-z\d][a-z\d-]{0,37}[a-z\d])$/i.test(username);
+}
+
+export function normalizeGitHubRepository(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  let candidate = trimmed;
+  try {
+    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    if (url.hostname.toLowerCase().replace(/^www\./, "") === "github.com") {
+      candidate = url.pathname.split("/").filter(Boolean).slice(0, 2).join("/");
+    }
+  } catch {
+    // Treat non-URL input as an owner/repository name below.
+  }
+
+  return candidate.replace(/^github\.com\//i, "").replace(/\.git$/i, "").replace(/^\/+|\/+$/g, "");
+}
+
+export function isValidGitHubRepository(value: string) {
+  const repository = normalizeGitHubRepository(value);
+  const [owner, name, extra] = repository.split("/");
+  return Boolean(
+    !extra &&
+      isValidGitHubUsername(owner ?? "") &&
+      name &&
+      name !== "." &&
+      name !== ".." &&
+      /^[a-z\d._-]{1,100}$/i.test(name),
+  );
+}
+
+export function normalizeGitHubRepositories(values: unknown) {
+  const entries = Array.isArray(values)
+    ? values.filter((value): value is string => typeof value === "string")
+    : typeof values === "string"
+      ? values.split(/[\s,]+/)
+      : [];
+  const repositories: string[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const repository = normalizeGitHubRepository(entry);
+    const key = repository.toLowerCase();
+    if (!repository || !isValidGitHubRepository(repository) || seen.has(key)) continue;
+    seen.add(key);
+    repositories.push(repository);
+    if (repositories.length === 5) break;
+  }
+
+  return repositories;
+}
+
+export function resolveDeveloperActivity(
+  value?: Partial<DeveloperActivityConfig>,
+): DeveloperActivityConfig {
+  return {
+    ...DEFAULT_DEVELOPER_ACTIVITY,
+    ...value,
+    repositories: {
+      ...DEFAULT_DEVELOPER_ACTIVITY.repositories,
+      ...(value?.repositories ?? {}),
+    },
+    commits: {
+      ...DEFAULT_DEVELOPER_ACTIVITY.commits,
+      ...(value?.commits ?? {}),
+    },
+    coding: {
+      ...DEFAULT_DEVELOPER_ACTIVITY.coding,
+      ...(value?.coding ?? {}),
+    },
+  };
+}
+
+export function developerActivityHasVisibleModules(
+  value: DeveloperActivityConfig,
+): boolean {
+  const codingVisible =
+    value.coding.enabled &&
+    (value.coding.showContributionCount ||
+      value.coding.showHeatmap ||
+      value.coding.showYearSelector ||
+      value.coding.showLanguages);
+  return value.commits.enabled || codingVisible;
 }
 
 /** Known site hostnames → display / company name for auto link titles. */
@@ -304,6 +471,56 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
       : undefined;
   const location = profile.location?.trim().slice(0, 80) || undefined;
   const availability = profile.availability?.trim().slice(0, 90) || undefined;
+  const rawDeveloperActivity = profile.developerActivity
+    ? resolveDeveloperActivity(profile.developerActivity)
+    : undefined;
+  const developerActivity = rawDeveloperActivity
+    ? {
+        enabled: Boolean(rawDeveloperActivity.enabled),
+        githubUsername: normalizeGitHubUsername(rawDeveloperActivity.githubUsername),
+        placement:
+          rawDeveloperActivity.placement === "after-links"
+            ? ("after-links" as const)
+            : ("before-links" as const),
+        repositories: {
+          mode:
+            rawDeveloperActivity.repositories.mode === "include" ||
+            rawDeveloperActivity.repositories.mode === "exclude"
+              ? rawDeveloperActivity.repositories.mode
+              : ("recent" as const),
+          names: normalizeGitHubRepositories(rawDeveloperActivity.repositories.names),
+        },
+        commits: {
+          enabled: Boolean(rawDeveloperActivity.commits.enabled),
+          title:
+            rawDeveloperActivity.commits.title.trim().slice(0, 60) ||
+            DEFAULT_DEVELOPER_ACTIVITY.commits.title,
+          limit: Math.min(10, Math.max(1, Math.round(rawDeveloperActivity.commits.limit))),
+          showRepository: Boolean(rawDeveloperActivity.commits.showRepository),
+          showDate: Boolean(rawDeveloperActivity.commits.showDate),
+        },
+        coding: {
+          enabled: Boolean(rawDeveloperActivity.coding.enabled),
+          title:
+            rawDeveloperActivity.coding.title.trim().slice(0, 60) ||
+            DEFAULT_DEVELOPER_ACTIVITY.coding.title,
+          windowDays: ([7, 14, 30] as const).includes(
+            rawDeveloperActivity.coding.windowDays,
+          )
+            ? rawDeveloperActivity.coding.windowDays
+            : DEFAULT_DEVELOPER_ACTIVITY.coding.windowDays,
+          showContributionCount: Boolean(
+            rawDeveloperActivity.coding.showContributionCount,
+          ),
+          showHeatmap: Boolean(rawDeveloperActivity.coding.showHeatmap),
+          showMonthLabels: Boolean(rawDeveloperActivity.coding.showMonthLabels),
+          showWeekdayLabels: Boolean(rawDeveloperActivity.coding.showWeekdayLabels),
+          showLegend: Boolean(rawDeveloperActivity.coding.showLegend),
+          showYearSelector: Boolean(rawDeveloperActivity.coding.showYearSelector),
+          showLanguages: Boolean(rawDeveloperActivity.coding.showLanguages),
+        },
+      }
+    : undefined;
 
   const sections = (profile.sections ?? [])
     .slice(0, MAX_SECTIONS)
@@ -328,6 +545,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     accent: /^#[0-9a-f]{6}$/i.test(profile.accent) ? profile.accent : "#8a2be2",
     published: profile.published,
     socials: profile.socials,
+    ...(developerActivity ? { developerActivity } : {}),
     ...(sections.length > 0 ? { sections } : {}),
     links: profile.links.slice(0, 50).map((link) => {
       const description = link.description?.trim().slice(0, 160) || undefined;

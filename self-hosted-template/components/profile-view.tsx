@@ -4,7 +4,12 @@ import Link from "next/link";
 import { ArrowUpRight, MapPin, SignIn } from "@phosphor-icons/react";
 import { useEffect, useState, type CSSProperties } from "react";
 import { selfHostedConfig } from "@/profile.config";
-import { cloneProfile, profileInitials } from "@/lib/profile-utils";
+import { DeveloperActivity } from "@/components/developer-activity";
+import {
+  cloneProfile,
+  developerActivityHasVisibleModules,
+  profileInitials
+} from "@/lib/profile-utils";
 import { subscribeToProfile } from "@/lib/profile-store";
 import type { Profile } from "@/types/profile";
 
@@ -20,6 +25,12 @@ export function ProfileView() {
   useEffect(() => subscribeToProfile(setProfile), []);
 
   const activeLinks = profile.links.filter((link) => link.enabled);
+  const developerActivity = profile.developerActivity;
+  const showDeveloperActivity = Boolean(
+    developerActivity?.enabled &&
+    developerActivity.githubUsername &&
+    developerActivityHasVisibleModules(developerActivity)
+  );
   const style = { "--profile-accent": profile.accent } as CSSProperties;
 
   return (
@@ -70,30 +81,40 @@ export function ProfileView() {
             ) : null}
           </section>
 
-          <section className="profile-links" aria-label="Featured links">
-            {activeLinks.length ? (
-              activeLinks.map((link, index) => (
-                <a
-                  className="profile-link-card"
-                  href={link.url}
-                  key={link.id}
-                  style={{ "--item-delay": `${90 + index * 65}ms` } as CSSProperties}
-                  {...newTabProps(link.url)}
-                >
-                  <span>
-                    <strong>{link.title}</strong>
-                    {link.description ? <small>{link.description}</small> : null}
-                  </span>
-                  <ArrowUpRight aria-hidden="true" size={22} weight="bold" />
-                </a>
-              ))
-            ) : (
-              <div className="profile-empty">
-                <h2>No links published yet</h2>
-                <p>The owner can add the first one from the private workspace.</p>
-              </div>
-            )}
-          </section>
+          <div className="profile-content">
+            {showDeveloperActivity && developerActivity?.placement === "before-links" ? (
+              <DeveloperActivity activity={developerActivity} />
+            ) : null}
+
+            <section className="profile-links" aria-label="Featured links">
+              {activeLinks.length ? (
+                activeLinks.map((link, index) => (
+                  <a
+                    className="profile-link-card"
+                    href={link.url}
+                    key={link.id}
+                    style={{ "--item-delay": `${90 + index * 65}ms` } as CSSProperties}
+                    {...newTabProps(link.url)}
+                  >
+                    <span>
+                      <strong>{link.title}</strong>
+                      {link.description ? <small>{link.description}</small> : null}
+                    </span>
+                    <ArrowUpRight aria-hidden="true" size={22} weight="bold" />
+                  </a>
+                ))
+              ) : (
+                <div className="profile-empty">
+                  <h2>No links published yet</h2>
+                  <p>The owner can add the first one from the private workspace.</p>
+                </div>
+              )}
+            </section>
+
+            {showDeveloperActivity && developerActivity?.placement === "after-links" ? (
+              <DeveloperActivity activity={developerActivity} />
+            ) : null}
+          </div>
         </div>
 
         <footer className="profile-footer">

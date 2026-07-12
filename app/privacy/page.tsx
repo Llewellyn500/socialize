@@ -49,13 +49,30 @@ const sections: LegalSection[] = [
         <p>
           We store the name, handle, role, bio, location, availability, avatar,
           accent choice, project links, social links, and other content you choose
-          to publish. Enabled profile fields and links are intentionally public.
+          to publish. A published profile record is publicly readable. When
+          developer activity is enabled, its GitHub username, repository selections,
+          and display settings are part of that public record. When it is disabled,
+          the hosted service omits those settings from the public profile and keeps
+          them only in the owner-private account document.
+        </p>
+        <p>
+          If you enable developer activity, Socialize sends the public GitHub
+          username and relevant <code>owner/repository</code> names to GitHub from
+          the server. We temporarily process and cache public event dates, commit
+          SHAs and first-line messages, repository names and URLs, commit dates,
+          contribution dates, counts, levels and years, public push-day totals, and
+          repository-language data. Full contribution calendars require the optional
+          public-only server token; otherwise the calendar is a labeled sample. Results
+          may be incomplete or delayed. They come from GitHub and are not
+          verified proof that a Socialize account owns a GitHub account or repository.
+          The configured server token must not have private-repository access.
         </p>
         <h3>Service and device information</h3>
         <p>
           Hosting and security systems may record request time, IP address, user
           agent, route, referrer, response status, authentication events, and
-          diagnostic details. If you allow optional analytics, Google Analytics
+          diagnostic details. The GitHub activity route also uses a source IP for
+          a best-effort limit of 30 requests per 60 seconds. If you allow optional analytics, Google Analytics
           may also process the page path and title, referrer, browser and device
           details, and session-level measurements. Socialize's manual page-view
           events omit URL query strings and do not include account or profile
@@ -98,6 +115,7 @@ const sections: LegalSection[] = [
       <ul>
         <li>Create and secure accounts, sessions, and profile ownership.</li>
         <li>Store, render, and deliver the hosted profile you configure.</li>
+        <li>Request, cache, sample, and display public GitHub activity you enable.</li>
         <li>Prevent impersonation, abuse, fraud, malware, and unauthorized access.</li>
         <li>Debug failures, maintain availability, and improve accessibility.</li>
         <li>Measure aggregate site traffic when you allow optional analytics.</li>
@@ -153,6 +171,13 @@ const sections: LegalSection[] = [
             authentication request when you choose that provider.
           </li>
           <li>
+            <strong>Developer activity.</strong> GitHub receives server-side API
+            requests for the public username and repositories needed to render an
+            activity section you enable. GitHub is the third-party source of the
+            resulting public commit, event, repository, and language metadata and
+            handles those requests under its own terms and privacy practices.
+          </li>
+          <li>
             <strong>Legal and safety needs.</strong> We may disclose information
             when reasonably necessary to comply with valid process, protect rights
             or safety, investigate abuse, or defend legal claims.
@@ -188,6 +213,13 @@ const sections: LegalSection[] = [
           Profile owners should avoid publishing confidential information or data
           about another person without permission.
         </p>
+        <p>
+          GitHub activity cards reproduce public information from GitHub, with a
+          labeled sample when the full calendar is unavailable. They may be delayed,
+          incomplete, attributed incorrectly,
+          or changed at the source, and do not indicate verification, endorsement,
+          employment, authorship of every pushed change, or affiliation with GitHub.
+        </p>
       </>
     ),
   },
@@ -210,6 +242,15 @@ const sections: LegalSection[] = [
           schedules must be confirmed against production provider settings before
           this policy is approved.
         </p>
+        <p>
+          Public GitHub events are revalidated after five minutes. Contribution
+          calendars, repository, commit, and language results may remain in the application cache for up
+          to one hour, and a successful CDN response may be served stale while it
+          revalidates for up to one additional hour. GitHub&apos;s own public event
+          feed may lag by about 30 seconds to six hours. Disabling the panel stops
+          the profile from initiating new activity requests, but it does not erase
+          third-party copies or cached responses before those windows expire.
+        </p>
       </>
     ),
   },
@@ -224,6 +265,13 @@ const sections: LegalSection[] = [
           location, you may also have rights to access, correct, delete, restrict,
           object to, or receive a portable copy of personal information, and to
           withdraw consent where processing relies on consent.
+        </p>
+        <p>
+          You can change or clear the GitHub username and repository selections,
+          disable developer activity, or unpublish the profile from the dashboard.
+          Disabling the feature removes its configuration from the public profile
+          record on the next successful save; cached activity responses then expire
+          on the schedule described above.
         </p>
         <p>
           Use the <strong>Privacy choices</strong> button available throughout the
@@ -287,7 +335,7 @@ export default function PrivacyPage() {
     <LegalPage
       contactEmail="privacy@socialize.you"
       sections={sections}
-      summary="This draft explains the information Socialize expects to handle for developer accounts, public profiles, service operations, and consented analytics."
+      summary="This draft explains the information Socialize expects to handle for developer accounts, public profiles, optional public GitHub activity, service operations, and consented analytics."
       title="Privacy Policy"
       related={[
         {

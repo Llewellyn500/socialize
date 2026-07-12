@@ -62,7 +62,8 @@ const sections: LegalSection[] = [
       <>
         <p>
           The hosted service lets you create and publish a developer-focused page
-          containing identity, project, writing, contact, and social links. We may
+          containing identity, project, writing, contact, social links, and an
+          optional public view of GitHub activity, with sampled fallbacks where noted. We may
           add, remove, limit, or change features to maintain security, comply with
           law, or improve the product.
         </p>
@@ -97,6 +98,14 @@ const sections: LegalSection[] = [
           the content and links. Do not submit confidential information, credentials,
           private repository access, or another person&apos;s personal information
           without a lawful basis and appropriate permission.
+        </p>
+        <p>
+          If you enable GitHub activity, you instruct Socialize to request, cache,
+          format, and display public GitHub data for the username and repositories
+          you select. You must not associate another person&apos;s or organization&apos;s
+          GitHub identity with your profile in a misleading, impersonating, or
+          unauthorized way. Finding public data is not verification that you own or
+          control the corresponding GitHub account or repository.
         </p>
         <p>
           Socialize may create limited screenshots or previews of public profiles
@@ -177,15 +186,24 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          Socialize relies on infrastructure providers such as cloud hosting and Vercel and may let you
-          sign in with Google or GitHub. Public profile links lead to websites we
-          do not operate. Those services have their own terms, privacy practices,
-          availability, and security controls.
+          Socialize relies on infrastructure providers such as cloud hosting and
+          Vercel and may let you sign in with Google or GitHub. When developer
+          activity is enabled, Socialize also sends server-side requests to GitHub
+          for public usernames, contribution calendars, events, commits, repositories, and languages.
+          Public profile links lead to websites we do not operate. Those services
+          have their own terms, privacy practices, availability, and security controls.
         </p>
         <p>
           We are not responsible for third-party content or a destination&apos;s
           conduct merely because a profile links to it. We may block a destination
           when needed to address abuse or protect users.
+        </p>
+        <p>
+          GitHub activity is cached, may use labeled samples, and depends on GitHub&apos;s public API.
+          It may be incomplete, delayed, unavailable, attributed incorrectly, or
+          changed or removed at the source. Socialize does not verify the displayed
+          account relationship, and the activity panel does not imply endorsement,
+          employment, affiliation, or approval by GitHub.
         </p>
       </>
     ),
@@ -240,7 +258,8 @@ const sections: LegalSection[] = [
           To the extent permitted by law, the service is provided on an "as is"
           and "as available" basis. We do not guarantee uninterrupted operation,
           permanent handles, search placement, traffic, employment outcomes, or
-          preservation of third-party content.
+          preservation, completeness, timing, or accuracy of third-party content,
+          including public GitHub activity.
         </p>
         <p>
           The final limitation-of-liability clause, monetary cap, exclusions, and
@@ -277,7 +296,7 @@ export default function TermsPage() {
     <LegalPage
       contactEmail="legal@socialize.you"
       sections={sections}
-      summary="These draft terms describe accounts, hosted profiles, user content, handles, and the boundary between the managed service and independent deployments."
+      summary="These draft terms describe accounts, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments."
       title="Terms of Service"
       related={[
         {

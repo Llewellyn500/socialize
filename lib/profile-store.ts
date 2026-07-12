@@ -12,6 +12,7 @@ import {
 import { db } from "@/lib/firebase";
 import { uploadProfileOgImage } from "@/lib/og-image-upload";
 import {
+  developerActivityHasVisibleModules,
   normalizeHandle,
   sanitizeProfile,
   type ProfileConfig,
@@ -19,8 +20,17 @@ import {
 
 export async function loadProfile(uid: string) {
   if (!db) return null;
-  const snapshot = await getDoc(doc(db, "profiles", uid));
-  return snapshot.exists() ? (snapshot.data() as ProfileConfig) : null;
+  const [profileSnapshot, userSnapshot] = await Promise.all([
+    getDoc(doc(db, "profiles", uid)),
+    getDoc(doc(db, "users", uid)),
+  ]);
+  if (!profileSnapshot.exists()) return null;
+
+  const profile = profileSnapshot.data() as ProfileConfig;
+  const privateActivity = userSnapshot.exists()
+    ? (userSnapshot.data().developerActivity as ProfileConfig["developerActivity"] | undefined)
+    : undefined;
+  return privateActivity ? { ...profile, developerActivity: privateActivity } : profile;
 }
 
 export async function loadPublicProfile(handle: string) {
@@ -86,6 +96,7 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
   const firestore = db;
   if (!firestore) throw new Error("Accounts are not configured.");
   const cleanProfile = sanitizeProfile(profile);
+  const { developerActivity, ...publicProfile } = cleanProfile;
   const handleRef = doc(firestore, "handles", cleanProfile.handle);
   const profileRef = doc(firestore, "profiles", uid);
 
@@ -112,7 +123,11 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
 
     transaction.set(handleRef, { uid, updatedAt: serverTimestamp() });
     transaction.set(profileRef, {
-      ...cleanProfile,
+      ...publicProfile,
+      ...(developerActivity?.enabled &&
+      developerActivityHasVisibleModules(developerActivity)
+        ? { developerActivity }
+        : {}),
       ownerUid: uid,
       updatedAt: serverTimestamp(),
       ...(cleanProfile.published && previousOgImageUrl
@@ -122,7 +137,11 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
 
   await setDoc(
     doc(firestore, "users", uid),
-    { profileHandle: cleanProfile.handle, updatedAt: serverTimestamp() },
+    {
+      profileHandle: cleanProfile.handle,
+      developerActivity: developerActivity ?? deleteField(),
+      updatedAt: serverTimestamp(),
+    },
     { merge: true },
   );
 

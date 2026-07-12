@@ -5,7 +5,10 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpRight,
+  ChartBar,
   FloppyDisk,
+  GitCommit,
+  GithubLogo,
   LinkSimple,
   Plus,
   SignOut,
@@ -16,12 +19,27 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { getFirebaseServices } from "@/lib/firebase";
-import { cloneProfile, isSafeImageUrl, isSafePublicUrl } from "@/lib/profile-utils";
+import {
+  cloneProfile,
+  developerActivityHasVisibleModules,
+  isSafeImageUrl,
+  isSafePublicUrl,
+  isValidRepositoryFullName,
+  normalizeRepositoryNames,
+  repositoryNameTokens,
+} from "@/lib/profile-utils";
 import { saveProfile, subscribeToProfile } from "@/lib/profile-store";
 import { selfHostedConfig } from "@/profile.config";
-import type { Profile, ProfileLink, SocialLink } from "@/types/profile";
+import type {
+  DeveloperActivity,
+  Profile,
+  ProfileLink,
+  SocialLink,
+} from "@/types/profile";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+
+const GITHUB_USERNAME = /^(?!.*--)[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
 
 function createId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
@@ -53,6 +71,31 @@ function validateProfile(profile: Profile): string {
   );
   if (invalidSocial) return "Every social link needs a label and an http or https URL.";
 
+  const activity = profile.developerActivity;
+  if (activity?.enabled) {
+    if (!GITHUB_USERNAME.test(activity.githubUsername)) {
+      return "Add a valid GitHub username before publishing developer activity.";
+    }
+    if (!developerActivityHasVisibleModules(activity)) {
+      return "Choose at least one contribution, language, or commit item to show.";
+    }
+    if (
+      activity.repositories.mode === "include" &&
+      activity.repositories.names.length === 0
+    ) {
+      return "Add a repository or switch repository selection to Recent.";
+    }
+    if (activity.repositories.names.some((name) => !isValidRepositoryFullName(name))) {
+      return "Repository filters must use the owner/repository format.";
+    }
+    if (activity.commits.enabled && !activity.commits.title.trim()) {
+      return "Add a heading for recent commits.";
+    }
+    if (activity.coding.enabled && !activity.coding.title.trim()) {
+      return "Add a heading for coding activity.";
+    }
+  }
+
   return "";
 }
 
@@ -61,11 +104,16 @@ export function ManageProfile() {
   const [profile, setProfile] = useState<Profile>(() => cloneProfile(selfHostedConfig.profile));
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const developerActivity = profile.developerActivity ?? selfHostedConfig.profile.developerActivity!;
+  const repositoryKey = developerActivity.repositories.names.join("\n");
+  const [repositoryDraft, setRepositoryDraft] = useState(repositoryKey);
 
   useEffect(
     () => subscribeToProfile((storedProfile) => setProfile(cloneProfile(storedProfile))),
     []
   );
+
+  useEffect(() => setRepositoryDraft(repositoryKey), [repositoryKey]);
 
   function patchProfile(patch: Partial<Profile>) {
     setProfile((current) => ({ ...current, ...patch }));
@@ -86,6 +134,24 @@ export function ManageProfile() {
       socials: profile.socials.map((social, socialIndex) =>
         socialIndex === index ? { ...social, ...patch } : social
       )
+    });
+  }
+
+  function patchDeveloperActivity(patch: Partial<DeveloperActivity>) {
+    patchProfile({ developerActivity: { ...developerActivity, ...patch } });
+  }
+
+  function patchCommitActivity(patch: Partial<DeveloperActivity["commits"]>) {
+    patchDeveloperActivity({ commits: { ...developerActivity.commits, ...patch } });
+  }
+
+  function patchCodingActivity(patch: Partial<DeveloperActivity["coding"]>) {
+    patchDeveloperActivity({ coding: { ...developerActivity.coding, ...patch } });
+  }
+
+  function patchRepositories(patch: Partial<DeveloperActivity["repositories"]>) {
+    patchDeveloperActivity({
+      repositories: { ...developerActivity.repositories, ...patch }
     });
   }
 
@@ -352,6 +418,280 @@ export function ManageProfile() {
               </div>
             )}
           </div>
+        </section>
+
+        <section className="editor-section" aria-labelledby="developer-activity-heading">
+          <div className="section-heading section-heading-action">
+            <div className="heading-copy">
+              <GithubLogo aria-hidden="true" size={25} weight="duotone" />
+              <div>
+                <h2 id="developer-activity-heading">Developer activity</h2>
+                <p>Show public GitHub commits and recent coding patterns on your profile.</p>
+              </div>
+            </div>
+            <label className="activity-visibility-toggle">
+              <input
+                checked={developerActivity.enabled}
+                onChange={(event) => patchDeveloperActivity({ enabled: event.target.checked })}
+                type="checkbox"
+              />
+              <span>{developerActivity.enabled ? "Visible on profile" : "Hidden from profile"}</span>
+            </label>
+          </div>
+
+          <div className="field-grid activity-source-fields">
+            <div className="field-block">
+              <label htmlFor="github-username">GitHub username</label>
+              <input
+                autoComplete="off"
+                id="github-username"
+                maxLength={39}
+                onChange={(event) => patchDeveloperActivity({
+                  githubUsername: event.target.value.trimStart().replace(/^@/, "")
+                })}
+                placeholder="octocat"
+                required={developerActivity.enabled}
+                spellCheck={false}
+                value={developerActivity.githubUsername}
+              />
+              <small>Public GitHub data only. Enter the account name without @.</small>
+            </div>
+            <div className="field-block">
+              <label htmlFor="activity-placement">Profile placement</label>
+              <select
+                id="activity-placement"
+                onChange={(event) => patchDeveloperActivity({
+                  placement: event.target.value as DeveloperActivity["placement"]
+                })}
+                value={developerActivity.placement}
+              >
+                <option value="before-links">Before primary links</option>
+                <option value="after-links">After primary links</option>
+              </select>
+              <small>Choose where the activity section appears in the profile column.</small>
+            </div>
+          </div>
+
+          <div className="field-grid activity-repository-fields">
+            <div className="field-block">
+              <label htmlFor="repository-mode">Repository selection</label>
+              <select
+                id="repository-mode"
+                onChange={(event) => patchRepositories({
+                  mode: event.target.value as DeveloperActivity["repositories"]["mode"]
+                })}
+                value={developerActivity.repositories.mode}
+              >
+                <option value="recent">Automatic · recent repositories</option>
+                <option value="include">Only selected repositories</option>
+                <option value="exclude">Recent except selected</option>
+              </select>
+              <small>Automatic mode samples up to three recent public repositories.</small>
+            </div>
+            {developerActivity.repositories.mode !== "recent" ? (
+              <div className="field-block">
+                <label htmlFor="repository-names">
+                  {developerActivity.repositories.mode === "include"
+                    ? "Repositories to show"
+                    : "Repositories to hide"}
+                </label>
+                <textarea
+                  aria-invalid={
+                    repositoryNameTokens(repositoryDraft).length > 5 ||
+                    repositoryNameTokens(repositoryDraft).some(
+                      (repository) => !isValidRepositoryFullName(repository)
+                    )
+                  }
+                  id="repository-names"
+                  onBlur={() => {
+                    const repositories = normalizeRepositoryNames(repositoryDraft);
+                    setRepositoryDraft(repositories.join("\n"));
+                    patchRepositories({ names: repositories });
+                  }}
+                  onChange={(event) => setRepositoryDraft(event.target.value)}
+                  placeholder={"owner/project\norganization/tooling"}
+                  rows={3}
+                  spellCheck={false}
+                  value={repositoryDraft}
+                />
+                <small>Use up to five owner/repository names, one per line or comma-separated.</small>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="activity-editor-modules">
+            <article className="activity-editor-module">
+              <div className="activity-editor-module-heading">
+                <div>
+                  <GitCommit aria-hidden="true" size={21} weight="duotone" />
+                  <div>
+                    <h3>Recent commits</h3>
+                    <p>Link directly to recent public commit pages.</p>
+                  </div>
+                </div>
+                <label className="toggle-label">
+                  <input
+                    checked={developerActivity.commits.enabled}
+                    onChange={(event) => patchCommitActivity({ enabled: event.target.checked })}
+                    type="checkbox"
+                  />
+                  Enabled
+                </label>
+              </div>
+
+              <fieldset disabled={!developerActivity.commits.enabled}>
+                <legend className="sr-only">Recent commit display settings</legend>
+                <div className="field-grid activity-module-fields">
+                  <div className="field-block field-span">
+                    <label htmlFor="commits-title">Section title</label>
+                    <input
+                      id="commits-title"
+                      maxLength={60}
+                      onChange={(event) => patchCommitActivity({ title: event.target.value })}
+                      required={developerActivity.enabled && developerActivity.commits.enabled}
+                      value={developerActivity.commits.title}
+                    />
+                  </div>
+                  <div className="field-block field-span">
+                    <label htmlFor="commits-limit">Commits to show</label>
+                    <input
+                      id="commits-limit"
+                      max={10}
+                      min={1}
+                      onChange={(event) => patchCommitActivity({
+                        limit: Math.min(10, Math.max(1, Number(event.target.value) || 1))
+                      })}
+                      type="number"
+                      value={developerActivity.commits.limit}
+                    />
+                    <small>Choose between 1 and 10 commits.</small>
+                  </div>
+                </div>
+                <div className="activity-option-row">
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.commits.showRepository}
+                      onChange={(event) => patchCommitActivity({ showRepository: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show repository
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.commits.showDate}
+                      onChange={(event) => patchCommitActivity({ showDate: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show date
+                  </label>
+                </div>
+              </fieldset>
+            </article>
+
+            <article className="activity-editor-module">
+              <div className="activity-editor-module-heading">
+                <div>
+                  <ChartBar aria-hidden="true" size={21} weight="duotone" />
+                  <div>
+                    <h3>Coding activity</h3>
+                    <p>Choose which parts of the yearly contribution view appear.</p>
+                  </div>
+                </div>
+                <label className="toggle-label">
+                  <input
+                    checked={developerActivity.coding.enabled}
+                    onChange={(event) => patchCodingActivity({ enabled: event.target.checked })}
+                    type="checkbox"
+                  />
+                  Enabled
+                </label>
+              </div>
+
+              <fieldset disabled={!developerActivity.coding.enabled}>
+                <legend className="sr-only">Coding activity display settings</legend>
+                <div className="field-grid activity-module-fields">
+                  <div className="field-block field-span">
+                    <label htmlFor="coding-title">Section title</label>
+                    <input
+                      id="coding-title"
+                      maxLength={60}
+                      onChange={(event) => patchCodingActivity({ title: event.target.value })}
+                      required={developerActivity.enabled && developerActivity.coding.enabled}
+                      value={developerActivity.coding.title}
+                    />
+                  </div>
+                </div>
+                <div className="activity-option-row activity-option-grid">
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showContributionCount}
+                      onChange={(event) => patchCodingActivity({ showContributionCount: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show contribution total
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showHeatmap}
+                      onChange={(event) => patchCodingActivity({ showHeatmap: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show contribution calendar
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showMonthLabels}
+                      disabled={!developerActivity.coding.showHeatmap}
+                      onChange={(event) => patchCodingActivity({ showMonthLabels: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show month labels
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showWeekdayLabels}
+                      disabled={!developerActivity.coding.showHeatmap}
+                      onChange={(event) => patchCodingActivity({ showWeekdayLabels: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show weekday labels
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showLegend}
+                      disabled={!developerActivity.coding.showHeatmap}
+                      onChange={(event) => patchCodingActivity({ showLegend: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show intensity legend
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showYearSelector}
+                      onChange={(event) => patchCodingActivity({ showYearSelector: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show year selector
+                  </label>
+                  <label className="check-option">
+                    <input
+                      checked={developerActivity.coding.showLanguages}
+                      onChange={(event) => patchCodingActivity({ showLanguages: event.target.checked })}
+                      type="checkbox"
+                    />
+                    Show active languages
+                  </label>
+                </div>
+                <p className="activity-module-note">
+                  The contribution calendar is account-wide. Repository filters apply to commits and languages.
+                </p>
+              </fieldset>
+            </article>
+          </div>
+
+          <p className="activity-editor-note">
+            Calendar data is cached for about one hour; commit data for about 15 minutes. Keep the server-only GITHUB_TOKEN limited to public data.
+          </p>
         </section>
 
         <section className="editor-section" aria-labelledby="social-heading">

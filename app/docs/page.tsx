@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 const pageNav = [
   { href: "#overview", label: "Overview" },
   { href: "#hosted", label: "Hosted profiles" },
+  { href: "#activity", label: "GitHub activity" },
   { href: "#self-hosted", label: "Self-hosted profiles" },
   { href: "#profile-model", label: "Profile model" },
   { href: "#auth", label: "Authentication" },
@@ -55,6 +56,34 @@ const profileShape = `type Profile = {
     label: string;
     url: string;
   }>;
+  developerActivity?: {
+    enabled: boolean;
+    githubUsername: string;
+    placement: "before-links" | "after-links";
+    repositories: {
+      mode: "recent" | "include" | "exclude";
+      names: string[]; // max 5 owner/repository slugs
+    };
+    commits: {
+      enabled: boolean;
+      title: string;
+      limit: number; // 1-10
+      showRepository: boolean;
+      showDate: boolean;
+    };
+    coding: {
+      enabled: boolean;
+      title: string;
+      windowDays: 7 | 14 | 30;
+      showContributionCount: boolean;
+      showHeatmap: boolean;
+      showMonthLabels: boolean;
+      showWeekdayLabels: boolean;
+      showLegend: boolean;
+      showYearSelector: boolean;
+      showLanguages: boolean;
+    };
+  };
 };`;
 
 export default function DocsPage() {
@@ -63,7 +92,7 @@ export default function DocsPage() {
       <PageHero
         section="Docs"
         title="Know what runs your page."
-        summary="Socialize has two delivery paths and one portable profile shape. Start with the managed editor, or run the compact self-hosted stack yourself."
+        summary="Socialize has two delivery paths, related profile models, and a portable developer-activity block. Start managed, or run the compact self-hosted stack yourself."
         tone="ink"
         actions={
           <>
@@ -77,7 +106,7 @@ export default function DocsPage() {
           <div className={styles.asideStatement}>
             <span>Documentation map</span>
             <strong>Pick a path, publish a profile, keep the data portable.</strong>
-            <p>Hosted and self-hosted editions use the same core identity and link fields.</p>
+            <p>Hosted and self-hosted editions share concepts, while their top-level JSON schemas remain distinct.</p>
           </div>
         }
       />
@@ -100,11 +129,11 @@ export default function DocsPage() {
               },
               {
                 label: "Shared core",
-                value: "Identity, links, socials, availability, and visual accent",
+                value: "Identity, links, socials, availability, accent, and developer activity",
               },
               {
                 label: "Portability",
-                value: "A typed profile object with no platform-only content format",
+                value: "Backup/migration JSON plus a shared nested activity shape",
               },
             ]}
           />
@@ -156,8 +185,9 @@ export default function DocsPage() {
                 body: (
                   <p>
                     Add your introduction, projects, writing, contact link, and
-                    social profiles. Use descriptions to tell visitors what they
-                    will find before they open a link.
+                    social profiles. The Activity tab can add sampled public GitHub
+                    work with repository and display controls. Use descriptions to
+                    tell visitors what they will find before they open a link.
                   </p>
                 ),
               },
@@ -182,6 +212,64 @@ export default function DocsPage() {
         </ContentSection>
 
         <ContentSection
+          id="activity"
+          title="Public GitHub activity"
+          lead="Choose what is displayed, understand what is sampled, and keep every credential server-side."
+        >
+          <p>
+            The Activity tab controls the public GitHub username, placement before
+            or after links, headings, a 1–10 commit limit, repository/date labels,
+            and every contribution-calendar layer: yearly total, grid, month and
+            weekday labels, intensity legend, year selector, and language summary.
+            The connection check finds public data; it does not verify ownership.
+          </p>
+          <h3>Repository selection</h3>
+          <ul>
+            <li>
+              <strong>Recent</strong> automatically samples up to three repositories
+              from the latest public push events.
+            </li>
+            <li>
+              <strong>Include</strong> uses only the selected public
+              <code> owner/repository</code> slugs, up to five.
+            </li>
+            <li>
+              <strong>Exclude</strong> removes up to five selected slugs from the
+              automatic recent set.
+            </li>
+          </ul>
+          <p>
+            Selected repositories are rechecked as public. Repository filters apply
+            to commits and languages; GitHub&apos;s contribution calendar remains
+            account-wide. With a server token, its public GraphQL calendar supplies
+            the yearly total, weeks, days, and contribution levels. Without one, the
+            profile renders the same geometry from a clearly labeled recent public-event
+            sample. GitHub results remain third-party, unverified, and may lag.
+          </p>
+          <h3>Caching and request limits</h3>
+          <p>
+            Public events are revalidated after five minutes; contribution calendars,
+            repository, commit, and language lookups are cached for one hour. Successful route responses
+            use a five-minute CDN cache with up to one additional stale hour. GitHub&apos;s
+            event feed can itself lag by about 30 seconds to six hours.
+          </p>
+          <p>
+            The route applies a best-effort limit of 30 requests per source IP per
+            60 seconds. For distributed production enforcement, add a Vercel
+            Firewall rate-limit rule for <code>/api/github-activity</code> and monitor
+            <code>429</code> responses.
+          </p>
+          <Notice title="A GitHub token must remain public-only" tone="signal">
+            <p>
+              <code>GITHUB_TOKEN</code> is optional and server-only. If configured,
+              it enables the complete public yearly calendar and must not have access
+              to private repositories. Never prefix it with
+              <code> NEXT_PUBLIC_</code>, store it in a profile, or include it in an export.
+            </p>
+          </Notice>
+        </ContentSection>
+
+        <ContentSection
           id="self-hosted"
           title="Self-hosted profiles"
           lead="A compact single-owner application for developers who want the repository and runtime."
@@ -200,6 +288,10 @@ export default function DocsPage() {
             <CheckItem>
               Put backend web-app values in <code>.env.local</code> locally and in
               your hosting environment for production.
+            </CheckItem>
+            <CheckItem>
+              If developer activity is enabled, optionally configure a server-only
+              <code> GITHUB_TOKEN</code> with no private-repository access.
             </CheckItem>
             <CheckItem>
               Deploy <code>firestore.rules</code> and grant one trusted account the
@@ -233,14 +325,16 @@ export default function DocsPage() {
 
         <ContentSection
           id="profile-model"
-          title="The portable profile model"
-          lead="Simple fields make the public page easy to move, validate, and render."
+          title="Profile models and portable data"
+          lead="Keep backups stable while converting the few top-level differences between editions."
         >
           <p>
             The self-hosted edition defines the profile in
-            <code>types/profile.ts</code>. Hosted exports should preserve this core
-            shape even when the managed service stores additional operational
-            fields such as account ownership or timestamps.
+            <code>types/profile.ts</code>. A hosted JSON export is a backup and
+            migration format, not a file the stripped template imports unchanged:
+            identity and social fields use different top-level representations.
+            Convert those fields during migration. The nested
+            <code> developerActivity</code> object shown below is intentionally shared.
           </p>
           <CodeBlock label="types/profile.ts">{profileShape}</CodeBlock>
           <h3>Link behavior</h3>
@@ -320,6 +414,10 @@ export default function DocsPage() {
             </CheckItem>
             <CheckItem>
               Verify a signed-out visitor can read the profile but cannot write its document.
+            </CheckItem>
+            <CheckItem>
+              Exercise the GitHub activity route, confirm sampling copy, and test
+              the application and Vercel Firewall rate-limit paths.
             </CheckItem>
             <CheckItem>
               Review the <Link href="/acceptable-use">Acceptable Use Policy</Link>

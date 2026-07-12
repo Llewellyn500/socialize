@@ -11,6 +11,7 @@ import {
   FiDownload,
   FiEye,
   FiFileText,
+  FiGithub,
   FiImage,
   FiLink,
   FiLogOut,
@@ -29,10 +30,15 @@ import { uploadUserAvatar } from "@/lib/avatar-upload";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import {
   demoProfile,
+  developerActivityHasVisibleModules,
   groupLinksBySection,
   isAutoLinkDescription,
   isAutoLinkTitle,
+  isValidGitHubRepository,
   isSafeExternalUrl,
+  isValidGitHubUsername,
+  normalizeGitHubUsername,
+  resolveDeveloperActivity,
   titleFromUrl,
   type ProfileConfig,
   type ProfileTheme,
@@ -47,12 +53,13 @@ import {
 import { isLinkedInUrl } from "@/lib/linkedin-url";
 import { LINKEDIN_LINK_TITLE } from "@/lib/linkedin-headline";
 import { LinksEditor } from "./links-editor";
+import { DeveloperActivityEditor } from "./developer-activity-editor";
 import { LinkStatsPanel } from "./link-stats-panel";
 import { LinkedSignInMethods } from "./linked-sign-in-methods";
 import { SocialProfilesFields } from "./social-profiles-fields";
 import styles from "./dashboard-app.module.css";
 
-type Tab = "overview" | "stats" | "links" | "profile" | "appearance" | "settings";
+type Tab = "overview" | "stats" | "links" | "profile" | "activity" | "appearance" | "settings";
 type Status = { tone: "neutral" | "success" | "error"; message: string } | null;
 
 const navItems = [
@@ -60,6 +67,7 @@ const navItems = [
   ["stats", "Stats", FiBarChart2],
   ["links", "Links", FiLink],
   ["profile", "Profile", FiUser],
+  ["activity", "Activity", FiGithub],
   ["appearance", "Appearance", FiSliders],
   ["settings", "Settings", FiSettings],
 ] as const;
@@ -330,6 +338,14 @@ export function DashboardApp() {
   }
 
   const linkGroups = useMemo(() => groupLinksBySection(profile), [profile]);
+  const developerActivity = useMemo(
+    () => resolveDeveloperActivity(profile.developerActivity),
+    [profile.developerActivity],
+  );
+  const suggestedGitHubUsername = useMemo(
+    () => normalizeGitHubUsername(profile.socials.github ?? ""),
+    [profile.socials.github],
+  );
 
   async function persistProfile(
     nextProfile: ProfileConfig = profile,
@@ -340,6 +356,22 @@ export function DashboardApp() {
     try {
       const invalidLink = nextProfile.links.find((link) => !isSafeExternalUrl(link.url));
       if (invalidLink) throw new Error(`“${invalidLink.title}” needs an https:// or mailto: URL.`);
+      const activity = resolveDeveloperActivity(nextProfile.developerActivity);
+      const activityWillPublish =
+        activity.enabled && developerActivityHasVisibleModules(activity);
+      if (activityWillPublish && !isValidGitHubUsername(activity.githubUsername)) {
+        throw new Error("Add a valid GitHub username before showing developer activity.");
+      }
+      if (activity.repositories.names.some((name) => !isValidGitHubRepository(name))) {
+        throw new Error("Repository filters must use the owner/repository format.");
+      }
+      if (
+        activityWillPublish &&
+        activity.repositories.mode === "include" &&
+        activity.repositories.names.length === 0
+      ) {
+        throw new Error("Add at least one repository or use automatic selection.");
+      }
       if (auth && user) {
         const saved = await saveProfile(user.uid, nextProfile);
         setProfile(saved);
@@ -600,6 +632,17 @@ export function DashboardApp() {
             </>
           ) : null}
 
+          {tab === "activity" ? (
+            <>
+              <PanelHeading eyebrow="GITHUB / ACTIVITY" title="Show what you ship." />
+              <DeveloperActivityEditor
+                onChange={(developerActivityValue) => update("developerActivity", developerActivityValue)}
+                suggestedUsername={suggestedGitHubUsername}
+                value={developerActivity}
+              />
+            </>
+          ) : null}
+
           {tab === "settings" ? (
             <>
               <PanelHeading eyebrow="ACCOUNT / SETTINGS" title="Keep the exits visible." />
@@ -610,7 +653,7 @@ export function DashboardApp() {
                 </div>
               </div>
               <LinkedSignInMethods />
-              <div className={styles.settingsBlock}><div><h3>Export profile data</h3><p>Download the portable JSON used by the self-hosted edition.</p></div><button type="button" onClick={exportProfile}><FiDownload /> Export</button></div>
+              <div className={styles.settingsBlock}><div><h3>Export profile data</h3><p>Download a JSON backup for migration or conversion to the self-hosted format.</p></div><button type="button" onClick={exportProfile}><FiDownload /> Export</button></div>
               <div className={styles.settingsBlock}><div><h3>Session</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut}><FiLogOut /> Sign out</button></div>
               <div className={styles.settingsBlock}><div><h3>Self-host this profile</h3><p>Use your export with the stripped edition and run it on your own infrastructure.</p></div><Link href="/self-host">Open guide</Link></div>
             </>
@@ -622,7 +665,9 @@ export function DashboardApp() {
 
         <aside className={styles.previewPane} aria-label="Live profile preview">
           <span className={styles.previewLabel}><i /> LIVE PREVIEW</span>
-          <div className={styles.phone}><ProfilePreview profile={profile} interactive /></div>
+          <div className={`${styles.phone} live-preview-phone`}>
+            <ProfilePreview profile={profile} interactive />
+          </div>
         </aside>
       </div>
     </div>

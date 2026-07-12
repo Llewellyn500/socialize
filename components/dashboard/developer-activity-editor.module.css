@@ -1,0 +1,304 @@
+.editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.integration,
+.featureSection {
+  border: 1px solid rgba(25, 26, 24, 0.15);
+  background: #f4f1e8;
+}
+
+.integration {
+  padding: 1.2rem;
+}
+
+.integrationHeading,
+.featureHeading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.integrationHeading h2,
+.integrationHeading p,
+.featureHeading h2,
+.featureHeading p {
+  margin: 0;
+}
+
+.integrationHeading h2,
+.featureHeading h2 {
+  font-size: 0.9rem;
+  letter-spacing: -0.02em;
+}
+
+.integrationHeading p,
+.featureHeading p {
+  max-width: 58ch;
+  margin-top: 0.25rem;
+  color: rgba(25, 26, 24, 0.7);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.integrationIcon {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  place-items: center;
+  background: #8a2be2;
+  color: #f7f3fb;
+  font-size: 1.1rem;
+}
+
+.masterToggle,
+.inlineToggle,
+.toggleField {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.masterToggle {
+  margin-left: auto;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(25, 26, 24, 0.2);
+}
+
+.masterToggle input,
+.inlineToggle input,
+.toggleField input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #8a2be2;
+}
+
+.connectionGrid,
+.featureControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.connectionGrid {
+  margin-top: 1.25rem;
+}
+
+.repositoryControls {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field > span {
+  color: rgba(25, 26, 24, 0.66);
+  font-size: 0.63rem;
+  font-weight: 750;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.22);
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: #191a18;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #8a2be2;
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color: #a12b24;
+}
+
+.field input:disabled,
+.field select:disabled,
+.toggleField input:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.field small {
+  color: rgba(25, 26, 24, 0.7);
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+.field small code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.connectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.connectionActions button {
+  min-height: 2.35rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.24);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.connectionActions button:hover:not(:disabled) {
+  border-color: #8a2be2;
+  background: rgba(138, 43, 226, 0.08);
+}
+
+.connectionActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.connectionActions p {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: rgba(25, 26, 24, 0.7);
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.connectionActions p[data-tone="success"] { color: #287c3b; }
+.connectionActions p[data-tone="error"] { color: #a12b24; }
+
+.featureSection {
+  padding: 1.15rem 1.2rem 1.2rem;
+}
+
+.featureHeading {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.featureHeading > svg {
+  margin-top: 0.1rem;
+  flex: 0 0 auto;
+  color: #8a2be2;
+  font-size: 1.05rem;
+}
+
+.inlineToggle {
+  margin-left: auto;
+}
+
+.featureControls {
+  align-items: end;
+  margin-top: 1rem;
+}
+
+.featureControls[data-disabled="true"] {
+  opacity: 0.62;
+}
+
+.featureNote {
+  margin: 0.9rem 0 0;
+  color: rgba(25, 26, 24, 0.66);
+  font-size: 0.63rem;
+  line-height: 1.5;
+}
+
+.toggleField {
+  min-height: 2.6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(25, 26, 24, 0.16);
+  color: rgba(25, 26, 24, 0.68);
+}
+
+:global(html:not([data-app-theme="light"])) .integration,
+:global(html:not([data-app-theme="light"])) .featureSection {
+  border-color: rgba(247, 243, 251, 0.14);
+  background: #18151d;
+}
+
+:global(html:not([data-app-theme="light"])) .integrationHeading p,
+:global(html:not([data-app-theme="light"])) .featureHeading p,
+:global(html:not([data-app-theme="light"])) .connectionActions p,
+:global(html:not([data-app-theme="light"])) .featureNote {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .field small {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .masterToggle,
+:global(html:not([data-app-theme="light"])) .featureHeading,
+:global(html:not([data-app-theme="light"])) .toggleField,
+:global(html:not([data-app-theme="light"])) .repositoryControls {
+  border-color: rgba(247, 243, 251, 0.16);
+}
+
+:global(html:not([data-app-theme="light"])) .field > span,
+:global(html:not([data-app-theme="light"])) .toggleField {
+  color: rgba(247, 243, 251, 0.72);
+}
+
+:global(html:not([data-app-theme="light"])) .field input,
+:global(html:not([data-app-theme="light"])) .field select,
+:global(html:not([data-app-theme="light"])) .field textarea,
+:global(html:not([data-app-theme="light"])) .connectionActions button {
+  border-color: rgba(247, 243, 251, 0.2);
+  background: #151219;
+  color: #f7f3fb;
+  color-scheme: dark;
+}
+
+:global(html:not([data-app-theme="light"])) .connectionActions p[data-tone="success"] { color: #8de0aa; }
+:global(html:not([data-app-theme="light"])) .connectionActions p[data-tone="error"] { color: #ff9dad; }
+
+@media (max-width: 620px) {
+  .integrationHeading,
+  .featureHeading {
+    flex-wrap: wrap;
+  }
+
+  .masterToggle,
+  .inlineToggle {
+    margin-left: 0;
+  }
+
+  .connectionGrid,
+  .featureControls,
+  .repositoryControls {
+    grid-template-columns: 1fr;
+  }
+
+  .connectionActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
