@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{ returnTo?: string; deleted?: string }>;
 }) {
-  const { returnTo: requestedReturnTo } = await searchParams;
+  const { returnTo: requestedReturnTo, deleted } = await searchParams;
   const returnTo =
     requestedReturnTo?.startsWith("/") && !requestedReturnTo.startsWith("//")
       ? requestedReturnTo
@@ -23,7 +23,15 @@ export default async function SignInPage({
       title="Your work, ready when you are."
       description="Return to the place where your projects, writing, and ways to reach you live together."
     >
-      <AuthForm mode="sign-in" returnTo={returnTo} />
+      <AuthForm
+        mode="sign-in"
+        returnTo={returnTo}
+        notice={
+          deleted === "1"
+            ? "Your Socialize account and profile were deleted."
+            : undefined
+        }
+      />
     </AuthShell>
   );
 }

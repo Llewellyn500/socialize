@@ -18,7 +18,6 @@ import {
   FiGlobe,
   FiMove,
   FiPlus,
-  FiRss,
   FiServer,
   FiSliders,
   FiTerminal,
@@ -175,9 +174,9 @@ export function LandingPage() {
               <small>8 minutes ago · main</small>
             </div>
             <div className="floating-code floating-code--right" aria-hidden="true">
-              <span>weekly activity</span>
-              <strong>18h 42m</strong>
-              <small>TypeScript · Go · MDX</small>
+              <span>weekly languages</span>
+              <strong>TypeScript · Go · MDX</strong>
+              <small>Most used this week</small>
             </div>
           </div>
           <a className="scroll-cue" href="#product">
@@ -205,7 +204,7 @@ export function LandingPage() {
             <div>
               <FiGitBranch aria-hidden="true" />
               <strong>Developer-native blocks</strong>
-              <p>Projects, repositories, RSS posts, and coding activity feel at home.</p>
+              <p>Projects, repositories, writing links, and coding activity feel at home.</p>
             </div>
             <div>
               <FiDatabase aria-hidden="true" />
@@ -367,22 +366,24 @@ export function LandingPage() {
               <FiGithub />
               <span>GITHUB</span>
               <h3>Pin the work that deserves a second look.</h3>
-              <div className="repo-line"><i /> socialize <small>TypeScript</small></div>
-              <div className="commit-grid" aria-hidden="true">
-                {Array.from({ length: 52 }).map((_, index) => <i key={index} />)}
+              <div className="github-card-footer">
+                <div className="repo-line"><i /> socialize <small>TypeScript</small></div>
+                <div className="commit-grid" aria-hidden="true">
+                  {Array.from({ length: 52 }).map((_, index) => <i key={index} />)}
+                </div>
               </div>
             </article>
             <article className="signal-card signal-card--rss">
-              <FiRss />
-              <span>RSS / WRITING</span>
+              <FiEdit3 />
+              <span>WRITING</span>
               <h3>Latest field note</h3>
               <strong>Why the best infrastructure fades into the background</strong>
               <small>7 min read · 3 days ago</small>
             </article>
             <article className="signal-card signal-card--activity">
               <FiCode />
-              <span>CODING ACTIVITY</span>
-              <strong>18h 42m</strong>
+              <span>CODING LANGUAGES</span>
+              <strong>TypeScript · Go · MDX</strong>
               <div className="language-bars"><i /><i /><i /></div>
               <small>TypeScript 54% · Go 31% · Other 15%</small>
             </article>
@@ -428,29 +429,63 @@ export function LandingPage() {
             <span>Small decisions, felt everywhere</span>
           </div>
           <div className="principles-list">
-            {[
-              ["01", "A page, not a platform trap", "Hosted convenience and self-hosted control use the same data model."],
-              ["02", "Made for technical work", "Projects, code, writing, and availability get the hierarchy they deserve."],
-              ["03", "Privacy before dashboards", "Optional aggregate analytics starts only after a clear yes."],
-              ["04", "Accessible motion", "Cinematic where it helps, quiet for reduced-motion preferences."],
-            ].map(([number, title, copy]) => (
-              <article key={number} data-reveal>
-                <span>{number}</span><h3>{title}</h3><p>{copy}</p><FiArrowUpRight />
-              </article>
+            {(
+              [
+                [
+                  "01",
+                  "A page, not a platform trap",
+                  "Hosted convenience and self-hosted control use the same data model.",
+                  "/self-host",
+                ],
+                [
+                  "02",
+                  "Made for technical work",
+                  "Projects, code, writing, and availability get the hierarchy they deserve.",
+                  "/docs",
+                ],
+                [
+                  "03",
+                  "Privacy before dashboards",
+                  "Optional aggregate analytics starts only after a clear yes.",
+                  "/privacy",
+                ],
+                [
+                  "04",
+                  "Accessible motion",
+                  "Cinematic where it helps, quiet for reduced-motion preferences.",
+                  "/docs",
+                ],
+              ] as const
+            ).map(([number, title, copy, href]) => (
+              <Link href={href} key={number} data-reveal>
+                <span>{number}</span>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+                <FiArrowUpRight aria-hidden="true" />
+              </Link>
             ))}
           </div>
         </section>
 
         <section className="sponsor-callout" data-reveal>
-          <div>
+          <div className="sponsor-callout__copy">
             <p className="eyebrow">OPEN SOURCE NEEDS OXYGEN</p>
             <h2>Help keep the self-hosted path genuinely useful.</h2>
           </div>
-          <p>
-            Sponsorship funds maintenance, documentation, accessibility work, and
-            the parts that make owning your page less painful.
-          </p>
-          <Link href="/sponsor">Sponsor the project <FiArrowUpRight /></Link>
+          <div className="sponsor-callout__aside">
+            <p>
+              Sponsorship funds maintenance, documentation, accessibility work, and
+              the parts that make owning your page less painful.
+            </p>
+            <ul className="sponsor-callout__points">
+              <li>Keep the hosted and self-hosted paths aligned</li>
+              <li>Ship docs and accessibility work that lasts</li>
+              <li>Support the unglamorous maintenance that protects exits</li>
+            </ul>
+            <Link className="button button--ink" href="/sponsor">
+              Sponsor the project <FiArrowUpRight aria-hidden="true" />
+            </Link>
+          </div>
         </section>
 
         <section className="closing-section">

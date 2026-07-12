@@ -7,7 +7,6 @@ import { FiArrowUpRight, FiMenu, FiX } from "react-icons/fi";
 import { Brand } from "@/components/brand";
 
 const links = [
-  { href: "/#product", label: "Product" },
   { href: "/self-host", label: "Self-host" },
   { href: "/docs", label: "Docs" },
   { href: "/sponsor", label: "Sponsor" },

@@ -70,6 +70,7 @@ import { LinksEditor } from "./links-editor";
 import { DeveloperActivityEditor } from "./developer-activity-editor";
 import { LinkStatsPanel } from "./link-stats-panel";
 import { LinkedSignInMethods } from "./linked-sign-in-methods";
+import { DeleteAccountPanel } from "./delete-account-panel";
 import { SocialProfilesFields } from "./social-profiles-fields";
 import styles from "./dashboard-app.module.css";
 
@@ -935,6 +936,7 @@ export function DashboardApp() {
               </div>
               <LinkedSignInMethods />
               <div className={styles.settingsBlock}><div><h3>Export profile data</h3><p>Download a JSON backup for migration or conversion to the self-hosted format.</p></div><button type="button" onClick={exportProfile}><FiDownload /> Export</button></div>
+              <DeleteAccountPanel user={user} handle={profile.handle} />
               <div className={styles.settingsBlock}><div><h3>Session</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut}><FiLogOut /> Sign out</button></div>
               <div className={styles.settingsBlock}><div><h3>Self-host this profile</h3><p>Use your export with the stripped edition and run it on your own infrastructure.</p></div><Link href="/self-host">Open guide</Link></div>
             </>

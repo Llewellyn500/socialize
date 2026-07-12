@@ -3,9 +3,10 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 
 const TICKER_ITEMS = [
-  "HOSTED WHEN YOU WANT IT",
-  "SELF-HOSTED WHEN YOU DON'T",
-  "DATA PORTABLE",
+  "LINKS THAT LOOK LIKE YOU",
+  "GITHUB ACTIVITY ON YOUR PAGE",
+  "SOCIALS UNDER YOUR BIO",
+  "BUILT FOR DEVELOPERS",
 ] as const;
 
 function TickerItems() {

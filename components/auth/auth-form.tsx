@@ -64,7 +64,15 @@ async function getPostAuthRoute(user: User) {
   }
 }
 
-export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string }) {
+export function AuthForm({
+  mode,
+  returnTo,
+  notice,
+}: {
+  mode: AuthMode;
+  returnTo?: string;
+  notice?: string;
+}) {
   const router = useRouter();
   const isSignUp = mode === "sign-up";
   const [displayName, setDisplayName] = useState("");
@@ -227,6 +235,13 @@ export function AuthForm({ mode, returnTo }: { mode: AuthMode; returnTo?: string
             Authentication is not configured yet. Add the public environment values
             to this deployment, then enable Email, Google, and GitHub sign-in.
           </p>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className={`${styles.notice} ${styles.noticeInfo}`} role="status">
+          <FiInfo aria-hidden="true" />
+          <p>{notice}</p>
         </div>
       ) : null}
 

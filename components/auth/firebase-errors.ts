@@ -39,7 +39,9 @@ export function getFirebaseAuthError(error: unknown) {
     case "auth/network-request-failed":
       return "The request could not reach the server. Check your connection and try again.";
     case "auth/requires-recent-login":
-      return "For security, sign in again before continuing.";
+      return "For security, confirm your identity again, then retry.";
+    case "auth/user-mismatch":
+      return "That confirmation did not match this account. Try again.";
     case "permission-denied":
     case "firestore/permission-denied":
       return "You do not have permission to make this change.";
@@ -54,7 +56,14 @@ export function getFirebaseAuthError(error: unknown) {
       return "The profile data was rejected. Check the fields and try again.";
     default:
       if (error instanceof Error) {
-        if (error.message === "That handle is already taken.") {
+        if (
+          error.message === "That handle is already taken." ||
+          error.message.startsWith("Enter your password") ||
+          error.message.startsWith("Type @") ||
+          error.message.startsWith("Export your profile") ||
+          error.message.startsWith("Sign out") ||
+          error.message.startsWith("Sign in")
+        ) {
           return error.message;
         }
         if (
