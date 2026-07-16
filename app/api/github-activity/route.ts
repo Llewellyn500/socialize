@@ -11,74 +11,20 @@ import {
   isValidGitHubRepository,
   normalizeGitHubRepository,
 } from "@/lib/profile";
+import {
+  consumeRequestRateLimit,
+  requestRateLimitHeaders,
+} from "@/lib/request-safety";
 
 export const runtime = "nodejs";
 
 const SUCCESS_CACHE_CONTROL = "private, no-store";
 const ERROR_CACHE_CONTROL = "private, no-store";
-const RATE_LIMIT = 30;
-const RATE_WINDOW_MS = 60_000;
-const MAX_RATE_LIMIT_ENTRIES = 5_000;
-
-type RateLimitEntry = { count: number; resetAt: number };
-type RateLimitResult = {
-  allowed: boolean;
-  remaining: number;
-  resetAt: number;
-  retryAfter: number;
-};
-
-const rateLimitGlobal = globalThis as typeof globalThis & {
-  __socializeGitHubActivityRateLimits?: Map<string, RateLimitEntry>;
-};
-const rateLimits =
-  rateLimitGlobal.__socializeGitHubActivityRateLimits ??
-  new Map<string, RateLimitEntry>();
-rateLimitGlobal.__socializeGitHubActivityRateLimits = rateLimits;
-
-function clientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return (forwarded || request.headers.get("x-real-ip") || "unknown").slice(0, 128);
-}
-
-function consumeRateLimit(request: Request): RateLimitResult {
-  const now = Date.now();
-
-  if (rateLimits.size >= MAX_RATE_LIMIT_ENTRIES) {
-    for (const [key, entry] of rateLimits) {
-      if (entry.resetAt <= now) rateLimits.delete(key);
-    }
-    while (rateLimits.size >= MAX_RATE_LIMIT_ENTRIES) {
-      const oldestKey = rateLimits.keys().next().value as string | undefined;
-      if (!oldestKey) break;
-      rateLimits.delete(oldestKey);
-    }
-  }
-
-  const key = clientAddress(request);
-  const current = rateLimits.get(key);
-  const entry =
-    !current || current.resetAt <= now
-      ? { count: 0, resetAt: now + RATE_WINDOW_MS }
-      : current;
-  entry.count += 1;
-  rateLimits.set(key, entry);
-
-  return {
-    allowed: entry.count <= RATE_LIMIT,
-    remaining: Math.max(0, RATE_LIMIT - entry.count),
-    resetAt: entry.resetAt,
-    retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1_000)),
-  };
-}
-
-function rateLimitHeaders(rateLimit: RateLimitResult) {
-  return {
-    "X-Socialize-RateLimit-Limit": String(RATE_LIMIT),
-    "X-Socialize-RateLimit-Remaining": String(rateLimit.remaining),
-    "X-Socialize-RateLimit-Reset": String(Math.ceil(rateLimit.resetAt / 1_000)),
-  };
-}
+const GITHUB_ACTIVITY_RATE_LIMIT = {
+  namespace: "github-activity",
+  limit: 30,
+  windowMs: 60_000,
+} as const;
 
 function errorResponse(
   error: string,
@@ -114,8 +60,8 @@ function parseBooleanFlag(value: string | null, fallback: boolean) {
 }
 
 export async function GET(request: Request) {
-  const rateLimit = consumeRateLimit(request);
-  const requestRateHeaders = rateLimitHeaders(rateLimit);
+  const rateLimit = consumeRequestRateLimit(request, GITHUB_ACTIVITY_RATE_LIMIT);
+  const requestRateHeaders = requestRateLimitHeaders(rateLimit);
   if (!rateLimit.allowed) {
     return errorResponse(
       "Too many activity requests. Try again shortly.",

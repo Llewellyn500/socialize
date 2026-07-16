@@ -148,11 +148,12 @@ export function LandingPage() {
               <p>
                 Publish a sharp developer profile in minutes, or take the code and
                 run it yourself. Your projects, writing, and socials—without the
-                creator-economy clutter.
+                creator-economy clutter. Free to use, with no trial, credit card,
+                or feature gate.
               </p>
               <div className="hero-actions">
                 <Link className="button button--signal" href="/sign-up">
-                  Create a hosted page <FiArrowUpRight aria-hidden="true" />
+                  Create your free page <FiArrowUpRight aria-hidden="true" />
                 </Link>
                 <Link className="button button--line" href="/self-host">
                   Self-host it <FiTerminal aria-hidden="true" />
@@ -208,8 +209,8 @@ export function LandingPage() {
             </div>
             <div>
               <FiDatabase aria-hidden="true" />
-              <strong>Your data, in one shape</strong>
-              <p>Saved to your account when hosted. Export a portable config file when you self-host.</p>
+              <strong>Take a structured backup</strong>
+              <p>Save it to your account when hosted, then export your profile data and follow the conversion guide when you self-host.</p>
             </div>
           </div>
         </section>
@@ -221,7 +222,7 @@ export function LandingPage() {
             <p className="eyebrow">The no-ops route</p>
             <h2>We host it.</h2>
             <p className="path-panel__copy">
-              Sign in, claim your handle, arrange your work, and publish. We handle
+              Sign in, verify your email, claim your handle, arrange your work, and publish. We handle
               accounts, storage, and the details—you handle the work.
             </p>
             <ul>
@@ -243,7 +244,7 @@ export function LandingPage() {
               and none of the marketing or service shell.
             </p>
             <ul>
-              <li><FiCheck /> One portable configuration file</li>
+              <li><FiCheck /> A structured export and conversion guide</li>
               <li><FiCheck /> Your infrastructure and domain</li>
               <li><FiCheck /> Docker and one-click deploy paths</li>
             </ul>
@@ -399,10 +400,11 @@ export function LandingPage() {
         <section className="selfhost-strip">
           <div className="selfhost-strip__copy" data-reveal>
             <p className="eyebrow">05 / THE EXIT DOOR IS A FEATURE</p>
-            <h2>Start hosted. Leave with your data whenever you want.</h2>
+            <h2>Start hosted. Keep a structured backup whenever you want.</h2>
             <p>
-              Export the same profile shape used by the open-source edition. No
-              reverse-engineering your own bio page later.
+              Export your profile data, then use the documented conversion guide to
+              move it into the self-hosted starter. Your infrastructure and data
+              path remain yours to operate.
             </p>
             <Link className="button button--cream" href="/self-host">
               See the architecture <FiArrowUpRight />
@@ -434,7 +436,7 @@ export function LandingPage() {
                 [
                   "01",
                   "A page, not a platform trap",
-                  "Hosted convenience and self-hosted control use the same data model.",
+                  "Hosted convenience and self-hosted control come with a documented migration path.",
                   "/self-host",
                 ],
                 [
@@ -475,7 +477,8 @@ export function LandingPage() {
           <div className="sponsor-callout__aside">
             <p>
               Sponsorship funds maintenance, documentation, accessibility work, and
-              the parts that make owning your page less painful.
+              the parts that make owning your page less painful. It never unlocks
+              features or changes who can use Socialize.
             </p>
             <ul className="sponsor-callout__points">
               <li>Keep the hosted and self-hosted paths aligned</li>
@@ -496,7 +499,7 @@ export function LandingPage() {
           </h2>
           <div className="closing-actions" data-reveal>
             <Link className="button button--signal" href="/sign-up">
-              Create your page <FiArrowUpRight />
+              Create your free page <FiArrowUpRight />
             </Link>
             <Link href="/self-host">Or own the stack →</Link>
           </div>

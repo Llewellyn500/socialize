@@ -130,6 +130,201 @@ service cloud.firestore {
           || activity.repositories.names.size() > 0);
     }
 
+    function validIdentifier(value, maximum) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= maximum
+        && value.matches('^[A-Za-z0-9_-]+$');
+    }
+
+    function validHttpsUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && value.matches('^https://.*')
+        && !value.matches('^https://[^/]*@.*');
+    }
+
+    function validExternalUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && (value.matches('^https://.*') || value.matches('^mailto:[^[:space:]]+@[^[:space:]]+$'))
+        && !value.matches('^https://[^/]*@.*');
+    }
+
+    function validMediaUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && (validHttpsUrl(value) || value.matches('^/[^/].*'));
+    }
+
+    function validMediaFields(item) {
+      return (!('mediaUrl' in item) || validMediaUrl(item.mediaUrl))
+        && (!('mediaIcon' in item)
+          || (validIdentifier(item.mediaIcon, 80)))
+        && (!('mediaType' in item)
+          || (item.mediaType is string && item.mediaType in ['icon', 'thumbnail']));
+    }
+
+    function validSection(section) {
+      return section is map
+        && section.keys().hasOnly([
+          'id', 'title', 'mediaUrl', 'mediaIcon', 'mediaType', 'hideTitle'
+        ])
+        && section.keys().hasAll(['id', 'title'])
+        && validIdentifier(section.id, 80)
+        && section.title is string
+        && section.title.size() >= 1
+        && section.title.size() <= 60
+        && validMediaFields(section)
+        && (!('hideTitle' in section) || section.hideTitle is bool);
+    }
+
+    function validSections(sections) {
+      return sections is list
+        && sections.size() <= 12
+        && (sections.size() < 1 || validSection(sections[0]))
+        && (sections.size() < 2 || validSection(sections[1]))
+        && (sections.size() < 3 || validSection(sections[2]))
+        && (sections.size() < 4 || validSection(sections[3]))
+        && (sections.size() < 5 || validSection(sections[4]))
+        && (sections.size() < 6 || validSection(sections[5]))
+        && (sections.size() < 7 || validSection(sections[6]))
+        && (sections.size() < 8 || validSection(sections[7]))
+        && (sections.size() < 9 || validSection(sections[8]))
+        && (sections.size() < 10 || validSection(sections[9]))
+        && (sections.size() < 11 || validSection(sections[10]))
+        && (sections.size() < 12 || validSection(sections[11]));
+    }
+
+    function validLink(link) {
+      return link is map
+        && link.keys().hasOnly([
+          'id', 'title', 'url', 'description', 'enabled', 'kind', 'sectionId',
+          'mediaUrl', 'mediaIcon', 'mediaType'
+        ])
+        && link.keys().hasAll(['id', 'title', 'url', 'enabled'])
+        && validIdentifier(link.id, 80)
+        && link.title is string
+        && link.title.size() >= 1
+        && link.title.size() <= 100
+        && validExternalUrl(link.url)
+        && link.enabled is bool
+        && (!('description' in link)
+          || (link.description is string && link.description.size() <= 160))
+        && (!('kind' in link)
+          || (link.kind is string && link.kind in ['link', 'project', 'writing']))
+        && (!('sectionId' in link) || validIdentifier(link.sectionId, 80))
+        && validMediaFields(link);
+    }
+
+    function validLinks(links) {
+      return links is list
+        && links.size() <= 50
+        && (links.size() < 1 || validLink(links[0]))
+        && (links.size() < 2 || validLink(links[1]))
+        && (links.size() < 3 || validLink(links[2]))
+        && (links.size() < 4 || validLink(links[3]))
+        && (links.size() < 5 || validLink(links[4]))
+        && (links.size() < 6 || validLink(links[5]))
+        && (links.size() < 7 || validLink(links[6]))
+        && (links.size() < 8 || validLink(links[7]))
+        && (links.size() < 9 || validLink(links[8]))
+        && (links.size() < 10 || validLink(links[9]))
+        && (links.size() < 11 || validLink(links[10]))
+        && (links.size() < 12 || validLink(links[11]))
+        && (links.size() < 13 || validLink(links[12]))
+        && (links.size() < 14 || validLink(links[13]))
+        && (links.size() < 15 || validLink(links[14]))
+        && (links.size() < 16 || validLink(links[15]))
+        && (links.size() < 17 || validLink(links[16]))
+        && (links.size() < 18 || validLink(links[17]))
+        && (links.size() < 19 || validLink(links[18]))
+        && (links.size() < 20 || validLink(links[19]))
+        && (links.size() < 21 || validLink(links[20]))
+        && (links.size() < 22 || validLink(links[21]))
+        && (links.size() < 23 || validLink(links[22]))
+        && (links.size() < 24 || validLink(links[23]))
+        && (links.size() < 25 || validLink(links[24]))
+        && (links.size() < 26 || validLink(links[25]))
+        && (links.size() < 27 || validLink(links[26]))
+        && (links.size() < 28 || validLink(links[27]))
+        && (links.size() < 29 || validLink(links[28]))
+        && (links.size() < 30 || validLink(links[29]))
+        && (links.size() < 31 || validLink(links[30]))
+        && (links.size() < 32 || validLink(links[31]))
+        && (links.size() < 33 || validLink(links[32]))
+        && (links.size() < 34 || validLink(links[33]))
+        && (links.size() < 35 || validLink(links[34]))
+        && (links.size() < 36 || validLink(links[35]))
+        && (links.size() < 37 || validLink(links[36]))
+        && (links.size() < 38 || validLink(links[37]))
+        && (links.size() < 39 || validLink(links[38]))
+        && (links.size() < 40 || validLink(links[39]))
+        && (links.size() < 41 || validLink(links[40]))
+        && (links.size() < 42 || validLink(links[41]))
+        && (links.size() < 43 || validLink(links[42]))
+        && (links.size() < 44 || validLink(links[43]))
+        && (links.size() < 45 || validLink(links[44]))
+        && (links.size() < 46 || validLink(links[45]))
+        && (links.size() < 47 || validLink(links[46]))
+        && (links.size() < 48 || validLink(links[47]))
+        && (links.size() < 49 || validLink(links[48]))
+        && (links.size() < 50 || validLink(links[49]));
+    }
+
+    function validSocials(socials) {
+      return socials is map
+        && socials.keys().hasOnly([
+          'github', 'gitlab', 'linkedin', 'x', 'youtube', 'instagram', 'tiktok',
+          'facebook', 'threads', 'bluesky', 'mastodon', 'discord', 'twitch',
+          'reddit', 'medium', 'hashnode', 'devto', 'stackoverflow', 'codepen',
+          'codesandbox', 'dribbble', 'behance', 'figma', 'npm', 'producthunt',
+          'telegram', 'whatsapp', 'spotify', 'soundcloud', 'apple_music',
+          'patreon', 'kofi', 'buymeacoffee', 'calendly', 'calcom', 'email',
+          'website'
+        ])
+        && (!('github' in socials) || validExternalUrl(socials.github))
+        && (!('gitlab' in socials) || validExternalUrl(socials.gitlab))
+        && (!('linkedin' in socials) || validExternalUrl(socials.linkedin))
+        && (!('x' in socials) || validExternalUrl(socials.x))
+        && (!('youtube' in socials) || validExternalUrl(socials.youtube))
+        && (!('instagram' in socials) || validExternalUrl(socials.instagram))
+        && (!('tiktok' in socials) || validExternalUrl(socials.tiktok))
+        && (!('facebook' in socials) || validExternalUrl(socials.facebook))
+        && (!('threads' in socials) || validExternalUrl(socials.threads))
+        && (!('bluesky' in socials) || validExternalUrl(socials.bluesky))
+        && (!('mastodon' in socials) || validExternalUrl(socials.mastodon))
+        && (!('discord' in socials) || validExternalUrl(socials.discord))
+        && (!('twitch' in socials) || validExternalUrl(socials.twitch))
+        && (!('reddit' in socials) || validExternalUrl(socials.reddit))
+        && (!('medium' in socials) || validExternalUrl(socials.medium))
+        && (!('hashnode' in socials) || validExternalUrl(socials.hashnode))
+        && (!('devto' in socials) || validExternalUrl(socials.devto))
+        && (!('stackoverflow' in socials) || validExternalUrl(socials.stackoverflow))
+        && (!('codepen' in socials) || validExternalUrl(socials.codepen))
+        && (!('codesandbox' in socials) || validExternalUrl(socials.codesandbox))
+        && (!('dribbble' in socials) || validExternalUrl(socials.dribbble))
+        && (!('behance' in socials) || validExternalUrl(socials.behance))
+        && (!('figma' in socials) || validExternalUrl(socials.figma))
+        && (!('npm' in socials) || validExternalUrl(socials.npm))
+        && (!('producthunt' in socials) || validExternalUrl(socials.producthunt))
+        && (!('telegram' in socials) || validExternalUrl(socials.telegram))
+        && (!('whatsapp' in socials) || validExternalUrl(socials.whatsapp))
+        && (!('spotify' in socials) || validExternalUrl(socials.spotify))
+        && (!('soundcloud' in socials) || validExternalUrl(socials.soundcloud))
+        && (!('apple_music' in socials) || validExternalUrl(socials.apple_music))
+        && (!('patreon' in socials) || validExternalUrl(socials.patreon))
+        && (!('kofi' in socials) || validExternalUrl(socials.kofi))
+        && (!('buymeacoffee' in socials) || validExternalUrl(socials.buymeacoffee))
+        && (!('calendly' in socials) || validExternalUrl(socials.calendly))
+        && (!('calcom' in socials) || validExternalUrl(socials.calcom))
+        && (!('email' in socials) || validExternalUrl(socials.email))
+        && (!('website' in socials) || validExternalUrl(socials.website));
+    }
+
     function validProfile(uid) {
       return request.resource.data.keys().hasOnly([
           'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
@@ -150,12 +345,9 @@ service cloud.firestore {
         && request.resource.data.bio is string
         && request.resource.data.bio.size() <= 240
         && (!('avatarUrl' in request.resource.data)
-          || (request.resource.data.avatarUrl is string
-            && request.resource.data.avatarUrl.size() <= 2048))
+          || validHttpsUrl(request.resource.data.avatarUrl))
         && (!('ogImageUrl' in request.resource.data)
-          || (request.resource.data.ogImageUrl is string
-            && request.resource.data.ogImageUrl.size() <= 2048
-            && request.resource.data.ogImageUrl.matches('^https://.*')))
+          || validHttpsUrl(request.resource.data.ogImageUrl))
         && (!('location' in request.resource.data)
           || (request.resource.data.location is string
             && request.resource.data.location.size() <= 80))
@@ -166,24 +358,25 @@ service cloud.firestore {
         && request.resource.data.accent is string
         && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}$')
         && request.resource.data.published is bool
-        && request.resource.data.socials is map
-        && request.resource.data.socials.keys().hasOnly([
-          'github', 'gitlab', 'linkedin', 'x', 'youtube', 'instagram', 'tiktok',
-          'facebook', 'threads', 'bluesky', 'mastodon', 'discord', 'twitch',
-          'reddit', 'medium', 'hashnode', 'devto', 'stackoverflow', 'codepen',
-          'codesandbox', 'dribbble', 'behance', 'figma', 'npm', 'producthunt',
-          'telegram', 'whatsapp', 'spotify', 'soundcloud', 'apple_music',
-          'patreon', 'kofi', 'buymeacoffee', 'calendly', 'calcom', 'email',
-          'website'
-        ])
+        && validSocials(request.resource.data.socials)
         && (!('sections' in request.resource.data)
-          || (request.resource.data.sections is list
-            && request.resource.data.sections.size() <= 12))
+          || validSections(request.resource.data.sections))
         && (!('developerActivity' in request.resource.data)
           || validDeveloperActivity(request.resource.data.developerActivity))
-        && request.resource.data.links is list
-        && request.resource.data.links.size() <= 50
+        && validLinks(request.resource.data.links)
         && request.resource.data.updatedAt == request.time;
+    }
+
+    function validHandleClaim(handle) {
+      return request.resource.data.keys().hasOnly(['uid', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['uid', 'updatedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && validHandle(handle);
+    }
+
+    function canPublishProfile() {
+      return request.auth.token.email_verified == true;
     }
 
     match /users/{uid} {
@@ -192,39 +385,28 @@ service cloud.firestore {
 
     match /profiles/{uid} {
       allow read: if resource.data.published == true || owns(uid);
-      allow create, update: if owns(uid) && validProfile(uid);
+      allow create, update: if owns(uid)
+        && validProfile(uid)
+        && (!request.resource.data.published || canPublishProfile());
       allow delete: if owns(uid);
     }
 
     match /handles/{handle} {
       allow read: if true;
       allow create: if signedIn()
-        && validHandle(handle)
-        && request.resource.data.uid == request.auth.uid;
+        && canPublishProfile()
+        && validHandleClaim(handle);
       allow update: if signedIn()
         && resource.data.uid == request.auth.uid
-        && request.resource.data.uid == request.auth.uid
-        && validHandle(handle);
+        && canPublishProfile()
+        && validHandleClaim(handle);
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /reports/{reportId} {
-      allow create: if request.resource.data.keys().hasOnly([
-          'handle', 'reason', 'details', 'contactEmail', 'createdAt', 'status'
-        ])
-        && request.resource.data.handle is string
-        && request.resource.data.handle.size() <= 64
-        && request.resource.data.reason is string
-        && request.resource.data.reason.size() <= 100
-        && request.resource.data.details is string
-        && request.resource.data.details.size() >= 20
-        && request.resource.data.details.size() <= 1000
-        && (request.resource.data.contactEmail == null
-          || (request.resource.data.contactEmail is string
-            && request.resource.data.contactEmail.size() <= 254))
-        && request.resource.data.status == 'new'
-        && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+      // Reports are submitted through the rate-limited server route. Public
+      // Firestore writes invite spam and turn every visitor into a write API.
+      allow read, create, update, delete: if false;
     }
 
     function validStatsPayload() {
@@ -241,12 +423,9 @@ service cloud.firestore {
 
     match /profileStats/{uid} {
       allow read: if owns(uid);
-      allow create: if validStatsPayload()
-        && request.resource.data.totalClicks == 1;
-      allow update: if validStatsPayload()
-        && request.resource.data.totalClicks == resource.data.totalClicks + 1
-        && request.resource.data.links.keys().size() >= resource.data.links.keys().size()
-        && request.resource.data.socials.keys().size() >= resource.data.socials.keys().size();
+      // Click aggregation is server-owned. Public SDK writes made analytics
+      // trivial to fabricate and opened an unbounded Firestore write surface.
+      allow create, update: if false;
       allow delete: if owns(uid);
     }
 
@@ -269,11 +448,11 @@ service cloud.firestore {
         && request.resource.data.source in ['profile', 'github', 'events'];
     }
 
-    // Public GitHub contribution day map. Past days are reused so GitHub is
-    // only queried for the current day (and for initial/full year fills).
+    // Public GitHub contribution day map. Cache writes must come from a
+    // trusted backend; browser/API-key writes let anyone poison public data.
     match /githubContributionCaches/{usernameKey} {
       allow read: if true;
-      allow create, update: if validContributionCache(usernameKey);
+      allow create, update: if false;
       allow delete: if false;
     }
 
@@ -293,10 +472,11 @@ service cloud.firestore {
         && request.resource.data.version >= 1;
     }
 
-    // Year-scoped language mixes for public GitHub activity.
+    // Year-scoped language mixes for public GitHub activity. As above, only a
+    // trusted backend may write these documents.
     match /githubLanguageCaches/{usernameKey} {
       allow read: if true;
-      allow create, update: if validLanguageCache(usernameKey);
+      allow create, update: if false;
       allow delete: if false;
     }
 

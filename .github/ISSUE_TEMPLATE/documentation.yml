@@ -1,0 +1,33 @@
+name: Documentation improvement
+description: Report an unclear, missing, or inaccurate guide.
+title: "[Docs]: "
+labels:
+  - documentation
+  - needs-triage
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      description: Link to the page or name the file and section.
+      placeholder: README.md — Local development
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is unclear or inaccurate?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Include the audience and any safe example that would help.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I removed secrets, account identifiers, and private data.
+          required: true

@@ -672,6 +672,27 @@ export function DashboardApp() {
   async function togglePublished() {
     const previous = profile;
     const nextProfile = { ...profile, published: !profile.published };
+
+    if (nextProfile.published && user) {
+      try {
+        await user.reload();
+        if (!user.emailVerified) {
+          setStatus({
+            tone: "error",
+            message: "Verify your email before publishing your profile.",
+          });
+          return;
+        }
+        await user.getIdToken(true);
+      } catch {
+        setStatus({
+          tone: "error",
+          message: "We could not confirm your email verification. Please try again.",
+        });
+        return;
+      }
+    }
+
     setProfile(nextProfile);
     const saved = await persistProfile(
       nextProfile,

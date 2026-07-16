@@ -1,5 +1,3 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import type {
   GitHubContributionCalendar,
   GitHubContributionDay,
@@ -7,6 +5,8 @@ import type {
   GitHubContributionMonth,
   GitHubContributionWeek,
 } from "@/lib/github-activity";
+import { firestoreAdminRequest } from "@/lib/firebase-admin-rest";
+import { firebasePublicDocumentUrl } from "@/lib/firebase-public-rest";
 
 export type ContributionDayCacheEntry = {
   count: number;
@@ -42,10 +42,6 @@ type FirestoreValue =
 const CACHE_COLLECTION = "githubContributionCaches";
 const MAX_CACHED_DAYS = 5_500;
 const COVERAGE_THRESHOLD = 0.9;
-
-function projectId() {
-  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
-}
 
 export function contributionCacheKey(username: string) {
   return username.trim().toLowerCase();
@@ -393,10 +389,8 @@ function encodeDayMap(days: ContributionDayMap): FirestoreValue {
 }
 
 async function fetchDocument(path: string) {
-  const id = projectId();
-  if (!id) return null;
-
-  const url = `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents/${path}`;
+  const url = firebasePublicDocumentUrl(path);
+  if (!url) return null;
   const response = await fetch(url, { cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) return null;
@@ -443,15 +437,8 @@ export async function saveContributionCacheServer(
     syncedYears?: number[];
   } = {},
 ) {
-  const id = projectId();
   const key = contributionCacheKey(username);
-  if (!id || !key) return false;
-
-  const url =
-    `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents/` +
-    `${CACHE_COLLECTION}/${encodeURIComponent(key)}`;
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
-  const writeUrl = apiKey ? `${url}?key=${encodeURIComponent(apiKey)}` : url;
+  if (!key) return false;
   const source = options.source ?? "profile";
   const version = options.version ?? CONTRIBUTION_CACHE_VERSION;
   const syncedYears = normalizeSyncedYears(options.syncedYears ?? []);
@@ -480,95 +467,13 @@ export async function saveContributionCacheServer(
     },
   };
 
-  try {
-    const response = await fetch(writeUrl, {
+  const response = await firestoreAdminRequest(
+    `${CACHE_COLLECTION}/${encodeURIComponent(key)}`,
+    {
       method: "PATCH",
-      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8_000),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-export async function loadContributionCacheClient(
-  username: string,
-): Promise<GitHubContributionCache | null> {
-  if (!db) return null;
-  const key = contributionCacheKey(username);
-  if (!key) return null;
-
-  const snapshot = await getDoc(doc(db, CACHE_COLLECTION, key));
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data() as Record<string, unknown>;
-  return {
-    username: typeof data.username === "string" ? data.username : key,
-    days: normalizeDayMap(data.days),
-    availableYears: normalizeAvailableYears(data.availableYears),
-    syncedYears: normalizeSyncedYears(data.syncedYears),
-    version: typeof data.version === "number" ? data.version : undefined,
-    source:
-      data.source === "profile" ||
-      data.source === "github" ||
-      data.source === "events"
-        ? data.source
-        : undefined,
-    updatedAt:
-      typeof data.updatedAt === "string"
-        ? data.updatedAt
-        : data.updatedAt &&
-            typeof data.updatedAt === "object" &&
-            data.updatedAt !== null &&
-            "toDate" in data.updatedAt
-          ? (data.updatedAt as { toDate: () => Date }).toDate().toISOString()
-          : undefined,
-  };
-}
-
-/** Persist contribution days for a GitHub username (owner-signed-in client). */
-export async function saveContributionCacheClient(
-  username: string,
-  days: ContributionDayMap,
-  availableYears: number[],
-  options: {
-    source?: GitHubContributionCache["source"];
-    version?: number;
-    syncedYear?: number;
-    replaceYear?: number;
-  } = {},
-) {
-  if (!db) return;
-  const key = contributionCacheKey(username);
-  if (!key) return;
-
-  const existing = await loadContributionCacheClient(key);
-  const mergedDays =
-    typeof options.replaceYear === "number"
-      ? replaceYearDays(existing?.days ?? {}, options.replaceYear, days)
-      : mergeDayMaps(existing?.days, days);
-  const mergedYears = normalizeAvailableYears([
-    ...(existing?.availableYears ?? []),
-    ...availableYears,
-  ]);
-  const syncedYears = normalizeSyncedYears([
-    ...(existing?.syncedYears ?? []),
-    ...(typeof options.syncedYear === "number" ? [options.syncedYear] : []),
-  ]);
-
-  await setDoc(
-    doc(db, CACHE_COLLECTION, key),
-    {
-      username: key,
-      days: mergedDays,
-      availableYears: mergedYears,
-      syncedYears,
-      source: options.source ?? "profile",
-      version: options.version ?? CONTRIBUTION_CACHE_VERSION,
-      updatedAt: serverTimestamp(),
     },
-    { merge: true },
   );
+  return Boolean(response?.ok);
 }

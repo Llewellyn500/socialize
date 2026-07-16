@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { PublicProfileClient } from "@/components/public-profile/public-profile-client";
 import { OG_SIZE } from "@/lib/og-mark";
 import { loadPublicProfileServer } from "@/lib/profile-server";
@@ -57,5 +58,21 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { handle } = await params;
-  return <PublicProfileClient handle={handle.toLowerCase()} />;
+  const normalized = handle.toLowerCase();
+  const profile = await loadPublicProfileServer(normalized);
+  if (!profile) notFound();
+
+  return (
+    <>
+      <PublicProfileClient handle={normalized} />
+      <noscript>
+        <main>
+          <h1>{profile.displayName}</h1>
+          <p>{profile.role}</p>
+          <p>{profile.bio}</p>
+          <p>View this developer profile on Socialize.</p>
+        </main>
+      </noscript>
+    </>
+  );
 }

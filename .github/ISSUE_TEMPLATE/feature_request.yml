@@ -1,0 +1,43 @@
+name: Feature or improvement
+description: Propose an outcome that would make Socialize more useful.
+title: "[Idea]: "
+labels:
+  - idea
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Sponsorship does not purchase a feature or a delivery date.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or user need
+      description: Describe who is affected and what is difficult today.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Focus on the result rather than a prescribed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Optional implementation ideas, examples, or prior art.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and the public roadmap.
+          required: true
+        - label: I understand this issue does not create a delivery commitment.
+          required: true

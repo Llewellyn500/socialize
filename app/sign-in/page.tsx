@@ -5,6 +5,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 export const metadata: Metadata = {
   title: "Sign in",
   description: "Sign in to manage your hosted Socialize developer profile.",
+  robots: { index: false, follow: false },
 };
 
 export default async function SignInPage({

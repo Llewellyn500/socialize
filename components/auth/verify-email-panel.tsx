@@ -62,6 +62,8 @@ export function VerifyEmailPanel() {
         return;
       }
 
+      await refreshedUser.getIdToken(true);
+
       setMessage("Email verified. Opening your workspace...");
       try {
         const profile = await loadProfile(refreshedUser.uid);
@@ -149,6 +151,24 @@ export function VerifyEmailPanel() {
         <Link className={styles.primaryButton} href="/sign-in">
           Go to sign in
         </Link>
+      </div>
+    );
+  }
+
+  if (!user.email) {
+    return (
+      <div className={styles.confirmation}>
+        <span className={styles.confirmationIcon}>
+          <FiMail aria-hidden="true" />
+        </span>
+        <h2>An email address is required</h2>
+        <p>
+          This sign-in method did not share an email address, so it cannot be
+          verified for a public profile. Use an account that shares an email.
+        </p>
+        <button className={styles.primaryButton} type="button" onClick={handleDifferentAccount}>
+          Use a different account
+        </button>
       </div>
     );
   }

@@ -1,6 +1,6 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import type { GitHubActivityLanguage } from "@/lib/github-activity";
+import { firestoreAdminRequest } from "@/lib/firebase-admin-rest";
+import { firebasePublicDocumentUrl } from "@/lib/firebase-public-rest";
 
 export type LanguageYearCacheEntry = {
   languages: GitHubActivityLanguage[];
@@ -34,10 +34,6 @@ const CACHE_COLLECTION = "githubLanguageCaches";
 const MAX_YEARS = 15;
 const MAX_LANGUAGES = 40;
 const MAX_REPOSITORIES = 40;
-
-function projectId() {
-  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
-}
 
 export function languageCacheKey(username: string) {
   return username.trim().toLowerCase();
@@ -292,10 +288,8 @@ function encodeByYear(
 }
 
 async function fetchDocument(path: string) {
-  const id = projectId();
-  if (!id) return null;
-  const url =
-    `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents/${path}`;
+  const url = firebasePublicDocumentUrl(path);
+  if (!url) return null;
   const response = await fetch(url, { cache: "no-store" });
   if (response.status === 404) return null;
   if (!response.ok) return null;
@@ -327,15 +321,8 @@ export async function saveLanguageCacheServer(
   syncedYears: number[],
   options: { version?: number } = {},
 ) {
-  const id = projectId();
   const key = languageCacheKey(username);
-  if (!id || !key) return false;
-
-  const url =
-    `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents/` +
-    `${CACHE_COLLECTION}/${encodeURIComponent(key)}`;
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
-  const writeUrl = apiKey ? `${url}?key=${encodeURIComponent(apiKey)}` : url;
+  if (!key) return false;
   const version = options.version ?? LANGUAGE_CACHE_VERSION;
   const body = {
     fields: {
@@ -353,78 +340,13 @@ export async function saveLanguageCacheServer(
     },
   };
 
-  try {
-    const response = await fetch(writeUrl, {
+  const response = await firestoreAdminRequest(
+    `${CACHE_COLLECTION}/${encodeURIComponent(key)}`,
+    {
       method: "PATCH",
-      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(8_000),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-export async function loadLanguageCacheClient(
-  username: string,
-): Promise<GitHubLanguageCache | null> {
-  if (!db) return null;
-  const key = languageCacheKey(username);
-  if (!key) return null;
-  const snapshot = await getDoc(doc(db, CACHE_COLLECTION, key));
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data() as Record<string, unknown>;
-  return {
-    username: typeof data.username === "string" ? data.username : key,
-    byYear: normalizeByYear(data.byYear),
-    syncedYears: normalizeSyncedYears(data.syncedYears),
-    version: typeof data.version === "number" ? data.version : undefined,
-    updatedAt:
-      typeof data.updatedAt === "string"
-        ? data.updatedAt
-        : data.updatedAt &&
-            typeof data.updatedAt === "object" &&
-            data.updatedAt !== null &&
-            "toDate" in data.updatedAt
-          ? (data.updatedAt as { toDate: () => Date }).toDate().toISOString()
-          : undefined,
-  };
-}
-
-export async function saveLanguageCacheClient(
-  username: string,
-  year: number,
-  entry: Omit<LanguageYearCacheEntry, "updatedAt"> & { updatedAt?: string },
-  options: { syncedYear?: number; version?: number } = {},
-) {
-  if (!db) return;
-  const key = languageCacheKey(username);
-  if (!key) return;
-
-  const existing = await loadLanguageCacheClient(key);
-  const nextEntry: LanguageYearCacheEntry = {
-    languages: normalizeLanguageList(entry.languages),
-    repositories: normalizeRepositoryList(entry.repositories),
-    modeKey: entry.modeKey.slice(0, 500),
-    updatedAt: entry.updatedAt ?? new Date().toISOString(),
-  };
-  const byYear = replaceLanguageYear(existing?.byYear ?? {}, year, nextEntry);
-  const syncedYears = normalizeSyncedYears([
-    ...(existing?.syncedYears ?? []),
-    ...(typeof options.syncedYear === "number" ? [options.syncedYear] : []),
-  ]);
-
-  await setDoc(
-    doc(db, CACHE_COLLECTION, key),
-    {
-      username: key,
-      byYear,
-      syncedYears,
-      version: options.version ?? LANGUAGE_CACHE_VERSION,
-      updatedAt: serverTimestamp(),
     },
-    { merge: true },
   );
+  return Boolean(response?.ok);
 }

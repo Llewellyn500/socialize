@@ -5,6 +5,7 @@ import { OnboardingForm } from "@/components/auth/onboarding-form";
 export const metadata: Metadata = {
   title: "Create your profile",
   description: "Claim a Socialize handle and create your developer profile.",
+  robots: { index: false, follow: false },
 };
 
 export default function OnboardingPage() {

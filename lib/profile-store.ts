@@ -9,7 +9,7 @@ import {
   updateDoc,
   deleteField,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { uploadProfileOgImage } from "@/lib/og-image-upload";
 import {
   developerActivityHasVisibleModules,
@@ -75,10 +75,19 @@ async function regenerateOgImage(uid: string, profile: ProfileConfig) {
     return rest;
   }
 
+  const idToken = await auth?.currentUser?.getIdToken();
+  if (!idToken) {
+    throw new Error("Sign in again to generate an Open Graph image.");
+  }
+
   const response = await fetch("/api/og-image", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
+      uid,
       profile: {
         handle: profile.handle,
         displayName: profile.displayName,

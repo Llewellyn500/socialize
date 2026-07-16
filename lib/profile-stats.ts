@@ -3,11 +3,9 @@
 import {
   doc,
   getDoc,
-  runTransaction,
-  serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, getLimitedUseAppCheckToken } from "@/lib/firebase";
 import { normalizeHandle } from "@/lib/profile";
 import { isSocialKey } from "@/lib/socials";
 
@@ -93,11 +91,16 @@ export async function recordProfileClick(input: {
   targetId: string;
   kind: ClickKind;
 }) {
-  if (!db) return;
-
   const handle = normalizeHandle(input.handle);
   const targetId = input.targetId.trim().slice(0, 80);
-  if (!handle || !targetId) return;
+  if (
+    !handle ||
+    !targetId ||
+    !/^[a-zA-Z0-9_-]{1,80}$/.test(targetId) ||
+    (input.kind !== "link" && input.kind !== "social")
+  ) {
+    return;
+  }
 
   // Avoid double-counting rapid duplicate clicks in the same tab.
   const dedupeKey = `socialize-click:${handle}:${input.kind}:${targetId}`;
@@ -115,43 +118,20 @@ export async function recordProfileClick(input: {
     // sessionStorage may be unavailable
   }
 
-  const handleSnap = await getDoc(doc(db, "handles", handle));
-  if (!handleSnap.exists()) return;
-  const uid = handleSnap.data().uid as string | undefined;
-  if (!uid) return;
+  // Analytics never blocks navigation. The server route owns aggregation so
+  // public visitors cannot write arbitrary Firestore documents directly.
+  const appCheckToken = await getLimitedUseAppCheckToken();
+  if (!appCheckToken) return;
 
-  const statsRef = doc(db, "profileStats", uid);
-  const linkPath = input.kind === "link" ? "links" : "socials";
-
-  await runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(statsRef);
-    const now = serverTimestamp();
-
-    if (!snap.exists()) {
-      transaction.set(statsRef, {
-        handle,
-        totalClicks: 1,
-        links: input.kind === "link" ? { [targetId]: { clicks: 1, lastClickAt: now } } : {},
-        socials: input.kind === "social" ? { [targetId]: { clicks: 1, lastClickAt: now } } : {},
-        updatedAt: now,
-      });
-      return;
-    }
-
-    const data = snap.data() as ProfileStats & {
-      links?: Record<string, { clicks?: number }>;
-      socials?: Record<string, { clicks?: number }>;
-    };
-    const bucket = input.kind === "link" ? data.links ?? {} : data.socials ?? {};
-    const previous = bucket[targetId]?.clicks ?? 0;
-
-    transaction.update(statsRef, {
-      handle,
-      totalClicks: (data.totalClicks ?? 0) + 1,
-      updatedAt: now,
-      [`${linkPath}.${targetId}.clicks`]: previous + 1,
-      [`${linkPath}.${targetId}.lastClickAt`]: now,
-    });
+  await fetch("/api/profile-click", {
+    method: "POST",
+    credentials: "same-origin",
+    keepalive: true,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Firebase-AppCheck": appCheckToken,
+    },
+    body: JSON.stringify({ handle, targetId, kind: input.kind }),
   });
 }
 

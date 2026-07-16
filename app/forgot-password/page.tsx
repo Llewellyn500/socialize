@@ -5,6 +5,7 @@ import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 export const metadata: Metadata = {
   title: "Reset password",
   description: "Request a password reset for your Socialize account.",
+  robots: { index: false, follow: false },
 };
 
 export default function ForgotPasswordPage() {

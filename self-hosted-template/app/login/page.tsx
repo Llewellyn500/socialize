@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import { LoginForm } from "@/components/login-form";
+
+export const metadata: Metadata = {
+  title: "Owner sign in",
+  robots: { index: false, follow: false },
+};
 
 export default function LoginPage() {
   return (

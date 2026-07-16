@@ -1,14 +1,21 @@
 # Socialize
 
-Socialize is a developer-first link page with two ways to use it:
+Socialize is a free, developer-first link page with two ways to use it:
 
-- **Hosted service:** create an account, claim a handle, edit visually, and publish on the Socialize domain.
+- **Hosted service:** create an account, claim a handle, edit visually, and publish on the Socialize domain at no cost.
 - **Self-hosted edition:** run the stripped profile and owner dashboard on your own infrastructure and domain.
 
 The hosted product and self-hosted starter use related profile models, but their
 top-level schemas are not interchangeable. A hosted JSON export is a backup and
-migration format rather than a file the stripped edition imports unchanged. The
-optional nested `developerActivity` shape is portable between both editions.
+migration source, not a file the stripped edition imports unchanged. There is no
+one-click hosted-to-self-hosted importer yet; use the documented conversion
+process when moving a profile. The optional nested `developerActivity` shape is
+portable between both editions.
+
+All current Socialize functionality is free. There are no paid product tiers,
+feature gates, or sponsor-only features. If the project helps, you can
+[sponsor its maintenance](https://github.com/sponsors/Llewellyn500), but
+sponsorship is voluntary support rather than payment for the service.
 
 ## What is in this repository
 
@@ -24,12 +31,19 @@ optional nested `developerActivity` shape is portable between both editions.
 
 ## Local development
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 22 and npm. The repository includes .nvmrc and the
+continuous-integration workflow uses Node 22.
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
+```
+
+On PowerShell, copy the environment file with:
+
+```powershell
+Copy-Item .env.example .env.local
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Without backend environment values, the marketing site and dashboard run in a clearly labeled local demo mode. Authentication and cloud persistence activate when the backend is configured.
@@ -61,7 +75,37 @@ firebase use --add
 firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
+### Deploy Firebase policy and trusted server writes
+
+Vercel deploys the Next.js application but does not deploy Firestore rules,
+Firestore indexes, or Storage rules. Production policy deployment must be run by
+an authorized Firebase CLI identity. For a CI deployment, use a dedicated
+service account with only the permissions required to deploy those Firebase
+resources, keep its credential in the CI secret store, and limit access to the
+deployment job.
+
+The hosted app also uses a **separate, server-only** Firebase service-account
+credential for click aggregation, the abuse-report queue, and GitHub activity
+caches. Put the complete JSON value in `FIREBASE_SERVICE_ACCOUNT_JSON` in the
+production runtime's encrypted environment variables (for example, Vercel
+Project Settings). It must never be committed, embedded in a Docker image,
+exported to the browser, or use a `NEXT_PUBLIC_` name. Give this runtime account
+only the Firestore access the hosted project needs. Without it, public profiles
+remain available but click analytics, browser report submissions, and persistent
+GitHub caches intentionally stay disabled rather than opening direct browser
+writes to Firestore.
+
 Firebase Web API keys are identifiers and are expected in the browser. Your real security boundary is Authentication, Firestore/Storage rules, authorized domains, App Check, and server-side handling for any future private integration token.
+
+Before public launch, create a Firebase App Check reCAPTCHA Enterprise provider,
+set `NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY`, verify token issuance in a
+production-like environment, and grant the runtime service account the Firebase
+App Check Token Verifier role. Browser report submissions and click analytics
+use one-time App Check tokens and remain disabled until this is configured; this
+keeps anonymous visitors from gaining a privileged Firestore write path. Only
+then enforce App Check for Firestore and Storage. The app initializes App Check
+when that value is present; do not enable enforcement until the live site has
+been verified or you will block legitimate users.
 
 For production, add every deployed domain under Authentication → Settings → Authorized domains. Test account linking when the same email arrives through different providers; Firebase may return `auth/account-exists-with-different-credential`, which should lead the user through the original provider before linking the new credential.
 
@@ -183,7 +227,8 @@ redeploy. After the first deployment:
    Open Graph, sitemap, and auth-action links use the correct origin.
 3. Keep Firebase rule deployment separate: Vercel deploys the Next.js app;
    `firebase deploy --only firestore:rules,firestore:indexes,storage` deploys the
-   backend access policy.
+   backend access policy through an authorized operator or dedicated CI
+   service account.
 4. Add your custom domain in Vercel, then add that final domain to Firebase
    Authentication too.
 5. If public GitHub activity will be enabled, optionally add the server-only
@@ -192,6 +237,39 @@ redeploy. After the first deployment:
 
 For the stripped edition, import the same GitHub repository as a second Vercel
 project and set its Root Directory to `self-hosted-template`.
+
+## Pre-launch checklist
+
+Do not invite public hosted accounts until the following have been completed and
+recorded:
+
+- [ ] Run a clean-clone install, `npm run lint`, and `npm run build` for the
+  hosted app and the equivalent checks for the self-hosted template.
+- [ ] Set `NEXT_PUBLIC_SITE_URL=https://socialize.you`, verify HTTPS and the
+  intended www redirect, then test canonical URLs and social sharing previews.
+- [ ] Add every production and preview domain to Firebase Authentication
+  authorized domains, and deploy Firestore rules, indexes, and Storage rules
+  through a controlled identity.
+- [ ] Enable and verify production abuse controls: App Check, endpoint rate
+  limits, account and email-verification behavior, moderation review, backups,
+  and incident handling.
+- [ ] Add a least-privilege `FIREBASE_SERVICE_ACCOUNT_JSON` runtime secret and
+  verify trusted click, report, and GitHub-cache writes without exposing a
+  browser-write rule.
+- [ ] Send and receive a test message from every published address:
+  support@socialize.you, security@socialize.you, privacy@socialize.you,
+  safety@socialize.you, legal@socialize.you, and sponsors@socialize.you.
+- [ ] Replace policy drafts with approved, accurate Terms, Privacy, Cookies,
+  acceptable-use, and security information that identifies the service operator,
+  contact details, retention, and reporting process.
+- [ ] Test sign-up, sign-in, password reset, OAuth, email verification,
+  publishing, unpublishing, exports, deletion, uploads, and a public profile in
+  a signed-out browser on desktop and mobile.
+- [ ] Scan browser storage and network requests in production, verify analytics
+  consent behavior, and update policy language with the results.
+- [ ] Verify robots.txt and sitemap.xml, set up Google Search Console, submit the
+  sitemap, and decide whether profiles should be explicitly discoverable by
+  search engines.
 
 ## Google Analytics
 
@@ -240,14 +318,33 @@ Pass Firebase public configuration through your deployment environment. Do not b
 - OAuth or third-party integration secrets belong in trusted server infrastructure, never profile documents.
 - GitHub activity is public-only, sampled, cached, optional per profile, and keeps a public-data-only `GITHUB_TOKEN` on the server.
 - Google Analytics is optional, consent-gated, and configured without advertising storage or profile/account fields.
-- Before a public launch, add Firebase App Check, Vercel Firewall limits for GitHub activity, rate limiting for reports and handle attempts, email verification enforcement, moderation tooling, account deletion automation, and emulator tests for every rules branch.
+- Before a public launch, complete the security, privacy, and operational checks
+  in the [pre-launch checklist](#pre-launch-checklist), including Firebase App
+  Check, distributed rate limits, moderation tooling, and emulator coverage for
+  every rules branch.
 
 The included legal pages are product-specific starter drafts, not legal advice. Review them for your operating entity, jurisdiction, retention schedule, subprocessors, and support contact before launch.
 
-## Sponsoring
+## Community and project governance
 
-Socialize is open source and accepts sponsorship for maintenance, documentation, accessibility, and the self-hosted edition. GitHub sponsorship metadata lives in [`.github/FUNDING.yml`](./.github/FUNDING.yml).
+- [Contributing guide](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Security policy](./SECURITY.md)
+- [Support guide](./SUPPORT.md)
+- [Public roadmap](./ROADMAP.md)
+- [Changelog](./CHANGELOG.md)
+
+## Supporting Socialize
+
+Socialize is free to use and free to self-host. Sponsorship supports
+maintenance, documentation, accessibility, security work, and the self-hosted
+edition. It does not unlock product features, priority support, access to user
+data, or roadmap control.
+
+Sponsor through [GitHub Sponsors](https://github.com/sponsors/Llewellyn500) or
+read the [support policy](./SUPPORT.md). GitHub sponsorship metadata lives in
+[.github/FUNDING.yml](./.github/FUNDING.yml).
 
 ## License
 
-No license was present in the original repository, so this work does not invent one. Add an explicit `LICENSE` before describing the code as legally reusable outside the permissions GitHub grants for viewing and forking.
+Socialize is released under the [MIT License](./LICENSE).

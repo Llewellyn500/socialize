@@ -19,7 +19,8 @@ export function SiteFooter() {
       <div className="site-footer__lead">
         <Brand inverse />
         <p>
-          A smaller, sharper link page for people who make software.
+          A smaller, sharper link page for people who make software. Free to use,
+          free to self-host, voluntarily supported.
         </p>
       </div>
       <nav className="site-footer__links" aria-label="Footer navigation">

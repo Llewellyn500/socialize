@@ -1,10 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { FiAlertCircle, FiCheck } from "react-icons/fi";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { db, isFirebaseConfigured } from "@/lib/firebase";
+import { getLimitedUseAppCheckToken } from "@/lib/firebase";
 import styles from "@/components/service-content.module.css";
 
 const reasons = [
@@ -33,27 +32,41 @@ export function ReportForm({ handle, fallbackEmail }: { handle: string; fallback
       setStatus({ tone: "error", message: "Choose a reason and add at least 20 characters of specific context." });
       return;
     }
-    if (!db || !isFirebaseConfigured) {
-      setStatus({ tone: "error", message: "The report endpoint is not configured on this deployment. Use the safety email below." });
-      return;
-    }
-
     setPending(true);
     try {
-      await addDoc(collection(db, "reports"), {
-        handle,
-        reason,
-        details: details.trim(),
-        contactEmail: contactEmail.trim() || null,
-        createdAt: serverTimestamp(),
-        status: "new",
+      const appCheckToken = await getLimitedUseAppCheckToken();
+      if (!appCheckToken) {
+        throw new Error("Report submission is unavailable. Please use the safety email below instead.");
+      }
+      const response = await fetch("/api/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Firebase-AppCheck": appCheckToken,
+        },
+        body: JSON.stringify({
+          handle,
+          reason,
+          details: details.trim(),
+          contactEmail: contactEmail.trim(),
+        }),
       });
+      if (!response.ok) {
+        const result = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(result?.error || "The report could not be submitted.");
+      }
       setReason("");
       setDetails("");
       setContactEmail("");
       setStatus({ tone: "success", message: "Report received. Keep a copy of the profile URL for your records." });
-    } catch {
-      setStatus({ tone: "error", message: "The report could not be submitted. Use the safety email below instead." });
+    } catch (error) {
+      setStatus({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The report could not be submitted. Use the safety email below instead.",
+      });
     } finally {
       setPending(false);
     }

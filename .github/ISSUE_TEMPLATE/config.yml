@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: mailto:security@socialize.you
+    about: Report security issues privately. Do not create a public issue.
+  - name: Hosted-profile abuse report
+    url: mailto:safety@socialize.you
+    about: Report phishing, malware, impersonation, or harmful hosted content.
+  - name: Account or privacy support
+    url: https://socialize.you/docs#help
+    about: Find the right private support channel.

@@ -131,11 +131,7 @@ export function OnboardingForm() {
     };
   }, [handle, user]);
 
-  const usesUnverifiedPassword = Boolean(
-    user &&
-      !user.emailVerified &&
-      user.providerData.some((provider) => provider.providerId === "password"),
-  );
+  const needsVerifiedEmail = Boolean(user && !user.emailVerified);
 
   async function handleAvatarChange(file: File | undefined) {
     if (!file || !user) return;
@@ -165,7 +161,7 @@ export function OnboardingForm() {
       setError("Sign in before claiming a Socialize handle.");
       return;
     }
-    if (usesUnverifiedPassword) {
+    if (needsVerifiedEmail) {
       setError("Verify your email before claiming a public handle.");
       return;
     }
@@ -194,6 +190,13 @@ export function OnboardingForm() {
 
     setIsSaving(true);
     try {
+      await user.reload();
+      if (!user.emailVerified) {
+        setError("Verify your email before claiming a public handle.");
+        return;
+      }
+      await user.getIdToken(true);
+
       const available = await isHandleAvailableForUser(handle, user.uid);
       if (!available) {
         setHandleAvailability("taken");
@@ -295,7 +298,7 @@ export function OnboardingForm() {
         </p>
       </div>
 
-      {usesUnverifiedPassword ? (
+      {needsVerifiedEmail ? (
         <div className={`${styles.notice} ${styles.noticeInfo}`} role="status">
           <FiInfo aria-hidden="true" />
           <p>
@@ -431,7 +434,7 @@ export function OnboardingForm() {
                 <label className={styles.fileButton}>
                   <input
                     accept="image/jpeg,image/png,image/webp,image/gif"
-                    disabled={isSaving || isUploadingAvatar || usesUnverifiedPassword}
+                    disabled={isSaving || isUploadingAvatar || needsVerifiedEmail}
                     type="file"
                     onChange={(event) => {
                       void handleAvatarChange(event.target.files?.[0]);
@@ -460,7 +463,7 @@ export function OnboardingForm() {
             disabled={
               isSaving ||
               isUploadingAvatar ||
-              usesUnverifiedPassword ||
+              needsVerifiedEmail ||
               !isValidHandle(handle) ||
               handleAvailability === "checking" ||
               handleAvailability === "taken" ||

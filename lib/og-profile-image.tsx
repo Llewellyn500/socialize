@@ -10,12 +10,28 @@ export type ProfileOgInput = Pick<
 
 function absoluteAvatarUrl(avatarUrl: string | undefined, siteUrl: string) {
   if (!avatarUrl) return null;
-  if (avatarUrl.startsWith("https://") || avatarUrl.startsWith("http://")) {
-    return avatarUrl;
-  }
   if (avatarUrl.startsWith("/")) {
     return `${siteUrl.replace(/\/$/, "")}${avatarUrl}`;
   }
+
+  try {
+    const url = new URL(avatarUrl);
+    const site = new URL(siteUrl);
+    if (url.protocol !== "https:") return null;
+
+    // OG rendering happens on our server. Only allow known image hosts here so
+    // a profile cannot turn the image generator into an internal-network fetch.
+    if (
+      url.origin === site.origin ||
+      url.hostname === "firebasestorage.googleapis.com" ||
+      url.hostname === "storage.googleapis.com"
+    ) {
+      return url.toString();
+    }
+  } catch {
+    // Invalid or relative external URLs are intentionally omitted from OG cards.
+  }
+
   return null;
 }
 

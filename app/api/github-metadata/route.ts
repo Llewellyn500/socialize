@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { fetchOpenGraph } from "@/lib/open-graph";
 import { parseGitHubUrl } from "@/lib/github-url";
+import {
+  consumeRequestRateLimit,
+  NO_STORE_CACHE_CONTROL,
+  PUBLIC_METADATA_CACHE_CONTROL,
+  requestRateLimitHeaders,
+  type RequestRateLimitResult,
+} from "@/lib/request-safety";
 import { safeExternalJson } from "@/lib/safe-external-fetch";
 
 export const runtime = "nodejs";
@@ -9,6 +16,32 @@ type GitHubMetadata = {
   title: string;
   description: string;
 };
+
+const METADATA_RATE_LIMIT = {
+  namespace: "link-metadata",
+  limit: 20,
+  windowMs: 60_000,
+} as const;
+
+function metadataHeaders(rateLimit: RequestRateLimitResult) {
+  return {
+    "Cache-Control": PUBLIC_METADATA_CACHE_CONTROL,
+    ...requestRateLimitHeaders(rateLimit),
+  };
+}
+
+function inputError(message: string, rateLimit: RequestRateLimitResult) {
+  return NextResponse.json(
+    { error: message },
+    {
+      status: 400,
+      headers: {
+        "Cache-Control": NO_STORE_CACHE_CONTROL,
+        ...requestRateLimitHeaders(rateLimit),
+      },
+    },
+  );
+}
 
 function githubHeaders(includeAuthorization = true) {
   const token = process.env.GITHUB_TOKEN?.trim();
@@ -34,6 +67,7 @@ async function fetchFromGitHubApi(
         // Repository link previews must remain public-only even if the configured
         // token was accidentally granted private repository access.
         headers: githubHeaders(false),
+        allowedHosts: ["api.github.com"],
       });
       if (!data?.full_name || data.private !== false) return null;
       return {
@@ -48,6 +82,7 @@ async function fetchFromGitHubApi(
       bio?: string | null;
     }>(`https://api.github.com/users/${parsed.owner}`, {
       headers: githubHeaders(),
+      allowedHosts: ["api.github.com"],
     });
 
     const title = data?.name?.trim() || data?.login?.trim();
@@ -65,7 +100,10 @@ function cleanGitHubTitle(value: string) {
   return value.replace(/\s*·\s*GitHub\s*$/i, "").replace(/\s*-\s*GitHub\s*$/i, "").trim();
 }
 
-function githubFallback(parsed: NonNullable<ReturnType<typeof parseGitHubUrl>>) {
+function githubFallback(
+  parsed: NonNullable<ReturnType<typeof parseGitHubUrl>>,
+  rateLimit: RequestRateLimitResult,
+) {
   const title =
     parsed.kind === "repo" && parsed.repo
       ? `${parsed.owner}/${parsed.repo}`
@@ -74,34 +112,50 @@ function githubFallback(parsed: NonNullable<ReturnType<typeof parseGitHubUrl>>) 
   return NextResponse.json({
     title,
     description: "",
-  });
+  }, { headers: metadataHeaders(rateLimit) });
 }
 
 export async function GET(request: Request) {
+  const rateLimit = consumeRequestRateLimit(request, METADATA_RATE_LIMIT);
+  const rateHeaders = requestRateLimitHeaders(rateLimit);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many metadata requests. Try again shortly." },
+      {
+        status: 429,
+        headers: {
+          "Cache-Control": NO_STORE_CACHE_CONTROL,
+          "Retry-After": String(rateLimit.retryAfter),
+          ...rateHeaders,
+        },
+      },
+    );
+  }
+
   const url = new URL(request.url).searchParams.get("url")?.trim();
   if (!url) {
-    return NextResponse.json({ error: "Missing url parameter." }, { status: 400 });
+    return inputError("Missing url parameter.", rateLimit);
   }
 
   const parsed = parseGitHubUrl(url);
   if (!parsed) {
-    return NextResponse.json({ error: "Not a supported GitHub URL." }, { status: 400 });
+    return inputError("Not a supported GitHub URL.", rateLimit);
   }
 
   try {
     const fromApi = await fetchFromGitHubApi(parsed);
-    if (fromApi) return NextResponse.json(fromApi);
+    if (fromApi) return NextResponse.json(fromApi, { headers: metadataHeaders(rateLimit) });
 
     const fromOpenGraph = await fetchOpenGraph(parsed.canonicalUrl);
     if (fromOpenGraph) {
       return NextResponse.json({
         title: cleanGitHubTitle(fromOpenGraph.title),
         description: fromOpenGraph.description,
-      });
+      }, { headers: metadataHeaders(rateLimit) });
     }
   } catch {
     // Fall through to URL-derived title.
   }
 
-  return githubFallback(parsed);
+  return githubFallback(parsed, rateLimit);
 }

@@ -11,6 +11,7 @@ import {
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   updateProfile,
   type User,
 } from "firebase/auth";
@@ -50,11 +51,7 @@ async function recordTermsAcceptance(user: User) {
 }
 
 async function getPostAuthRoute(user: User) {
-  const usesPassword = user.providerData.some(
-    (provider) => provider.providerId === "password",
-  );
-
-  if (usesPassword && !user.emailVerified) return "/verify-email";
+  if (!user.emailVerified) return "/verify-email";
 
   try {
     const profile = await loadProfile(user.uid);
@@ -194,15 +191,30 @@ export function AuthForm({
         provider.setCustomParameters({ prompt: "select_account" });
       } else {
         provider.addScope("read:user");
+        provider.addScope("user:email");
       }
 
       const result = await signInWithPopup(firebaseAuth, provider);
+      const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
+      if (isNewUser && !isSignUp) {
+        await signOut(firebaseAuth);
+        router.push("/sign-up?notice=Create your account there so you can accept the Terms and Privacy Policy.");
+        return;
+      }
       if (providerName === "github") {
         await captureGitHubLoginFromCredential(result);
       }
-      const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
-      if (isSignUp) await recordTermsAcceptance(result.user);
-      const route = isNewUser ? "/onboarding" : await getPostAuthRoute(result.user);
+      if (isNewUser || isSignUp) await recordTermsAcceptance(result.user);
+      if (isNewUser && !result.user.emailVerified) {
+        try {
+          await sendEmailVerification(result.user, {
+            url: `${window.location.origin}/verify-email`,
+          });
+        } catch {
+          // The verification screen includes a resend action if delivery fails.
+        }
+      }
+      const route = await getPostAuthRoute(result.user);
       router.push(returnTo && route === "/dashboard" ? returnTo : route);
     } catch (authError) {
       const linkPrompt = await readPendingProviderLink(authError);
@@ -223,7 +235,7 @@ export function AuthForm({
         <h2>{isSignUp ? "Create your account" : "Welcome back"}</h2>
         <p>
           {isSignUp
-            ? "Choose a sign-in method. You will claim your Socialize handle next."
+            ? "Choose a sign-in method, verify your email, then claim your Socialize handle."
             : "Sign in to edit your profile, publish links, and manage your hosted page."}
         </p>
       </div>

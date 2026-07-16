@@ -6,7 +6,7 @@ import { FiArrowUpRight } from "react-icons/fi";
 import { Brand } from "@/components/brand";
 import { ProfilePreview } from "@/components/profile-preview";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { demoProfile, type ProfileConfig, type ProfileTheme } from "@/lib/profile";
+import { type ProfileConfig, type ProfileTheme } from "@/lib/profile";
 import { loadPublicProfile } from "@/lib/profile-store";
 import { ProfileLoadingState } from "./profile-loading-state";
 import { TerminalTyping } from "./terminal-typing";
@@ -17,20 +17,17 @@ const MIN_LOADING_MS = 1200;
 
 type LoadPhase = "loading" | "ready";
 
-function initialPhase(handle: string): LoadPhase {
-  if (handle === demoProfile.handle) return "ready";
+function initialPhase(): LoadPhase {
   return isFirebaseConfigured ? "loading" : "ready";
 }
 
 export function PublicProfileClient({ handle }: { handle: string }) {
-  const [profile, setProfile] = useState<ProfileConfig | null>(
-    handle === demoProfile.handle ? demoProfile : null,
-  );
-  const [phase, setPhase] = useState<LoadPhase>(() => initialPhase(handle));
-  const [failed, setFailed] = useState(handle !== demoProfile.handle && !isFirebaseConfigured);
+  const [profile, setProfile] = useState<ProfileConfig | null>(null);
+  const [phase, setPhase] = useState<LoadPhase>(() => initialPhase());
+  const [failed, setFailed] = useState(!isFirebaseConfigured);
 
   useEffect(() => {
-    if (handle === demoProfile.handle || !isFirebaseConfigured) return;
+    if (!isFirebaseConfigured) return;
 
     let active = true;
     const startedAt = Date.now();

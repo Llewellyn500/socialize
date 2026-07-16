@@ -5,6 +5,7 @@ import { VerifyEmailPanel } from "@/components/auth/verify-email-panel";
 export const metadata: Metadata = {
   title: "Verify email",
   description: "Verify the email address attached to your Socialize account.",
+  robots: { index: false, follow: false },
 };
 
 export default function VerifyEmailPage() {

@@ -36,7 +36,7 @@ export function SiteHeader() {
             Sign in
           </Link>
           <Link className="button button--small button--ink" href="/sign-up">
-            Start building <FiArrowUpRight aria-hidden="true" />
+            Create your free page <FiArrowUpRight aria-hidden="true" />
           </Link>
         </div>
         <button
@@ -63,7 +63,7 @@ export function SiteHeader() {
           Sign in
         </Link>
         <Link href="/sign-up" onClick={() => setOpen(false)}>
-          Create a page
+          Create your free page
         </Link>
       </div>
     </header>

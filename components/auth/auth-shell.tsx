@@ -23,12 +23,12 @@ const benefits = [
   {
     icon: FiCode,
     title: "Your data stays portable",
-    copy: "Hosted profiles use the same clean data shape as the self-hosted edition.",
+    copy: "Export a structured profile backup and move to the self-hosted starter with the documented conversion guide.",
   },
   {
     icon: FiCheck,
     title: "Start small, change it later",
-    copy: "Claim a handle now, then add links, themes, and integrations from your workspace.",
+    copy: "Verify your email, claim a handle, then add links, themes, and integrations from your workspace.",
   },
 ] as const;
 
@@ -56,6 +56,9 @@ export function AuthShell({
               {title}
             </h1>
             <p className={styles.introDescription}>{description}</p>
+            <p className={styles.introDescription}>
+              No trial, no credit card, and no feature gate. Sponsorship is optional support for the project.
+            </p>
             <div className={styles.benefitList}>
               {benefits.map(({ icon: Icon, title: benefitTitle, copy }) => (
                 <div className={styles.benefit} key={benefitTitle}>

@@ -7,15 +7,6 @@ import type {
   GitHubContributionCalendar,
 } from "@/lib/github-activity";
 import {
-  extractDaysFromCalendar,
-  fillYearDayGaps,
-  saveContributionCacheClient,
-} from "@/lib/github-contribution-cache";
-import {
-  languageModeKey,
-  saveLanguageCacheClient,
-} from "@/lib/github-language-cache";
-import {
   isValidGitHubUsername,
   normalizeGitHubUsername,
   type DeveloperActivityConfig,
@@ -99,49 +90,6 @@ export function DeveloperActivity({
             );
           }
           setState({ status: "ready", data: result, message: "" });
-          if (
-            result.contributions &&
-            result.contributions.source === "github" &&
-            !result.contributions.partial
-          ) {
-            void saveContributionCacheClient(
-              username,
-              fillYearDayGaps(
-                extractDaysFromCalendar(result.contributions),
-                result.contributions.year,
-              ),
-              result.contributions.availableYears,
-              {
-                source: "profile",
-                syncedYear: result.contributions.year,
-                replaceYear: result.contributions.year,
-              },
-            ).catch(() => {
-              // Cache writes are best-effort.
-            });
-          }
-          if (result.languages.length > 0) {
-            void saveLanguageCacheClient(
-              username,
-              selectedYear,
-              {
-                languages: result.languages,
-                repositories: result.repositories,
-                modeKey: languageModeKey(
-                  config.repositories.mode,
-                  config.repositories.names,
-                ),
-              },
-              {
-                syncedYear:
-                  selectedYear === new Date().getUTCFullYear()
-                    ? undefined
-                    : selectedYear,
-              },
-            ).catch(() => {
-              // Cache writes are best-effort.
-            });
-          }
         })
         .catch((error: unknown) => {
           if (controller.signal.aborted) return;

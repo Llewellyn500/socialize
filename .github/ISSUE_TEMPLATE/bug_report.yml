@@ -1,0 +1,71 @@
+name: Bug report
+description: Report a reproducible problem in the hosted app or self-hosted template.
+title: "[Bug]: "
+labels:
+  - bug
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Socialize. Do not include passwords,
+        access tokens, private profile data, or security vulnerabilities here.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Hosted app
+        - Self-hosted template
+        - Documentation
+        - Deployment or configuration
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Provide a release, commit SHA, or deployment date if known.
+      placeholder: e.g. main at abc1234
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest reliable sequence of steps.
+      placeholder: |
+        1. Go to ...
+        2. Enter ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include a screenshot or recording only after removing private data.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser/OS, Node version, deployment provider, and Firebase mode when relevant.
+      placeholder: Chrome 126, Windows 11, Node 22, hosted production
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for existing issues and removed sensitive information.
+          required: true
+        - label: This is not a security vulnerability or an abuse report.
+          required: true

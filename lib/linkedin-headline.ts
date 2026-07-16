@@ -63,7 +63,9 @@ export function extractLinkedInHeadline(html: string) {
 
 export async function fetchLinkedInHeadline(url: string) {
   try {
-    const html = await safeExternalText(url);
+    const html = await safeExternalText(url, {
+      allowedHosts: ["www.linkedin.com"],
+    });
     if (!html) return "";
     return extractLinkedInHeadline(html);
   } catch {

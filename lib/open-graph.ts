@@ -28,7 +28,8 @@ export function readMetaContent(html: string, property: string) {
 
 export async function fetchOpenGraph(url: string): Promise<OpenGraphMetadata | null> {
   try {
-    const html = await safeExternalText(url);
+    const hostname = new URL(url).hostname;
+    const html = await safeExternalText(url, { allowedHosts: [hostname] });
     if (!html) return null;
 
     const title = readMetaContent(html, "og:title");

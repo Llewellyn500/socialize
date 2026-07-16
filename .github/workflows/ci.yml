@@ -38,6 +38,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Smoke-test public routes
+        run: |
+          npm run start > /tmp/socialize.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:3000/status > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:3000/ > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/status > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/robots.txt > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/sitemap.xml > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/opengraph-image > /dev/null
+
   self-hosted-template:
     name: Self-hosted template
     runs-on: ubuntu-latest
@@ -65,3 +82,18 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Smoke-test public routes
+        run: |
+          npm run start > /tmp/socialize-self-hosted.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:3000/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:3000/ > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/robots.txt > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/sitemap.xml > /dev/null

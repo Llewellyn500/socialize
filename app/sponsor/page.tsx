@@ -13,6 +13,7 @@ import {
   ServiceShell,
   serviceContentStyles as styles,
 } from "@/components/service-content";
+import { githubSponsorUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Sponsor Socialize",
@@ -41,7 +42,7 @@ export default function SponsorPage() {
           <>
             <PageAction
               external
-              href="https://github.com/sponsors/Llewellyn500"
+              href={githubSponsorUrl}
             >
               Sponsor on GitHub
             </PageAction>
@@ -57,8 +58,8 @@ export default function SponsorPage() {
         aside={
           <div className={styles.asideStatement}>
             <span>Open source support</span>
-            <strong>Hosted revenue builds the service. Sponsors protect the public option.</strong>
-            <p>GitHub supports one-time and recurring contributions in available regions.</p>
+            <strong>Everything Socialize offers today stays free. Sponsors fund the maintenance that keeps it that way.</strong>
+            <p>Support is voluntary. It does not change which features, limits, or data controls are available to anyone.</p>
           </div>
         }
       />
@@ -148,14 +149,14 @@ export default function SponsorPage() {
             links={[
               {
                 external: true,
-                href: "https://github.com/sponsors/Llewellyn500",
+                href: githubSponsorUrl,
                 title: "One-time or monthly sponsorship",
                 description: "Choose the amount and visibility through GitHub Sponsors.",
               },
               {
                 href: "mailto:sponsors@socialize.you?subject=Socialize%20organization%20sponsorship",
                 title: "Organization sponsorship",
-                description: "Discuss an invoice, public acknowledgement, or a larger contribution.",
+                description: "Ask about a larger voluntary contribution or optional public acknowledgement before sending funds.",
               },
               {
                 external: true,
@@ -193,10 +194,10 @@ export default function SponsorPage() {
           </p>
           <h3>Project access</h3>
           <p>
-            Public releases remain available under the repository&apos;s license.
-            A sponsorship does not transfer copyright, grant access to hosted user
-            data, or create a service-level agreement unless a separate written
-            agreement says so.
+            Public releases remain available under the repository&apos;s license and
+            every current hosted feature remains free. A sponsorship does not
+            transfer copyright, unlock functionality, grant access to hosted user
+            data, priority support, or create a service-level agreement.
           </p>
           <h3>Priorities</h3>
           <p>
@@ -216,18 +217,18 @@ export default function SponsorPage() {
         <ContentSection
           id="questions"
           title="Common questions"
-          lead="The payment relationship is handled by GitHub unless agreed otherwise in writing."
+          lead="GitHub handles voluntary contributions; Socialize does not sell access to the service."
         >
           <h3>Can I cancel a recurring sponsorship?</h3>
           <p>
-            Yes. Manage or cancel it from your GitHub Sponsors settings. Access to
-            any tier benefit follows the period and rules GitHub displays at
-            checkout.
+            Yes. Manage or cancel it from your GitHub Sponsors settings. Cancelling
+            never changes access to Socialize because there are no paid features or
+            sponsor-only service tiers.
           </p>
           <h3>Will I receive an invoice or receipt?</h3>
           <p>
             GitHub provides payment records for GitHub Sponsors transactions.
-            Organizations that need different paperwork should email
+            Organizations that want to discuss a voluntary contribution can email
             <a href="mailto:sponsors@socialize.you"> sponsors@socialize.you</a>
             before paying.
           </p>
@@ -252,8 +253,8 @@ export default function SponsorPage() {
         links={[
           {
             external: true,
-            href: "https://github.com/sponsors/Llewellyn500",
-            label: "Choose a sponsor tier",
+            href: githubSponsorUrl,
+            label: "Support the project",
           },
           { href: "/self-host", label: "See the self-hosted edition" },
         ]}

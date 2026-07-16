@@ -5,7 +5,7 @@ import { LegalPage, type LegalSection } from "@/components/legal-page";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Draft terms for Socialize accounts, hosted developer profiles, content, handles, and service access.",
+    "Current terms for Socialize accounts, free hosted developer profiles, content, handles, and service access.",
   alternates: { canonical: "/terms" },
 };
 
@@ -22,10 +22,11 @@ const sections: LegalSection[] = [
           incorporate.
         </p>
         <p>
-          The final Terms must name the legal service operator and its contact
-          address before launch. If you do not agree, do not create or use a hosted
-          account. Browsing a public profile remains subject to applicable law and
-          the provisions that reasonably apply to visitors.
+          The legal service operator, contact address, governing law, and final
+          consumer-rights wording must be completed before public hosted launch.
+          If you do not agree, do not create or use a hosted account. Browsing a
+          public profile remains subject to applicable law and the provisions that
+          reasonably apply to visitors.
         </p>
       </>
     ),
@@ -69,8 +70,8 @@ const sections: LegalSection[] = [
         </p>
         <p>
           We aim to provide reasonable notice before a material change that removes
-          paid functionality or requires a data migration. Early, preview, or beta
-          features may change more quickly and may be withdrawn.
+          a current free feature or requires a data migration. Early, preview, or
+          beta features may change more quickly and may be withdrawn.
         </p>
         <p>
           You should retain copies of important profile content and destination
@@ -167,10 +168,9 @@ const sections: LegalSection[] = [
           domains, security rules, backups, content, and legal compliance.
         </p>
         <p>
-          Source-code rights must be stated in the license distributed with the
-          repository. This draft does not create an additional source-code license.
-          A clear repository license must be selected and added before the
-          self-hosted edition is publicly distributed.
+          Source-code rights are stated in the repository&apos;s license. This Terms
+          page governs the managed service and does not add restrictions to that
+          license.
         </p>
         <p>
           Socialize does not promise support, uptime, compatibility, or data
@@ -214,15 +214,17 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          Any paid plan, tax, renewal period, refund rule, and included feature
-          must be shown before purchase. Unless checkout states otherwise, fees are
-          charged in advance and are not refundable except where law requires.
-          Final billing terms must be completed before paid plans launch.
+          Socialize currently has no paid plans, paid features, paid limits, or
+          service subscriptions. The hosted service and self-hosted edition are
+          free to use. If that changes, we will publish revised terms before asking
+          anyone to pay for service access.
         </p>
         <p>
-          GitHub sponsorship supports project maintenance and is not payment for a
-          hosted account, delivery date, roadmap vote, or service-level agreement.
-          Separate written scopes govern any commissioned work.
+          GitHub sponsorship is voluntary support for maintenance, security,
+          documentation, accessibility, and the self-hosted edition. It is not
+          payment for a hosted account, access to any feature, priority support, a
+          delivery date, roadmap vote, or service-level agreement. Separate written
+          scopes govern any commissioned work.
         </p>
       </>
     ),
@@ -235,8 +237,8 @@ const sections: LegalSection[] = [
         <p>
           You may stop using the service and request account deletion. We may
           restrict or terminate access when reasonably necessary for a material
-          policy violation, legal requirement, security risk, nonpayment, or harm
-          to users or infrastructure.
+          policy violation, legal requirement, security risk, or harm to users or
+          infrastructure.
         </p>
         <p>
           When risk permits, we will try to give notice and an opportunity to fix
@@ -264,7 +266,7 @@ const sections: LegalSection[] = [
         <p>
           The final limitation-of-liability clause, monetary cap, exclusions, and
           any consumer-law carve-outs must be selected with counsel based on the
-          operator&apos;s jurisdiction and paid-plan structure. They are intentionally
+          operator&apos;s jurisdiction and free-service structure. They are intentionally
           not invented in this draft.
         </p>
       </>
@@ -296,7 +298,7 @@ export default function TermsPage() {
     <LegalPage
       contactEmail="legal@socialize.you"
       sections={sections}
-      summary="These draft terms describe accounts, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments."
+      summary="These terms describe the current free Socialize service, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments. The legal operator details still need to be completed before public hosted launch."
       title="Terms of Service"
       related={[
         {

@@ -1,4 +1,5 @@
 import { normalizeHandle, type ProfileConfig } from "@/lib/profile";
+import { firebasePublicDocumentUrl } from "@/lib/firebase-public-rest";
 
 type FirestoreValue =
   | { stringValue: string }
@@ -9,10 +10,6 @@ type FirestoreValue =
   | { nullValue: null }
   | { mapValue: { fields?: Record<string, FirestoreValue> } }
   | { arrayValue: { values?: FirestoreValue[] } };
-
-function projectId() {
-  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
-}
 
 function readString(fields: Record<string, FirestoreValue> | undefined, key: string) {
   const value = fields?.[key];
@@ -25,10 +22,8 @@ function readBoolean(fields: Record<string, FirestoreValue> | undefined, key: st
 }
 
 async function fetchDocument(path: string) {
-  const id = projectId();
-  if (!id) return null;
-
-  const url = `https://firestore.googleapis.com/v1/projects/${id}/databases/(default)/documents/${path}`;
+  const url = firebasePublicDocumentUrl(path);
+  if (!url) return null;
   const response = await fetch(url, {
     next: { revalidate: 60 },
   });
