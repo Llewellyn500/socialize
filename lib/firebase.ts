@@ -1,7 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import {
   getLimitedUseToken,
-  getAppCheck,
   initializeAppCheck,
   ReCaptchaEnterpriseProvider,
 } from "firebase/app-check";
@@ -31,12 +30,12 @@ function initializeOptionalAppCheck() {
   if (!firebaseApp || !siteKey || typeof window === "undefined") return null;
 
   try {
-    return getAppCheck(firebaseApp);
-  } catch {
     return initializeAppCheck(firebaseApp, {
       provider: new ReCaptchaEnterpriseProvider(siteKey),
       isTokenAutoRefreshEnabled: true,
     });
+  } catch {
+    return null;
   }
 }
 

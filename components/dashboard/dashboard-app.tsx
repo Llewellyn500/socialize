@@ -65,7 +65,6 @@ import {
   isEnrichableLinkUrl,
 } from "@/lib/link-metadata";
 import { isLinkedInUrl } from "@/lib/linkedin-url";
-import { LINKEDIN_LINK_TITLE } from "@/lib/linkedin-headline";
 import { LinksEditor } from "./links-editor";
 import { DeveloperActivityEditor } from "./developer-activity-editor";
 import { LinkStatsPanel } from "./link-stats-panel";
@@ -101,6 +100,8 @@ const themeOptions: { id: ProfileTheme; label: string; className: string }[] = [
   { id: "midnight", label: "Midnight", className: styles.themeMidnight },
   { id: "mono", label: "Mono", className: styles.themeMono },
 ];
+
+const LINKEDIN_LINK_TITLE = "LinkedIn";
 
 export function DashboardApp() {
   const router = useRouter();
