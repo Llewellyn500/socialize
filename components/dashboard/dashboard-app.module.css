@@ -503,6 +503,55 @@
   text-underline-offset: 0.16em;
 }
 
+.supportPrompt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(138, 43, 226, 0.32);
+  background: rgba(138, 43, 226, 0.06);
+}
+
+.supportPrompt div {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 38rem;
+}
+
+.supportPrompt span {
+  color: #8a2be2;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.supportPrompt strong {
+  font-size: 0.82rem;
+}
+
+.supportPrompt p {
+  margin: 0;
+  color: rgba(25, 26, 24, 0.55);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.supportPrompt a {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(138, 43, 226, 0.45);
+  color: #8a2be2;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.supportPrompt a:hover {
+  background: rgba(138, 43, 226, 0.08);
+}
+
 .statsPanel {
   display: grid;
   gap: 1.5rem;
@@ -2292,6 +2341,7 @@
 :global(html:not([data-app-theme="light"])) .overviewCard span,
 :global(html:not([data-app-theme="light"])) .overviewCard p,
 :global(html:not([data-app-theme="light"])) .overviewStatsHint p,
+:global(html:not([data-app-theme="light"])) .supportPrompt p,
 :global(html:not([data-app-theme="light"])) .checklist small,
 :global(html:not([data-app-theme="light"])) .linkRowNumber,
 :global(html:not([data-app-theme="light"])) .fieldHint,
@@ -2300,6 +2350,24 @@
 :global(html:not([data-app-theme="light"])) .status,
 :global(html:not([data-app-theme="light"])) .emptyAuth p {
   color: rgba(247, 243, 251, 0.58);
+}
+
+:global(html:not([data-app-theme="light"])) .supportPrompt {
+  border-color: rgba(157, 77, 255, 0.38);
+  background: rgba(138, 43, 226, 0.12);
+}
+
+:global(html:not([data-app-theme="light"])) .supportPrompt span,
+:global(html:not([data-app-theme="light"])) .supportPrompt a {
+  color: #c596ff;
+}
+
+:global(html:not([data-app-theme="light"])) .supportPrompt a {
+  border-color: rgba(197, 150, 255, 0.42);
+}
+
+:global(html:not([data-app-theme="light"])) .supportPrompt a:hover {
+  background: rgba(197, 150, 255, 0.1);
 }
 
 :global(html:not([data-app-theme="light"])) .topbarActions button,

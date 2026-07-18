@@ -835,6 +835,16 @@ export function DashboardApp() {
                 <p>Click counts update when people open links on your live profile.</p>
                 <button type="button" onClick={() => setTab("stats")}>Open full stats</button>
               </div>
+              {profile.published ? (
+                <aside className={styles.supportPrompt}>
+                  <div>
+                    <span>KEEP SOCIALIZE FREE</span>
+                    <strong>Your page is live. If Socialize helped, help keep it free.</strong>
+                    <p>Support funds hosting, security, documentation, and maintenance. It never unlocks product features.</p>
+                  </div>
+                  <Link href="/sponsor">See what support funds</Link>
+                </aside>
+              ) : null}
               <div className={styles.checklist}>
                 <div><FiCheck /><span>Claim your handle</span><small>@{profile.handle}</small></div>
                 <div><FiCheck /><span>Add your best work</span><small>{profile.links.length} links</small></div>
