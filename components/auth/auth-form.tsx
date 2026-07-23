@@ -2,19 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   createUserWithEmailAndPassword,
   deleteUser,
   getAdditionalUserInfo,
+  getRedirectResult,
   GithubAuthProvider,
   GoogleAuthProvider,
   sendEmailVerification,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
   type User,
+  type UserCredential,
 } from "firebase/auth";
 import {
   doc,
@@ -39,6 +41,13 @@ import styles from "./auth.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
 type ProviderName = "google" | "github";
+type ProviderRedirectState = {
+  acceptedTerms: boolean;
+  mode: AuthMode;
+  providerName: ProviderName;
+};
+
+const PROVIDER_REDIRECT_STATE_KEY = "socialize:provider-redirect";
 const TERMS_VERSION =
   process.env.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE?.trim() || "2026-07-23";
 
@@ -118,9 +127,62 @@ export function AuthForm({
   const [pendingEmailPassword, setPendingEmailPassword] = useState<{
     password: string;
   } | null>(null);
+  const redirectHandled = useRef(false);
 
   const isBusy = pendingAction !== null;
   const isReady = isFirebaseConfigured && Boolean(auth);
+
+  useEffect(() => {
+    if (redirectHandled.current || !auth) return;
+    redirectHandled.current = true;
+
+    const rawState = window.sessionStorage.getItem(PROVIDER_REDIRECT_STATE_KEY);
+    if (!rawState) return;
+
+    let redirectState: ProviderRedirectState | null = null;
+    try {
+      const parsed = JSON.parse(rawState) as Partial<ProviderRedirectState>;
+      if (
+        (parsed.providerName === "google" || parsed.providerName === "github") &&
+        (parsed.mode === "sign-in" || parsed.mode === "sign-up")
+      ) {
+        redirectState = {
+          acceptedTerms: Boolean(parsed.acceptedTerms),
+          mode: parsed.mode,
+          providerName: parsed.providerName,
+        };
+      }
+    } catch {
+      // A malformed or stale redirect marker should not block email sign-in.
+    }
+
+    if (!redirectState || redirectState.mode !== mode) {
+      window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
+      return;
+    }
+
+    setPendingAction(redirectState.providerName);
+    void getRedirectResult(auth)
+      .then(async (result) => {
+        window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
+        if (!result) {
+          setError(
+            "The provider returned without a sign-in result. Allow cross-site cookies for Firebase Authentication, then try again.",
+          );
+          return;
+        }
+        await completeProviderSignIn(
+          result,
+          redirectState.providerName,
+          redirectState.acceptedTerms,
+        );
+      })
+      .catch(async (authError) => {
+        window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
+        await showProviderError(authError);
+      })
+      .finally(() => setPendingAction(null));
+  }, [mode]);
 
   function validateSignUp() {
     if (displayName.trim().length < 2) {
@@ -204,9 +266,12 @@ export function AuthForm({
     }
   }
 
-  async function finishLinkedSignIn(user: User) {
+  async function finishLinkedSignIn(
+    user: User,
+    termsAcceptedForAttempt = acceptedTerms,
+  ) {
     if (isSignUp) {
-      if (!acceptedTerms) {
+      if (!termsAcceptedForAttempt) {
         await signOut(auth!);
         setError("Accept the Terms and Privacy Policy before creating an account.");
         return;
@@ -222,6 +287,72 @@ export function AuthForm({
 
     const route = await getPostAuthRoute(user);
     router.push(returnTo && route === "/dashboard" ? returnTo : route);
+  }
+
+  async function showProviderError(authError: unknown) {
+    const linkPrompt = await readPendingProviderLink(authError);
+    if (linkPrompt) {
+      setPendingLink(linkPrompt);
+      setPendingEmailPassword(null);
+      setError(null);
+    } else {
+      setError(getFirebaseAuthError(authError));
+    }
+  }
+
+  async function completeProviderSignIn(
+    result: UserCredential,
+    providerName: ProviderName,
+    termsAcceptedForAttempt = acceptedTerms,
+  ) {
+    const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
+    if (isNewUser && !isSignUp) {
+      await removeUnacceptedAccount(result.user);
+      router.push(
+        "/sign-up?notice=Create your account there so you can accept the Terms and Privacy Policy.",
+      );
+      return;
+    }
+    // Establish the immutable acceptance record before adding optional
+    // provider metadata to a newly created user document.
+    if (isNewUser || isSignUp) {
+      if (!termsAcceptedForAttempt) {
+        if (isNewUser) await removeUnacceptedAccount(result.user);
+        else await signOut(auth!);
+        setError("Accept the Terms and Privacy Policy before creating an account.");
+        return;
+      }
+      try {
+        await recordTermsAcceptance(result.user);
+      } catch (acceptanceError) {
+        if (isNewUser) await removeUnacceptedAccount(result.user);
+        throw acceptanceError;
+      }
+    }
+    if (
+      !isNewUser &&
+      !isSignUp &&
+      !(await hasRecordedTermsAcceptance(result.user))
+    ) {
+      await signOut(auth!);
+      router.push(
+        "/sign-up?notice=Finish creating your account by accepting the Terms and Privacy Policy.",
+      );
+      return;
+    }
+    if (providerName === "github") {
+      await captureGitHubLoginFromCredential(result);
+    }
+    if (isNewUser && !result.user.emailVerified) {
+      try {
+        await sendEmailVerification(result.user, {
+          url: `${window.location.origin}/verify-email`,
+        });
+      } catch {
+        // The verification screen includes a resend action if delivery fails.
+      }
+    }
+    await finishLinkedSignIn(result.user, termsAcceptedForAttempt);
   }
 
   async function handleProvider(providerName: ProviderName) {
@@ -251,56 +382,14 @@ export function AuthForm({
         provider.addScope("user:email");
       }
 
-      const result = await signInWithPopup(firebaseAuth, provider);
-      const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
-      if (isNewUser && !isSignUp) {
-        await removeUnacceptedAccount(result.user);
-        router.push("/sign-up?notice=Create your account there so you can accept the Terms and Privacy Policy.");
-        return;
-      }
-      // Establish the immutable acceptance record before adding optional
-      // provider metadata to a newly created user document.
-      if (isNewUser || isSignUp) {
-        try {
-          await recordTermsAcceptance(result.user);
-        } catch (acceptanceError) {
-          if (isNewUser) await removeUnacceptedAccount(result.user);
-          throw acceptanceError;
-        }
-      }
-      if (
-        !isNewUser &&
-        !isSignUp &&
-        !(await hasRecordedTermsAcceptance(result.user))
-      ) {
-        await signOut(firebaseAuth);
-        router.push(
-          "/sign-up?notice=Finish creating your account by accepting the Terms and Privacy Policy.",
-        );
-        return;
-      }
-      if (providerName === "github") {
-        await captureGitHubLoginFromCredential(result);
-      }
-      if (isNewUser && !result.user.emailVerified) {
-        try {
-          await sendEmailVerification(result.user, {
-            url: `${window.location.origin}/verify-email`,
-          });
-        } catch {
-          // The verification screen includes a resend action if delivery fails.
-        }
-      }
-      await finishLinkedSignIn(result.user);
+      window.sessionStorage.setItem(
+        PROVIDER_REDIRECT_STATE_KEY,
+        JSON.stringify({ acceptedTerms, mode, providerName }),
+      );
+      await signInWithRedirect(firebaseAuth, provider);
     } catch (authError) {
-      const linkPrompt = await readPendingProviderLink(authError);
-      if (linkPrompt) {
-        setPendingLink(linkPrompt);
-        setPendingEmailPassword(null);
-        setError(null);
-      } else {
-        setError(getFirebaseAuthError(authError));
-      }
+      window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
+      await showProviderError(authError);
     } finally {
       setPendingAction(null);
     }
