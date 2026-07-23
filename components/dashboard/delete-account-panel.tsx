@@ -38,7 +38,8 @@ export function DeleteAccountPanel({
   );
 
   const confirmationMatches =
-    confirmHandle.trim().toLowerCase() === handle.trim().toLowerCase();
+    confirmHandle.trim().replace(/^@/, "").toLowerCase() ===
+    handle.trim().replace(/^@/, "").toLowerCase();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
