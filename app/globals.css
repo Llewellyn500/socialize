@@ -23,6 +23,8 @@
 }
 
 html {
+  /* ponytail: one root bump scales rem across marketing + dashboard */
+  font-size: 18px;
   scroll-behavior: smooth;
   scrollbar-color: var(--signal) var(--ink);
   scrollbar-width: thin;
@@ -34,7 +36,7 @@ body {
   background: var(--cream);
   color: var(--ink);
   font-family: "Helvetica Neue", "Arial Narrow", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

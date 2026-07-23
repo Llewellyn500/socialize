@@ -22,13 +22,18 @@ export function DeleteAccountPanel({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmHandle, setConfirmHandle] = useState("");
-  const [password, setPassword] = useState("");
   const [exported, setExported] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const needsPassword = useMemo(
-    () => Boolean(user?.providerData.some((entry) => entry.providerId === "password")),
+  const usesOauthReauth = useMemo(
+    () =>
+      Boolean(
+        user?.providerData.some(
+          (entry) =>
+            entry.providerId === "google.com" || entry.providerId === "github.com",
+        ),
+      ),
     [user],
   );
 
@@ -57,9 +62,7 @@ export function DeleteAccountPanel({
     setBusy(true);
     setError(null);
     try {
-      await deleteAccount(user, {
-        password: needsPassword ? password : undefined,
-      });
+      await deleteAccount(user);
       router.replace("/sign-in?deleted=1");
     } catch (deleteError) {
       setError(getFirebaseAuthError(deleteError));
@@ -119,22 +122,11 @@ export function DeleteAccountPanel({
             />
           </label>
 
-          {needsPassword ? (
-            <label className={styles.deleteAccountField}>
-              <span>Password</span>
-              <input
-                autoComplete="current-password"
-                disabled={busy}
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-          ) : (
+          {usesOauthReauth ? (
             <p className={styles.deleteAccountHint}>
               You will re-confirm with Google or GitHub before deletion finishes.
             </p>
-          )}
+          ) : null}
 
           {error ? (
             <p className={styles.deleteAccountError} role="alert">
@@ -149,7 +141,6 @@ export function DeleteAccountPanel({
               onClick={() => {
                 setOpen(false);
                 setConfirmHandle("");
-                setPassword("");
                 setError(null);
               }}
             >
