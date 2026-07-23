@@ -3,6 +3,13 @@ export function getFirebaseAuthError(error: unknown) {
     typeof error === "object" && error && "code" in error
       ? String(error.code)
       : "";
+  const firebaseDetail =
+    error instanceof Error
+      ? error.message
+          .replace(/^Firebase:\s*/i, "")
+          .replace(/\s*\(auth\/internal-error\)\.?\s*$/i, "")
+          .trim()
+      : "";
 
   switch (code) {
     case "auth/invalid-credential":
@@ -40,6 +47,14 @@ export function getFirebaseAuthError(error: unknown) {
       return "Firebase rejected this deployment's browser API key. Check the Vercel Preview value and redeploy.";
     case "auth/invalid-app-id":
       return "This deployment's Firebase app ID does not match its API key. Check the Vercel Firebase values and redeploy.";
+    case "auth/internal-error":
+      if (
+        firebaseDetail &&
+        firebaseDetail !== "An internal AuthError has occurred."
+      ) {
+        return `Firebase rejected the sign-in request: ${firebaseDetail.slice(0, 220)}`;
+      }
+      return "Firebase could not complete this provider sign-in. If App Check is enforced, verify its reCAPTCHA Enterprise key for this exact preview hostname. For GitHub, also verify the Firebase callback URL and client secret.";
     case "auth/invalid-app-credential":
     case "auth/missing-app-credential":
     case "auth/captcha-check-failed":
