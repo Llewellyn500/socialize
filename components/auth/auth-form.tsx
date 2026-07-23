@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   createUserWithEmailAndPassword,
   deleteUser,
   getAdditionalUserInfo,
-  getRedirectResult,
   GithubAuthProvider,
   GoogleAuthProvider,
   sendEmailVerification,
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -41,13 +40,7 @@ import styles from "./auth.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
 type ProviderName = "google" | "github";
-type ProviderRedirectState = {
-  acceptedTerms: boolean;
-  mode: AuthMode;
-  providerName: ProviderName;
-};
 
-const PROVIDER_REDIRECT_STATE_KEY = "socialize:provider-redirect";
 const TERMS_VERSION =
   process.env.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE?.trim() || "2026-07-23";
 
@@ -127,62 +120,9 @@ export function AuthForm({
   const [pendingEmailPassword, setPendingEmailPassword] = useState<{
     password: string;
   } | null>(null);
-  const redirectHandled = useRef(false);
 
   const isBusy = pendingAction !== null;
   const isReady = isFirebaseConfigured && Boolean(auth);
-
-  useEffect(() => {
-    if (redirectHandled.current || !auth) return;
-    redirectHandled.current = true;
-
-    const rawState = window.sessionStorage.getItem(PROVIDER_REDIRECT_STATE_KEY);
-    if (!rawState) return;
-
-    let redirectState: ProviderRedirectState | null = null;
-    try {
-      const parsed = JSON.parse(rawState) as Partial<ProviderRedirectState>;
-      if (
-        (parsed.providerName === "google" || parsed.providerName === "github") &&
-        (parsed.mode === "sign-in" || parsed.mode === "sign-up")
-      ) {
-        redirectState = {
-          acceptedTerms: Boolean(parsed.acceptedTerms),
-          mode: parsed.mode,
-          providerName: parsed.providerName,
-        };
-      }
-    } catch {
-      // A malformed or stale redirect marker should not block email sign-in.
-    }
-
-    if (!redirectState || redirectState.mode !== mode) {
-      window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
-      return;
-    }
-
-    setPendingAction(redirectState.providerName);
-    void getRedirectResult(auth)
-      .then(async (result) => {
-        window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
-        if (!result) {
-          setError(
-            "The provider returned without a sign-in result. Allow cross-site cookies for Firebase Authentication, then try again.",
-          );
-          return;
-        }
-        await completeProviderSignIn(
-          result,
-          redirectState.providerName,
-          redirectState.acceptedTerms,
-        );
-      })
-      .catch(async (authError) => {
-        window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
-        await showProviderError(authError);
-      })
-      .finally(() => setPendingAction(null));
-  }, [mode]);
 
   function validateSignUp() {
     if (displayName.trim().length < 2) {
@@ -382,13 +322,10 @@ export function AuthForm({
         provider.addScope("user:email");
       }
 
-      window.sessionStorage.setItem(
-        PROVIDER_REDIRECT_STATE_KEY,
-        JSON.stringify({ acceptedTerms, mode, providerName }),
-      );
-      await signInWithRedirect(firebaseAuth, provider);
+      // ponytail: popup avoids third-party cookie break on redirect across authDomain
+      const result = await signInWithPopup(firebaseAuth, provider);
+      await completeProviderSignIn(result, providerName, acceptedTerms);
     } catch (authError) {
-      window.sessionStorage.removeItem(PROVIDER_REDIRECT_STATE_KEY);
       await showProviderError(authError);
     } finally {
       setPendingAction(null);
