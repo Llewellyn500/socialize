@@ -1,0 +1,326 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalPage, type LegalSection } from "@/components/legal-page";
+import { contactConfig, mailto } from "@/lib/contact-config";
+import { legalConfig } from "@/lib/legal-config";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "Current terms for Socialize accounts, free hosted developer profiles, content, handles, and service access.",
+  alternates: { canonical: "/terms" },
+};
+
+const sections: LegalSection[] = [
+  {
+    id: "agreement",
+    title: "Agreement and scope",
+    content: (
+      <>
+        <p>
+          These Terms govern access to the managed Socialize website, accounts,
+          editor, hosted profiles, and related support. By creating an account or
+          using the managed service, you agree to these Terms and the policies they
+          incorporate.
+        </p>
+        <p>
+          The managed service is operated by {legalConfig.operatorName}, at{" "}
+          {legalConfig.operatorAddress}. If you do not agree, do not create or use
+          a hosted account. Browsing a public profile remains subject to applicable
+          law and the provisions that reasonably apply to visitors.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "eligibility",
+    title: "Eligibility and accounts",
+    content: (
+      <>
+        <p>
+          You must be at least 13 years old and old enough to enter a binding
+          agreement where you live. If you use Socialize for an organization, you
+          represent that you have authority to bind it to these Terms.
+        </p>
+        <p>
+          Provide accurate account information, protect every connected sign-in
+          method, and tell us promptly about suspected unauthorized access. You are
+          responsible for activity carried out through your account until you
+          report compromise and we have a reasonable opportunity to act.
+        </p>
+        <p>
+          You may not transfer or sell an account or reserved handle without
+          written permission. Socialize support will not ask for your password,
+          OAuth secret, recovery code, or service-account key.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "service",
+    title: "The service",
+    lead: "Socialize provides a profile editor and public page, not permanent storage or an identity guarantee.",
+    content: (
+      <>
+        <p>
+          The hosted service lets you create and publish a developer-focused page
+          containing identity, project, writing, contact, social links, and an
+          optional public view of GitHub activity, with sampled fallbacks where noted. We may
+          add, remove, limit, or change features to maintain security, comply with
+          law, or improve the product.
+        </p>
+        <p>
+          We aim to provide reasonable notice before a material change that removes
+          a current free feature or requires a data migration. Early, preview, or
+          beta features may change more quickly and may be withdrawn.
+        </p>
+        <p>
+          You should retain copies of important profile content and destination
+          URLs. Socialize is not a source-code host, archive, emergency contact
+          system, or substitute for your own records.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "content",
+    title: "Your content",
+    content: (
+      <>
+        <p>
+          You keep ownership of content you submit. You grant Socialize a
+          non-exclusive, worldwide, royalty-free license to host, cache, reproduce,
+          format, and display that content only as needed to operate, secure,
+          promote, and improve the service. This license ends when content is
+          deleted, except for reasonable backup periods, legal obligations, and
+          copies already made by visitors or third parties.
+        </p>
+        <p>
+          You represent that you have the rights and permissions needed to publish
+          the content and links. Do not submit confidential information, credentials,
+          private repository access, or another person&apos;s personal information
+          without a lawful basis and appropriate permission.
+        </p>
+        <p>
+          If you enable GitHub activity, you instruct Socialize to request, cache,
+          format, and display public GitHub data for the username and repositories
+          you select. You must not associate another person&apos;s or organization&apos;s
+          GitHub identity with your profile in a misleading, impersonating, or
+          unauthorized way. Finding public data is not verification that you own or
+          control the corresponding GitHub account or repository.
+        </p>
+        <p>
+          Socialize will not use an identifiable public profile in promotional
+          material without the profile owner&apos;s permission. Aggregated or
+          fictional examples may be used to explain the product.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "handles",
+    title: "Handles and profile URLs",
+    content: (
+      <>
+        <p>
+          Handles are provided for use with the service, not sold as property.
+          They must be reasonably connected to you or your organization and may
+          not impersonate, mislead, infringe rights, or reserve names primarily for
+          resale.
+        </p>
+        <p>
+          We may rename, release, reserve, or suspend a handle after notice when
+          reasonably possible, including for verified impersonation, trademark
+          concerns, prolonged inactivity under a published policy, technical
+          conflicts, or legal requirements. A handle does not grant trademark or
+          other rights in the underlying name.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "acceptable-use",
+    title: "Acceptable use",
+    content: (
+      <>
+        <p>
+          You must follow the <Link href="/acceptable-use">Acceptable Use Policy</Link>.
+          In particular, do not use profiles or links for malware, credential
+          theft, unlawful content, harassment, impersonation, deceptive redirects,
+          privacy violations, or attempts to disrupt the service.
+        </p>
+        <p>
+          We may review reported public content and account records needed to
+          investigate a suspected violation. Enforcement can include link removal,
+          reduced visibility, handle changes, temporary restriction, or account
+          termination, depending on risk, context, and history.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "self-hosting",
+    title: "Self-hosted edition",
+    content: (
+      <>
+        <p>
+          A self-hosted deployment is operated by the person who deploys it, not by
+          the managed Socialize service. That operator controls backend infrastructure, hosting,
+          domains, security rules, backups, content, and legal compliance.
+        </p>
+        <p>
+          Source-code rights are stated in the repository&apos;s license. This Terms
+          page governs the managed service and does not add restrictions to that
+          license.
+        </p>
+        <p>
+          Socialize does not promise support, uptime, compatibility, or data
+          recovery for an independent deployment unless a separate written
+          agreement states otherwise.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "third-parties",
+    title: "Third-party services",
+    content: (
+      <>
+        <p>
+          Socialize relies on infrastructure providers such as cloud hosting and
+          Vercel and may let you sign in with Google or GitHub. When developer
+          activity is enabled, Socialize also sends server-side requests to GitHub
+          for public usernames, contribution calendars, events, commits, repositories, and languages.
+          Public profile links lead to websites we do not operate. Those services
+          have their own terms, privacy practices, availability, and security controls.
+        </p>
+        <p>
+          We are not responsible for third-party content or a destination&apos;s
+          conduct merely because a profile links to it. We may block a destination
+          when needed to address abuse or protect users.
+        </p>
+        <p>
+          GitHub activity is cached, may use labeled samples, and depends on GitHub&apos;s public API.
+          It may be incomplete, delayed, unavailable, attributed incorrectly, or
+          changed or removed at the source. Socialize does not verify the displayed
+          account relationship, and the activity panel does not imply endorsement,
+          employment, affiliation, or approval by GitHub.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "fees",
+    title: "Fees and sponsorship",
+    content: (
+      <>
+        <p>
+          Socialize currently has no paid plans, paid features, paid limits, or
+          service subscriptions. The hosted service and self-hosted edition are
+          free to use. If that changes, we will publish revised terms before asking
+          anyone to pay for service access.
+        </p>
+        <p>
+          GitHub sponsorship is voluntary support for maintenance, security,
+          documentation, accessibility, and the self-hosted edition. It is not
+          payment for a hosted account, access to any feature, priority support, a
+          delivery date, roadmap vote, or service-level agreement. Separate written
+          scopes govern any commissioned work.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "suspension",
+    title: "Suspension and termination",
+    content: (
+      <>
+        <p>
+          You may stop using the service and request account deletion. We may
+          restrict or terminate access when reasonably necessary for a material
+          policy violation, legal requirement, security risk, or harm to users or
+          infrastructure.
+        </p>
+        <p>
+          When risk permits, we will try to give notice and an opportunity to fix
+          the problem. Immediate action may be necessary for phishing, malware,
+          child exploitation, credible threats, active compromise, or service
+          disruption. Provisions that by their nature should survive termination,
+          including ownership, disclaimers, liability limits, and dispute terms,
+          continue to apply.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "warranties-liability",
+    title: "Warranties and liability",
+    content: (
+      <>
+        <p>
+          To the extent permitted by law, the service is provided on an "as is"
+          and "as available" basis. We do not guarantee uninterrupted operation,
+          permanent handles, search placement, traffic, employment outcomes, or
+          preservation, completeness, timing, or accuracy of third-party content,
+          including public GitHub activity.
+        </p>
+        <p>
+          To the maximum extent permitted by applicable law, neither Socialize nor
+          its operator is liable for indirect, incidental, special, consequential,
+          or punitive loss, or for lost profits, data, goodwill, or opportunities.
+          Aggregate liability arising from the managed service is limited to{" "}
+          {legalConfig.liabilityCap}. These limits do not exclude liability that
+          applicable law does not allow the parties to limit or exclude.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "law-changes-contact",
+    title: "Law, changes, and contact",
+    content: (
+      <>
+        <p>
+          These Terms are governed by {legalConfig.governingLaw}, without overriding
+          mandatory consumer protections that apply where you live. Subject to
+          those protections, disputes must be brought in {legalConfig.venue}. Before
+          filing a claim, contact <a href={mailto(contactConfig.legal)}>{contactConfig.legal}</a>{" "}
+          so the parties can try to resolve it informally.
+        </p>
+        <p>
+          We may update these Terms. Material changes will receive reasonable
+          notice and will apply prospectively where required. Questions can be sent
+          to <a href={mailto(contactConfig.legal)}>{contactConfig.legal}</a>.
+        </p>
+      </>
+    ),
+  },
+];
+
+export default function TermsPage() {
+  return (
+    <LegalPage
+      contactEmail={contactConfig.legal}
+      sections={sections}
+      summary="These terms describe the free Socialize service, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments."
+      title="Terms of Service"
+      related={[
+        {
+          href: "/acceptable-use",
+          title: "Acceptable Use Policy",
+          description: "Content and behavior that are not allowed on hosted profiles.",
+        },
+        {
+          href: "/privacy",
+          title: "Privacy Policy",
+          description: "How the managed service expects to handle information.",
+        },
+        {
+          href: "/sponsor",
+          title: "Sponsorship",
+          description: "What project support funds and what it does not purchase.",
+        },
+      ]}
+    />
+  );
+}

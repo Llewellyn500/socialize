@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - service
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hosted-app:
+    name: Hosted app
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate production environment contract
+        env:
+          VERCEL_ENV: production
+          VERCEL_FIREWALL_CONFIGURED: "true"
+          FIREBASE_APP_CHECK_ENFORCED: "true"
+          NEXT_PUBLIC_SITE_URL: https://socialize-ci.dev
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-api-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: socialize-ci.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: socialize-ci
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: socialize-ci.firebasestorage.app
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:1234567890:web:ci
+          NEXT_PUBLIC_FIREBASE_APP_CHECK_SITE_KEY: ci-app-check-key
+          FIREBASE_SERVICE_ACCOUNT_JSON: '{"project_id":"socialize-ci","client_email":"ci@socialize-ci.iam.gserviceaccount.com","private_key":"CI PRIVATE KEY FIXTURE"}'
+          NEXT_PUBLIC_LEGAL_OPERATOR_NAME: Socialize CI
+          NEXT_PUBLIC_LEGAL_OPERATOR_ADDRESS: CI address
+          NEXT_PUBLIC_LEGAL_GOVERNING_LAW: CI law
+          NEXT_PUBLIC_LEGAL_VENUE: CI venue
+          NEXT_PUBLIC_LEGAL_LIABILITY_CAP: USD 100
+          NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE: 2026-01-01
+          NEXT_PUBLIC_SUPPORT_EMAIL: support@socialize-ci.dev
+          NEXT_PUBLIC_SECURITY_EMAIL: security@socialize-ci.dev
+          NEXT_PUBLIC_PRIVACY_EMAIL: privacy@socialize-ci.dev
+          NEXT_PUBLIC_SAFETY_EMAIL: safety@socialize-ci.dev
+          NEXT_PUBLIC_LEGAL_EMAIL: legal@socialize-ci.dev
+          NEXT_PUBLIC_SPONSORS_EMAIL: sponsors@socialize-ci.dev
+        run: npm run validate:env:production
+
+      - name: Type-check
+        run: npm run lint
+
+      - name: Set up Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compile Firebase rules
+        run: npx --yes firebase-tools@15.24.0 emulators:exec --only firestore,storage --project demo-socialize "node -e \"console.log('Firebase rules compiled')\""
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke-test public routes
+        run: |
+          npm run start > /tmp/socialize.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:3000/status > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:3000/ > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/status > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/robots.txt > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/sitemap.xml > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/opengraph-image > /dev/null
+
+  self-hosted-template:
+    name: Self-hosted template
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: self-hosted-template
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: self-hosted-template/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate production environment contract
+        env:
+          VERCEL_ENV: production
+          VERCEL_FIREWALL_CONFIGURED: "true"
+          NEXT_PUBLIC_SITE_URL: https://profile.socialize-ci.dev
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-api-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: socialize-ci.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: socialize-ci
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: socialize-ci.firebasestorage.app
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:1234567890:web:ci
+        run: npm run validate:env:production
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Set up Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Compile Firebase rules
+        run: npx --yes firebase-tools@15.24.0 emulators:exec --only firestore,storage --project demo-socialize-self-hosted "node -e \"console.log('Firebase rules compiled')\""
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke-test public routes
+        run: |
+          npm run start > /tmp/socialize-self-hosted.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:3000/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --silent --fail http://127.0.0.1:3000/ > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/robots.txt > /dev/null
+          curl --silent --fail http://127.0.0.1:3000/sitemap.xml > /dev/null

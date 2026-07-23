@@ -1,0 +1,509 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validHandle(handle) {
+      return handle is string
+        && handle.size() >= 3
+        && handle.size() <= 30
+        && handle.matches('^[a-z0-9]+(-[a-z0-9]+)*$')
+        && !(handle in [
+          'acceptable-use', 'api', 'auth', 'cookies', 'dashboard', 'docs',
+          'forgot-password', 'legal', 'login', 'onboarding', 'privacy',
+          'report', 'security', 'self-host', 'settings', 'sign-in', 'sign-up',
+          'sponsor', 'support', 'terms'
+        ]);
+    }
+
+    function validGitHubUsername(username) {
+      return username is string
+        && username.size() >= 1
+        && username.size() <= 39
+        && username.matches('^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$')
+        && !username.matches('.*--.*');
+    }
+
+    function validActivityTitle(title) {
+      return title is string
+        && title.size() >= 1
+        && title.size() <= 60
+        && title.matches('.*[^[:space:]].*');
+    }
+
+    function validRepositoryName(name) {
+      return name is string
+        && name.size() >= 1
+        && name.size() <= 140;
+    }
+
+    function validRepositoryNames(names) {
+      return names is list
+        && names.size() <= 5
+        && (names.size() < 1 || validRepositoryName(names[0]))
+        && (names.size() < 2 || validRepositoryName(names[1]))
+        && (names.size() < 3 || validRepositoryName(names[2]))
+        && (names.size() < 4 || validRepositoryName(names[3]))
+        && (names.size() < 5 || validRepositoryName(names[4]));
+    }
+
+    function validRepositorySelection(repositories) {
+      return repositories is map
+        && repositories.keys().hasOnly(['mode', 'names'])
+        && repositories.keys().hasAll(['mode', 'names'])
+        && repositories.mode is string
+        && repositories.mode in ['recent', 'include', 'exclude']
+        && validRepositoryNames(repositories.names);
+    }
+
+    function validCommitActivity(commits) {
+      return commits is map
+        && commits.keys().hasOnly([
+          'enabled', 'title', 'limit', 'showRepository', 'showDate'
+        ])
+        && commits.keys().hasAll([
+          'enabled', 'title', 'limit', 'showRepository', 'showDate'
+        ])
+        && commits.enabled is bool
+        && validActivityTitle(commits.title)
+        && commits.limit is int
+        && commits.limit >= 1
+        && commits.limit <= 10
+        && commits.showRepository is bool
+        && commits.showDate is bool;
+    }
+
+    function validCodingActivity(coding) {
+      return coding is map
+        && coding.keys().hasOnly([
+          'enabled', 'title', 'windowDays', 'showContributionCount',
+          'showHeatmap', 'showMonthLabels', 'showWeekdayLabels',
+          'showLegend', 'showYearSelector', 'showLanguages'
+        ])
+        && coding.keys().hasAll([
+          'enabled', 'title', 'windowDays', 'showContributionCount',
+          'showHeatmap', 'showMonthLabels', 'showWeekdayLabels',
+          'showLegend', 'showYearSelector', 'showLanguages'
+        ])
+        && coding.enabled is bool
+        && validActivityTitle(coding.title)
+        && coding.windowDays is int
+        && coding.windowDays in [7, 14, 30]
+        && coding.showContributionCount is bool
+        && coding.showHeatmap is bool
+        && coding.showMonthLabels is bool
+        && coding.showWeekdayLabels is bool
+        && coding.showLegend is bool
+        && coding.showYearSelector is bool
+        && coding.showLanguages is bool;
+    }
+
+    function validDeveloperActivity(activity) {
+      return activity is map
+        && activity.keys().hasOnly([
+          'enabled', 'githubUsername', 'placement', 'repositories', 'commits', 'coding'
+        ])
+        && activity.keys().hasAll([
+          'enabled', 'githubUsername', 'placement', 'repositories', 'commits', 'coding'
+        ])
+        && activity.enabled is bool
+        && activity.githubUsername is string
+        && activity.githubUsername.size() <= 39
+        && (activity.githubUsername == ''
+          || validGitHubUsername(activity.githubUsername))
+        && (!activity.enabled || validGitHubUsername(activity.githubUsername))
+        && activity.placement is string
+        && activity.placement in ['before-links', 'after-links']
+        && validRepositorySelection(activity.repositories)
+        && validCommitActivity(activity.commits)
+        && validCodingActivity(activity.coding)
+        && (!activity.enabled
+          || (!activity.commits.enabled && !activity.coding.enabled)
+          || activity.repositories.mode != 'include'
+          || activity.repositories.names.size() > 0);
+    }
+
+    function validIdentifier(value, maximum) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= maximum
+        && value.matches('^[A-Za-z0-9_-]+$');
+    }
+
+    function validHttpsUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && value.matches('^https://.*')
+        && !value.matches('^https://[^/]*@.*');
+    }
+
+    function validExternalUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && (value.matches('^https://.*') || value.matches('^mailto:[^[:space:]]+@[^[:space:]]+$'))
+        && !value.matches('^https://[^/]*@.*');
+    }
+
+    function validMediaUrl(value) {
+      return value is string
+        && value.size() >= 1
+        && value.size() <= 2048
+        && (validHttpsUrl(value) || value.matches('^/[^/].*'));
+    }
+
+    function validMediaFields(item) {
+      return (!('mediaUrl' in item) || validMediaUrl(item.mediaUrl))
+        && (!('mediaIcon' in item)
+          || (validIdentifier(item.mediaIcon, 80)))
+        && (!('mediaType' in item)
+          || (item.mediaType is string && item.mediaType in ['icon', 'thumbnail']));
+    }
+
+    function validSection(section) {
+      return section is map
+        && section.keys().hasOnly([
+          'id', 'title', 'mediaUrl', 'mediaIcon', 'mediaType', 'hideTitle'
+        ])
+        && section.keys().hasAll(['id', 'title'])
+        && validIdentifier(section.id, 80)
+        && section.title is string
+        && section.title.size() >= 1
+        && section.title.size() <= 60
+        && validMediaFields(section)
+        && (!('hideTitle' in section) || section.hideTitle is bool);
+    }
+
+    function validSections(sections) {
+      return sections is list
+        && sections.size() <= 12
+        && (sections.size() < 1 || validSection(sections[0]))
+        && (sections.size() < 2 || validSection(sections[1]))
+        && (sections.size() < 3 || validSection(sections[2]))
+        && (sections.size() < 4 || validSection(sections[3]))
+        && (sections.size() < 5 || validSection(sections[4]))
+        && (sections.size() < 6 || validSection(sections[5]))
+        && (sections.size() < 7 || validSection(sections[6]))
+        && (sections.size() < 8 || validSection(sections[7]))
+        && (sections.size() < 9 || validSection(sections[8]))
+        && (sections.size() < 10 || validSection(sections[9]))
+        && (sections.size() < 11 || validSection(sections[10]))
+        && (sections.size() < 12 || validSection(sections[11]));
+    }
+
+    function validLink(link) {
+      return link is map
+        && link.keys().hasOnly([
+          'id', 'title', 'url', 'description', 'enabled', 'kind', 'sectionId',
+          'mediaUrl', 'mediaIcon', 'mediaType'
+        ])
+        && link.keys().hasAll(['id', 'title', 'url', 'enabled'])
+        && validIdentifier(link.id, 80)
+        && link.title is string
+        && link.title.size() >= 1
+        && link.title.size() <= 100
+        && validExternalUrl(link.url)
+        && link.enabled is bool
+        && (!('description' in link)
+          || (link.description is string && link.description.size() <= 160))
+        && (!('kind' in link)
+          || (link.kind is string && link.kind in ['link', 'project', 'writing']))
+        && (!('sectionId' in link) || validIdentifier(link.sectionId, 80))
+        && validMediaFields(link);
+    }
+
+    function validLinks(links) {
+      return links is list
+        && links.size() <= 50
+        && (links.size() < 1 || validLink(links[0]))
+        && (links.size() < 2 || validLink(links[1]))
+        && (links.size() < 3 || validLink(links[2]))
+        && (links.size() < 4 || validLink(links[3]))
+        && (links.size() < 5 || validLink(links[4]))
+        && (links.size() < 6 || validLink(links[5]))
+        && (links.size() < 7 || validLink(links[6]))
+        && (links.size() < 8 || validLink(links[7]))
+        && (links.size() < 9 || validLink(links[8]))
+        && (links.size() < 10 || validLink(links[9]))
+        && (links.size() < 11 || validLink(links[10]))
+        && (links.size() < 12 || validLink(links[11]))
+        && (links.size() < 13 || validLink(links[12]))
+        && (links.size() < 14 || validLink(links[13]))
+        && (links.size() < 15 || validLink(links[14]))
+        && (links.size() < 16 || validLink(links[15]))
+        && (links.size() < 17 || validLink(links[16]))
+        && (links.size() < 18 || validLink(links[17]))
+        && (links.size() < 19 || validLink(links[18]))
+        && (links.size() < 20 || validLink(links[19]))
+        && (links.size() < 21 || validLink(links[20]))
+        && (links.size() < 22 || validLink(links[21]))
+        && (links.size() < 23 || validLink(links[22]))
+        && (links.size() < 24 || validLink(links[23]))
+        && (links.size() < 25 || validLink(links[24]))
+        && (links.size() < 26 || validLink(links[25]))
+        && (links.size() < 27 || validLink(links[26]))
+        && (links.size() < 28 || validLink(links[27]))
+        && (links.size() < 29 || validLink(links[28]))
+        && (links.size() < 30 || validLink(links[29]))
+        && (links.size() < 31 || validLink(links[30]))
+        && (links.size() < 32 || validLink(links[31]))
+        && (links.size() < 33 || validLink(links[32]))
+        && (links.size() < 34 || validLink(links[33]))
+        && (links.size() < 35 || validLink(links[34]))
+        && (links.size() < 36 || validLink(links[35]))
+        && (links.size() < 37 || validLink(links[36]))
+        && (links.size() < 38 || validLink(links[37]))
+        && (links.size() < 39 || validLink(links[38]))
+        && (links.size() < 40 || validLink(links[39]))
+        && (links.size() < 41 || validLink(links[40]))
+        && (links.size() < 42 || validLink(links[41]))
+        && (links.size() < 43 || validLink(links[42]))
+        && (links.size() < 44 || validLink(links[43]))
+        && (links.size() < 45 || validLink(links[44]))
+        && (links.size() < 46 || validLink(links[45]))
+        && (links.size() < 47 || validLink(links[46]))
+        && (links.size() < 48 || validLink(links[47]))
+        && (links.size() < 49 || validLink(links[48]))
+        && (links.size() < 50 || validLink(links[49]));
+    }
+
+    function validSocials(socials) {
+      return socials is map
+        && socials.keys().hasOnly([
+          'github', 'gitlab', 'linkedin', 'x', 'youtube', 'instagram', 'tiktok',
+          'facebook', 'threads', 'bluesky', 'mastodon', 'discord', 'twitch',
+          'reddit', 'medium', 'hashnode', 'devto', 'stackoverflow', 'codepen',
+          'codesandbox', 'dribbble', 'behance', 'figma', 'npm', 'producthunt',
+          'telegram', 'whatsapp', 'spotify', 'soundcloud', 'apple_music',
+          'patreon', 'kofi', 'buymeacoffee', 'calendly', 'calcom', 'email',
+          'website'
+        ])
+        && (!('github' in socials) || validExternalUrl(socials.github))
+        && (!('gitlab' in socials) || validExternalUrl(socials.gitlab))
+        && (!('linkedin' in socials) || validExternalUrl(socials.linkedin))
+        && (!('x' in socials) || validExternalUrl(socials.x))
+        && (!('youtube' in socials) || validExternalUrl(socials.youtube))
+        && (!('instagram' in socials) || validExternalUrl(socials.instagram))
+        && (!('tiktok' in socials) || validExternalUrl(socials.tiktok))
+        && (!('facebook' in socials) || validExternalUrl(socials.facebook))
+        && (!('threads' in socials) || validExternalUrl(socials.threads))
+        && (!('bluesky' in socials) || validExternalUrl(socials.bluesky))
+        && (!('mastodon' in socials) || validExternalUrl(socials.mastodon))
+        && (!('discord' in socials) || validExternalUrl(socials.discord))
+        && (!('twitch' in socials) || validExternalUrl(socials.twitch))
+        && (!('reddit' in socials) || validExternalUrl(socials.reddit))
+        && (!('medium' in socials) || validExternalUrl(socials.medium))
+        && (!('hashnode' in socials) || validExternalUrl(socials.hashnode))
+        && (!('devto' in socials) || validExternalUrl(socials.devto))
+        && (!('stackoverflow' in socials) || validExternalUrl(socials.stackoverflow))
+        && (!('codepen' in socials) || validExternalUrl(socials.codepen))
+        && (!('codesandbox' in socials) || validExternalUrl(socials.codesandbox))
+        && (!('dribbble' in socials) || validExternalUrl(socials.dribbble))
+        && (!('behance' in socials) || validExternalUrl(socials.behance))
+        && (!('figma' in socials) || validExternalUrl(socials.figma))
+        && (!('npm' in socials) || validExternalUrl(socials.npm))
+        && (!('producthunt' in socials) || validExternalUrl(socials.producthunt))
+        && (!('telegram' in socials) || validExternalUrl(socials.telegram))
+        && (!('whatsapp' in socials) || validExternalUrl(socials.whatsapp))
+        && (!('spotify' in socials) || validExternalUrl(socials.spotify))
+        && (!('soundcloud' in socials) || validExternalUrl(socials.soundcloud))
+        && (!('apple_music' in socials) || validExternalUrl(socials.apple_music))
+        && (!('patreon' in socials) || validExternalUrl(socials.patreon))
+        && (!('kofi' in socials) || validExternalUrl(socials.kofi))
+        && (!('buymeacoffee' in socials) || validExternalUrl(socials.buymeacoffee))
+        && (!('calendly' in socials) || validExternalUrl(socials.calendly))
+        && (!('calcom' in socials) || validExternalUrl(socials.calcom))
+        && (!('email' in socials) || validExternalUrl(socials.email))
+        && (!('website' in socials) || validExternalUrl(socials.website));
+    }
+
+    function validProfile(uid) {
+      return request.resource.data.keys().hasOnly([
+          'ownerUid', 'handle', 'displayName', 'role', 'bio', 'avatarUrl',
+          'ogImageUrl', 'location', 'availability', 'theme', 'accent', 'published',
+          'socials', 'sections', 'links', 'developerActivity', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'ownerUid', 'handle', 'displayName', 'role', 'bio', 'theme',
+          'accent', 'published', 'socials', 'links', 'updatedAt'
+        ])
+        && request.resource.data.ownerUid == uid
+        && validHandle(request.resource.data.handle)
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() >= 1
+        && request.resource.data.displayName.size() <= 60
+        && request.resource.data.role is string
+        && request.resource.data.role.size() <= 100
+        && request.resource.data.bio is string
+        && request.resource.data.bio.size() <= 240
+        && (!('avatarUrl' in request.resource.data)
+          || validHttpsUrl(request.resource.data.avatarUrl))
+        && (!('ogImageUrl' in request.resource.data)
+          || validHttpsUrl(request.resource.data.ogImageUrl))
+        && (!('location' in request.resource.data)
+          || (request.resource.data.location is string
+            && request.resource.data.location.size() <= 80))
+        && (!('availability' in request.resource.data)
+          || (request.resource.data.availability is string
+            && request.resource.data.availability.size() <= 90))
+        && request.resource.data.theme in ['terminal', 'paper', 'midnight', 'mono']
+        && request.resource.data.accent is string
+        && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}$')
+        && request.resource.data.published is bool
+        && validSocials(request.resource.data.socials)
+        && (!('sections' in request.resource.data)
+          || validSections(request.resource.data.sections))
+        && (!('developerActivity' in request.resource.data)
+          || validDeveloperActivity(request.resource.data.developerActivity))
+        && validLinks(request.resource.data.links)
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validHandleClaim(handle) {
+      return request.resource.data.keys().hasOnly(['uid', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['uid', 'updatedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && validHandle(handle);
+    }
+
+    function canPublishProfile() {
+      return request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && hasCompleteTermsRecord(
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        );
+    }
+
+    function hasNoTermsRecord(data) {
+      return !data.keys().hasAny(['termsAcceptedAt', 'termsVersion']);
+    }
+
+    function hasCompleteTermsRecord(data) {
+      return data.keys().hasAll(['termsAcceptedAt', 'termsVersion'])
+        && data.termsAcceptedAt is timestamp
+        && data.termsVersion is string
+        && data.termsVersion.size() >= 1
+        && data.termsVersion.size() <= 40;
+    }
+
+    function validNewTermsRecord(data) {
+      return hasCompleteTermsRecord(data)
+        && data.termsAcceptedAt == request.time;
+    }
+
+    function validTermsTransition() {
+      return (
+          hasNoTermsRecord(resource.data)
+          && (
+            hasNoTermsRecord(request.resource.data)
+            || validNewTermsRecord(request.resource.data)
+          )
+        )
+        || (
+          hasCompleteTermsRecord(resource.data)
+          && hasCompleteTermsRecord(request.resource.data)
+          && request.resource.data.termsAcceptedAt == resource.data.termsAcceptedAt
+          && request.resource.data.termsVersion == resource.data.termsVersion
+        );
+    }
+
+    function validUser() {
+      return request.resource.data.keys().hasOnly([
+          'email', 'displayName', 'githubLogin', 'profileHandle',
+          'developerActivity', 'termsAcceptedAt', 'termsVersion', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll(['updatedAt'])
+        && (!('email' in request.resource.data)
+          || request.resource.data.email == null
+          || (request.resource.data.email is string
+            && request.resource.data.email.size() <= 320))
+        && (!('displayName' in request.resource.data)
+          || request.resource.data.displayName == null
+          || (request.resource.data.displayName is string
+            && request.resource.data.displayName.size() <= 100))
+        && (!('githubLogin' in request.resource.data)
+          || validGitHubUsername(request.resource.data.githubLogin))
+        && (!('profileHandle' in request.resource.data)
+          || validHandle(request.resource.data.profileHandle))
+        && (!('developerActivity' in request.resource.data)
+          || validDeveloperActivity(request.resource.data.developerActivity))
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /users/{uid} {
+      allow read: if owns(uid);
+      allow create: if owns(uid)
+        && validUser()
+        && validNewTermsRecord(request.resource.data);
+      allow update: if owns(uid)
+        && validUser()
+        && validTermsTransition();
+      // Account deletion runs through the recently-reauthenticated server
+      // workflow so immutable acceptance records cannot be deleted/recreated.
+      allow delete: if false;
+    }
+
+    match /profiles/{uid} {
+      allow read: if resource.data.published == true || owns(uid);
+      allow create, update: if owns(uid)
+        && validProfile(uid)
+        && (!request.resource.data.published || canPublishProfile());
+      allow delete: if owns(uid);
+    }
+
+    match /handles/{handle} {
+      allow read: if true;
+      allow create: if signedIn()
+        && canPublishProfile()
+        && validHandleClaim(handle);
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && canPublishProfile()
+        && validHandleClaim(handle);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /reports/{reportId} {
+      // Reports are submitted through the rate-limited server route. Public
+      // Firestore writes invite spam and turn every visitor into a write API.
+      allow read, create, update, delete: if false;
+    }
+
+    match /profileStats/{uid} {
+      allow read: if owns(uid);
+      // Click aggregation is server-owned. Public SDK writes made analytics
+      // trivial to fabricate and opened an unbounded Firestore write surface.
+      allow create, update: if false;
+      allow delete: if owns(uid);
+    }
+
+    // Public GitHub contribution day map. Cache writes must come from a
+    // trusted backend; browser/API-key writes let anyone poison public data.
+    match /githubContributionCaches/{usernameKey} {
+      allow read: if true;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // Year-scoped language mixes for public GitHub activity. As above, only a
+    // trusted backend may write these documents.
+    match /githubLanguageCaches/{usernameKey} {
+      allow read: if true;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

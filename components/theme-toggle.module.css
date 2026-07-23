@@ -1,0 +1,61 @@
+.toggle {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(246, 242, 250, 0.24);
+  background: rgba(246, 242, 250, 0.06);
+  color: #f6f2fa;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 720;
+  line-height: 1;
+  transition: background-color 180ms ease, border-color 180ms ease,
+    transform 180ms var(--ease-out);
+}
+
+.toggle:hover {
+  border-color: rgba(246, 242, 250, 0.5);
+  background: rgba(246, 242, 250, 0.12);
+}
+
+.toggle:active {
+  transform: scale(0.98);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.toggle svg {
+  flex: 0 0 auto;
+  color: var(--signal);
+  font-size: 1rem;
+}
+
+:global(html[data-app-theme="light"]) .toggle {
+  border-color: rgba(20, 18, 24, 0.22);
+  background: rgba(20, 18, 24, 0.04);
+  color: #141218;
+}
+
+:global(html[data-app-theme="light"]) .toggle:hover {
+  border-color: rgba(20, 18, 24, 0.45);
+  background: rgba(20, 18, 24, 0.08);
+}
+
+.compact span {
+  display: none;
+}
+
+.compact {
+  width: 2.5rem;
+  justify-content: center;
+  padding-inline: 0;
+}
+
+:global(html[data-reduce-motion]) .toggle {
+  transition-duration: 0.01ms;
+}

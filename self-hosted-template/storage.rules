@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/owners/$(request.auth.uid)
+        )
+        && firestore.get(
+          /databases/(default)/documents/owners/$(request.auth.uid)
+        ).data.enabled == true;
+    }
+
+    function validProfileMedia() {
+      return request.resource.size <= 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    }
+
+    function validItemId(itemId) {
+      return itemId.size() >= 1
+        && itemId.size() <= 80
+        && itemId.matches('^[A-Za-z0-9_-]+$');
+    }
+
+    function immutableProfileMediaFile(fileName) {
+      return fileName.matches(
+        '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+      );
+    }
+
+    function legacyProfileMediaFile(fileName) {
+      return fileName in ['media', 'media-a', 'media-b'];
+    }
+
+    match /profile-media/{uid}/{allPaths=**} {
+      // Public pages receive capability URLs for individual objects. Only the
+      // allowlisted owner may enumerate this personal deployment's media.
+      allow list: if isOwner() && request.auth.uid == uid;
+    }
+
+    match /profile-media/{uid}/{scope}/{itemId}/{fileName} {
+      allow get: if true;
+      allow create: if isOwner()
+        && request.auth.uid == uid
+        && scope in ['links', 'sections']
+        && validItemId(itemId)
+        && immutableProfileMediaFile(fileName)
+        && validProfileMedia();
+      allow delete: if isOwner()
+        && request.auth.uid == uid
+        && scope in ['links', 'sections']
+        && validItemId(itemId)
+        && (
+          immutableProfileMediaFile(fileName)
+          || legacyProfileMediaFile(fileName)
+        );
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

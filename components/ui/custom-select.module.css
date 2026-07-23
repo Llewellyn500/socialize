@@ -1,0 +1,242 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.root[data-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.trigger {
+  display: flex;
+  width: 100%;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(25, 26, 24, 0.18);
+  background: rgba(255, 255, 255, 0.55);
+  color: #191a18;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: rgba(138, 43, 226, 0.4);
+  background: rgba(138, 43, 226, 0.05);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid #8a2be2;
+  outline-offset: 2px;
+}
+
+.trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trigger span[data-placeholder="true"] {
+  color: rgba(25, 26, 24, 0.42);
+  font-weight: 600;
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.9rem;
+  transition: transform 160ms ease;
+}
+
+.root[data-open="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  right: 0;
+  left: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: min(18rem, 50vh);
+  overflow: hidden;
+  border: 1px solid rgba(25, 26, 24, 0.14);
+  background: #f7f4ec;
+  box-shadow: 0 14px 36px rgba(25, 26, 24, 0.16);
+}
+
+.search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid rgba(25, 26, 24, 0.12);
+}
+
+.search svg {
+  color: rgba(25, 26, 24, 0.42);
+  font-size: 0.82rem;
+}
+
+.search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
+  color: #191a18;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  outline: 0;
+}
+
+.search input::placeholder {
+  color: rgba(25, 26, 24, 0.38);
+  font-weight: 550;
+}
+
+.menu {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.35rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.empty {
+  padding: 0.7rem 0.55rem;
+  color: rgba(25, 26, 24, 0.45);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  border-radius: 0.28rem;
+  background: transparent;
+  color: #191a18;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.option > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.option > svg {
+  color: #8a2be2;
+  font-size: 0.78rem;
+}
+
+.option:hover:not(:disabled),
+.option[data-active="true"]:not(:disabled),
+.option[aria-selected="true"] {
+  background: rgba(138, 43, 226, 0.1);
+  color: #6b21c8;
+}
+
+.option:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.option:active:not(:disabled) {
+  background: rgba(138, 43, 226, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .chevron {
+    transition: none;
+  }
+}
+
+:global(html:not([data-app-theme="light"])) .trigger {
+  border-color: rgba(247, 243, 251, 0.18);
+  background: rgba(247, 243, 251, 0.04);
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .trigger:hover:not(:disabled) {
+  border-color: rgba(180, 121, 235, 0.45);
+  background: rgba(138, 43, 226, 0.12);
+}
+
+:global(html:not([data-app-theme="light"])) .trigger span[data-placeholder="true"] {
+  color: rgba(247, 243, 251, 0.42);
+}
+
+:global(html:not([data-app-theme="light"])) .chevron {
+  color: rgba(247, 243, 251, 0.5);
+}
+
+:global(html:not([data-app-theme="light"])) .menuPanel {
+  border-color: rgba(247, 243, 251, 0.14);
+  background: #1f1a24;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+}
+
+:global(html:not([data-app-theme="light"])) .search {
+  border-bottom-color: rgba(247, 243, 251, 0.12);
+}
+
+:global(html:not([data-app-theme="light"])) .search svg {
+  color: rgba(247, 243, 251, 0.45);
+}
+
+:global(html:not([data-app-theme="light"])) .search input {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .search input::placeholder {
+  color: rgba(247, 243, 251, 0.38);
+}
+
+:global(html:not([data-app-theme="light"])) .empty {
+  color: rgba(247, 243, 251, 0.42);
+}
+
+:global(html:not([data-app-theme="light"])) .option {
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .option > svg {
+  color: #d7b7f5;
+}
+
+:global(html:not([data-app-theme="light"])) .option:hover:not(:disabled),
+:global(html:not([data-app-theme="light"])) .option[data-active="true"]:not(:disabled),
+:global(html:not([data-app-theme="light"])) .option[aria-selected="true"] {
+  background: rgba(138, 43, 226, 0.22);
+  color: #f0ddff;
+}

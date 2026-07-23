@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsPath(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function canWriteOwnedPath(uid) {
+      return ownsPath(uid) && request.auth.token.email_verified == true;
+    }
+
+    function isValidOgImage() {
+      return request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType == 'image/png';
+    }
+
+    match /avatars/{uid}/{fileName} {
+      allow get: if true;
+      allow list: if false;
+      allow delete: if canWriteOwnedPath(uid)
+        && fileName in [
+          'avatar', 'avatar.jpg', 'avatar.jpeg', 'avatar.png',
+          'avatar.webp', 'avatar.gif'
+        ];
+    }
+
+    match /og/{uid}/{fileName} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if canWriteOwnedPath(uid)
+        && fileName == 'opengraph.png'
+        && isValidOgImage();
+      allow delete: if canWriteOwnedPath(uid) && fileName == 'opengraph.png';
+    }
+
+    // Hosted profile media is created and removed only by the authenticated
+    // server route. Service-account requests bypass these browser rules.
+    // Token-bearing object gets remain public; directory enumeration and all
+    // client writes are denied for both the pool and legacy paths.
+    match /profile-media/{allPaths=**} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

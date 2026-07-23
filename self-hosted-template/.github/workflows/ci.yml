@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Validate production environment contract
+        env:
+          VERCEL_ENV: production
+          VERCEL_FIREWALL_CONFIGURED: "true"
+          NEXT_PUBLIC_SITE_URL: https://profile.socialize-ci.dev
+          NEXT_PUBLIC_FIREBASE_API_KEY: ci-api-key
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: socialize-ci.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: socialize-ci
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: socialize-ci.firebasestorage.app
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:1234567890:web:ci
+        run: npm run validate:env:production
+      - run: npm run lint
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Compile Firebase rules
+        run: npx --yes firebase-tools@15.24.0 emulators:exec --only firestore,storage --project demo-socialize-self-hosted "node -e \"console.log('Firebase rules compiled')\""
+      - run: npm run build
