@@ -48,7 +48,10 @@ export function credentialFromAuthError(error: unknown) {
   );
 }
 
-export async function readPendingProviderLink(error: unknown): Promise<PendingProviderLink | null> {
+export async function readPendingProviderLink(
+  error: unknown,
+  emailHint?: string,
+): Promise<PendingProviderLink | null> {
   const firebaseAuth = auth;
   if (!firebaseAuth) return null;
 
@@ -65,15 +68,23 @@ export async function readPendingProviderLink(error: unknown): Promise<PendingPr
     typeof error === "object" && error && "customData" in error
       ? (error.customData as { email?: string })
       : undefined;
-  const email = customData?.email?.trim();
+  const email = customData?.email?.trim() || emailHint?.trim();
   if (!email) return null;
 
-  const methods = (await fetchSignInMethodsForEmail(firebaseAuth, email)).filter(
-    (method): method is AuthProviderId =>
-      method === "password" || method === "google.com" || method === "github.com",
-  );
-
-  if (methods.length === 0) return null;
+  let methods: AuthProviderId[] = [];
+  try {
+    methods = (await fetchSignInMethodsForEmail(firebaseAuth, email)).filter(
+      (method): method is AuthProviderId =>
+        method === "password" || method === "google.com" || method === "github.com",
+    );
+  } catch {
+    // Email Enumeration Protection can suppress method discovery. The
+    // collision itself is still actionable, so present all supported methods
+    // and verify the chosen account's email before linking below.
+  }
+  if (methods.length === 0) {
+    methods = ["password", "google.com", "github.com"];
+  }
 
   return {
     email,
@@ -99,11 +110,13 @@ export async function signInAndLinkPendingCredential(
   providerId: AuthProviderId,
   pendingCredential: AuthCredential | null,
   emailPassword?: { email: string; password: string },
+  expectedEmail?: string,
 ) {
   const firebaseAuth = auth;
   if (!firebaseAuth) throw new Error("Accounts are not configured.");
 
   const { signInWithEmailAndPassword, signInWithPopup } = await import("firebase/auth");
+  let providerResult: Awaited<ReturnType<typeof signInWithPopup>> | null = null;
 
   if (providerId === "password") {
     if (!emailPassword) throw new Error("Email and password are required.");
@@ -115,19 +128,30 @@ export async function signInAndLinkPendingCredential(
   } else {
     const provider = providerInstance(providerId);
     if (!provider) throw new Error("Unsupported sign-in provider.");
-    const result = await signInWithPopup(firebaseAuth, provider);
-    if (providerId === "github.com") {
-      await captureGitHubLoginFromCredential(result);
-    }
+    providerResult = await signInWithPopup(firebaseAuth, provider);
   }
 
   const currentUser = firebaseAuth.currentUser;
   if (!currentUser) throw new Error("Sign-in did not complete.");
+  const normalizedExpectedEmail = (
+    expectedEmail || emailPassword?.email || ""
+  ).trim().toLowerCase();
+  const signedInEmail = currentUser.email?.trim().toLowerCase();
+  if (normalizedExpectedEmail && signedInEmail !== normalizedExpectedEmail) {
+    await firebaseAuth.signOut();
+    throw new Error("Sign in with the account that uses the matching email address.");
+  }
+  if (providerId === "github.com" && providerResult) {
+    await captureGitHubLoginFromCredential(providerResult);
+  }
 
   if (pendingCredential) {
     const linkResult = await linkWithCredential(currentUser, pendingCredential);
     await captureGitHubLoginFromCredential(linkResult);
-  } else if (emailPassword) {
+  } else if (
+    providerId !== "password" &&
+    emailPassword?.password
+  ) {
     await linkEmailPassword(currentUser, emailPassword.email, emailPassword.password);
   }
 

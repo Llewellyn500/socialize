@@ -16,6 +16,7 @@ import {
   Steps,
   serviceContentStyles as styles,
 } from "@/components/service-content";
+import { contactConfig, mailto } from "@/lib/contact-config";
 
 export const metadata: Metadata = {
   title: "Documentation",
@@ -305,7 +306,8 @@ export default function DocsPage() {
             </CheckItem>
             <CheckItem>
               Deploy <code>firestore.rules</code> and grant one trusted account the
-              <code>owners/&#123;uid&#125;</code> allowlist document.
+              <code> owners/&#123;uid&#125;</code> allowlist document with its
+              Boolean <code>enabled</code> field set to <code>true</code>.
             </CheckItem>
             <CheckItem>
               Test public reads, signed-out write rejection, owner writes, and
@@ -340,11 +342,13 @@ export default function DocsPage() {
         >
           <p>
             The self-hosted edition defines the profile in
-            <code>types/profile.ts</code>. A hosted JSON export is a backup and
-            migration format, not a file the stripped template imports unchanged:
-            identity and social fields use different top-level representations.
-            Convert those fields during migration. The nested
-            <code> developerActivity</code> object shown below is intentionally shared.
+            <code>types/profile.ts</code>. Its private <code>/manage</code> route
+            includes an <strong>Import hosted JSON</strong> action that converts a
+            dashboard export into this model for review before publishing. Identity
+            and social fields are mapped into their stripped representations, and
+            the nested <code>developerActivity</code> object shown below is shared.
+            Hosted built-in icon IDs are reported for replacement, and hosted
+            Firebase images should be re-uploaded before the old account is removed.
           </p>
           <CodeBlock label="types/profile.ts">{profileShape}</CodeBlock>
           <h3>Link behavior</h3>
@@ -395,13 +399,14 @@ export default function DocsPage() {
           <h3>Self-hosted edition</h3>
           <p>
             The template checks for an <code>owners/&#123;uid&#125;</code> document in
-            both the interface gate and database rules. The interface check helps
-            the owner understand access state; the database rule remains the
-            security boundary.
+            both the interface gate and database rules, and requires its Boolean
+            <code> enabled</code> field to be <code>true</code>. The interface
+            check helps the owner understand access state; the database rule
+            remains the security boundary.
           </p>
           <CodeBlock label="firestore.rules">
             {
-              "function isOwner() {\n  return request.auth != null\n    && exists(/databases/$(database)/documents/owners/$(request.auth.uid));\n}\n\nmatch /profiles/{profileId} {\n  allow read: if true;\n  allow create, update, delete: if isOwner();\n}"
+              "function isOwner() {\n  return request.auth != null\n    && exists(/databases/$(database)/documents/owners/$(request.auth.uid))\n    && get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.enabled == true;\n}\n\nmatch /profiles/{profileId} {\n  allow read: if true;\n  allow create, update, delete: if isOwner();\n}"
             }
           </CodeBlock>
           <Notice title="Client checks are not access control" tone="signal">
@@ -460,12 +465,12 @@ export default function DocsPage() {
                 description: "Reproducible bugs and public feature discussions. Never include secrets.",
               },
               {
-                href: "mailto:support@socialize.you",
+                href: mailto(contactConfig.support),
                 title: "Hosted account support",
                 description: "Account access, handle, publishing, or billing questions.",
               },
               {
-                href: "mailto:security@socialize.you",
+                href: mailto(contactConfig.security),
                 title: "Private security reports",
                 description: "Vulnerabilities, exposed credentials, or abuse of service infrastructure.",
               },

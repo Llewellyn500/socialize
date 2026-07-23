@@ -16,8 +16,8 @@ import styles from "./auth.module.css";
 
 type LinkAccountPromptProps = {
   pendingLink: PendingProviderLink;
-  emailPassword?: { email: string; password: string };
-  onComplete: () => void;
+  emailPassword?: { password: string };
+  onComplete: () => Promise<void>;
   onCancel: () => void;
 };
 
@@ -41,13 +41,14 @@ export function LinkAccountPrompt({
       await signInAndLinkPendingCredential(
         providerId,
         pendingLink.pendingCredential,
-        providerId === "password" && emailPassword
-          ? { email: emailPassword.email, password }
-          : providerId === "password"
-            ? { email: pendingLink.email, password }
+        providerId === "password"
+          ? { email: pendingLink.email, password }
+          : emailPassword?.password
+            ? { email: pendingLink.email, password: emailPassword.password }
             : undefined,
+        pendingLink.email,
       );
-      onComplete();
+      await onComplete();
     } catch (linkError) {
       setError(getFirebaseAuthError(linkError));
     } finally {
@@ -57,7 +58,7 @@ export function LinkAccountPrompt({
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (password.length < 8) {
+    if (!password) {
       setError("Enter the password for this account.");
       return;
     }

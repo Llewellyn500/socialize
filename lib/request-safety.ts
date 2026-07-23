@@ -37,7 +37,28 @@ const rateLimits =
 rateLimitGlobal.__socializeRequestRateLimits = rateLimits;
 
 function boundedHeaderValue(value: string | null) {
-  return value?.trim().slice(0, 128) ?? "";
+  const candidate = value?.split(",")[0]?.trim().slice(0, 128) ?? "";
+  if (!candidate) return "";
+
+  const withoutIpv4Port = candidate.replace(
+    /^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/,
+    "$1",
+  );
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(withoutIpv4Port)) {
+    const valid = withoutIpv4Port
+      .split(".")
+      .every((part) => Number(part) >= 0 && Number(part) <= 255);
+    return valid ? withoutIpv4Port : "";
+  }
+
+  const withoutIpv6Port =
+    candidate.startsWith("[") && candidate.includes("]")
+      ? candidate.slice(1, candidate.indexOf("]"))
+      : candidate;
+  return /^[0-9a-f:]+$/i.test(withoutIpv6Port) &&
+    withoutIpv6Port.includes(":")
+    ? withoutIpv6Port.toLowerCase()
+    : "";
 }
 
 /**
@@ -45,13 +66,24 @@ function boundedHeaderValue(value: string | null) {
  * compatibility fallback; deployments should ensure their proxy overwrites it.
  */
 export function requestClientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0] ?? null;
-  const candidates = [
-    request.headers.get("cf-connecting-ip"),
-    request.headers.get("x-vercel-forwarded-for"),
-    request.headers.get("x-real-ip"),
-    forwarded,
-  ];
+  // On Vercel, use only Vercel-managed forwarding headers before generic
+  // fallbacks. Trusting a client-supplied Cloudflare header first lets callers
+  // rotate the limiter key on every request.
+  const candidates =
+    process.env.VERCEL === "1"
+      ? [
+          request.headers.get("x-vercel-forwarded-for"),
+          request.headers.get("x-forwarded-for"),
+        ]
+      : process.env.CF_PAGES === "1" || process.env.CF_PAGES === "true"
+        ? [
+            request.headers.get("cf-connecting-ip"),
+            request.headers.get("x-forwarded-for"),
+          ]
+        : [
+            request.headers.get("x-real-ip"),
+            request.headers.get("x-forwarded-for"),
+          ];
 
   return candidates.map(boundedHeaderValue).find(Boolean) ?? "unknown";
 }

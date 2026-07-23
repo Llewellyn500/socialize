@@ -9,6 +9,8 @@ import {
   ServiceShell,
   serviceContentStyles as styles,
 } from "@/components/service-content";
+import { contactConfig } from "@/lib/contact-config";
+import { legalConfig } from "@/lib/legal-config";
 
 export type LegalSection = {
   id: string;
@@ -46,15 +48,21 @@ export function LegalPage({
         tone="moss"
         aside={
           <div className={styles.asideStatement}>
-            <span>Product policy draft</span>
-            <strong>Last updated July 11, 2026.</strong>
-            <p>Prepared for operational planning and counsel review before launch.</p>
+            <span>{legalConfig.isConfigured ? "Service policy" : "Development policy"}</span>
+            <strong>Effective {legalConfig.effectiveDate}.</strong>
+            <p>
+              {legalConfig.operatorName}
+              <br />
+              {legalConfig.operatorAddress}
+            </p>
           </div>
         }
       />
 
       <PageLayout nav={nav} navLabel="In this policy">
-        <LegalDraftNote />
+        {!legalConfig.isConfigured || !contactConfig.isConfigured ? (
+          <LegalDraftNote />
+        ) : null}
         {sections.map((section) => (
           <ContentSection
             id={section.id}

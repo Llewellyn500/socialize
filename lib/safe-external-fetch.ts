@@ -2,7 +2,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
 const DEFAULT_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (compatible; SocializeBot/1.0; +https://socialize.you)",
+  "User-Agent": "Mozilla/5.0 (compatible; SocializeBot/1.0; +https://www.socialize.you)",
   "Accept-Language": "en-US,en;q=0.9",
 };
 

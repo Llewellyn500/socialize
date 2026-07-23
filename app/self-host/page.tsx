@@ -28,6 +28,7 @@ const pageNav = [
   { href: "#what-you-get", label: "What you get" },
   { href: "#before-you-start", label: "Before you start" },
   { href: "#activity", label: "GitHub activity" },
+  { href: "#migrate", label: "Move your profile" },
   { href: "#setup", label: "Setup guide" },
   { href: "#deploy", label: "Deploy" },
   { href: "#operate", label: "Operate safely" },
@@ -72,8 +73,9 @@ export default function SelfHostPage() {
           <p>
             The template lives in <code>self-hosted-template</code>. Visitors see
             your profile at <code>/</code>. Only a signed-in account whose UID has
-            a matching <code>owners/&#123;uid&#125;</code> allowlist document can open
-            <code>/manage</code> and publish changes.
+            a matching <code>owners/&#123;uid&#125;</code> allowlist document with
+            <code> enabled: true</code> can open <code>/manage</code> and publish
+            changes.
           </p>
           <FactGrid
             facts={[
@@ -104,6 +106,10 @@ export default function SelfHostPage() {
               Optional public GitHub commit and coding activity with repository,
               placement, sampling, and display controls.
             </CheckItem>
+            <CheckItem>
+              A review-before-publish importer for JSON exported from the hosted
+              Socialize dashboard.
+            </CheckItem>
           </CheckList>
           <Notice title="The config remains your recovery path">
             <p>
@@ -121,11 +127,12 @@ export default function SelfHostPage() {
           lead="Allow about twenty minutes for backend setup and the first deployment."
         >
           <CheckList>
-            <CheckItem>Node.js 20 or newer and npm installed locally.</CheckItem>
+            <CheckItem>Node.js 22 and npm installed locally.</CheckItem>
             <CheckItem>A GitHub account, a fork of the repository, and a Vercel account.</CheckItem>
             <CheckItem>
-              A cloud backend project. Choose your database location carefully because
-              that location cannot be changed later.
+              A dedicated cloud backend project used only by this self-hosted
+              profile. Choose its database location carefully because that location
+              cannot be changed later.
             </CheckItem>
             <CheckItem>
               A domain you control, if you want a custom production address.
@@ -141,6 +148,15 @@ export default function SelfHostPage() {
             rules, not from hiding those values. This starter does not need a
             server admin credential.
           </p>
+          <Notice title="Do not reuse another application's backend project" tone="warning">
+            <p>
+              The included Firestore and Storage rules are the complete policy for
+              the template&apos;s collections and upload paths. Deploying them into a
+              shared project can expose profile documents or block an unrelated
+              application. Create a dedicated project before deploying either
+              rules file.
+            </p>
+          </Notice>
         </ContentSection>
 
         <ContentSection
@@ -190,6 +206,57 @@ export default function SelfHostPage() {
         </ContentSection>
 
         <ContentSection
+          id="migrate"
+          title="Move a hosted profile without rebuilding it"
+          lead="The private manager converts the hosted export into the stripped profile model."
+        >
+          <Steps
+            items={[
+              {
+                title: "Export from hosted Socialize",
+                body: (
+                  <p>
+                    Open Settings in the hosted dashboard and download the profile
+                    JSON export.
+                  </p>
+                ),
+              },
+              {
+                title: "Import into the private manager",
+                body: (
+                  <p>
+                    Sign in at <code>/manage</code>, choose
+                    <strong> Import hosted JSON</strong>, and select the downloaded
+                    file. The import remains local draft state until you publish.
+                  </p>
+                ),
+              },
+              {
+                title: "Review and publish",
+                body: (
+                  <p>
+                    Check identity, socials, section order, links, and developer
+                    activity, then publish. The importer reports hosted icon choices
+                    that need replacement and Firebase images that still depend on
+                    the old project.
+                  </p>
+                ),
+              },
+              {
+                title: "Move uploaded images",
+                body: (
+                  <p>
+                    Re-upload any hosted avatar, link image, or section image to
+                    the dedicated self-hosted Firebase project before deleting the
+                    hosted account.
+                  </p>
+                ),
+              },
+            ]}
+          />
+        </ContentSection>
+
+        <ContentSection
           id="setup"
           title="Setup, from fork to owner access"
           lead="These steps follow the files already included in the template."
@@ -213,8 +280,8 @@ export default function SelfHostPage() {
                 title: "Make the fallback profile yours",
                 body: (
                   <p>
-                    Edit <code>profile.config.ts</code>. Replace the owner email,
-                    name, handle, sections, links, social URLs, accent color, and optional
+                    Edit <code>profile.config.ts</code>. Replace the name, handle,
+                    sections, links, social URLs, accent color, and optional
                     developer-activity defaults. Keep
                     <code>firestoreDocumentPath</code> at
                     <code>profiles/main</code> unless you also update the rules and
@@ -222,7 +289,7 @@ export default function SelfHostPage() {
                   </p>
                 ),
                 code:
-                  'ownerEmail: "you@example.com"\nfirestoreDocumentPath: "profiles/main"',
+                  'firestoreDocumentPath: "profiles/main"\nprofile: {\n  name: "Your name",\n  handle: "@your-handle"\n}',
                 label: "profile.config.ts",
               },
               {
@@ -281,11 +348,11 @@ export default function SelfHostPage() {
                 title: "Add the owner UID to the database",
                 body: (
                   <p>
-                    In the database, create <code>owners/USER_UID</code> with a small
-                    marker field such as <code>enabled: true</code>. The document
-                    ID—not its field value—is the access grant. Browser clients
-                    cannot create or change owner records under the included
-                    rules.
+                    In the database, create <code>owners/USER_UID</code> and add the
+                    Boolean field <code>enabled: true</code>. Both the document ID
+                    and this exact field value are required for owner access.
+                    Browser clients cannot create or change owner records under
+                    the included rules.
                   </p>
                 ),
                 code:
@@ -297,9 +364,10 @@ export default function SelfHostPage() {
                 body: (
                   <p>
                     The included rules allow anyone to read the public profile and
-                    allow writes only when the authenticated UID has a matching
-                    owner document. Storage rules make profile imagery publicly
-                    readable while restricting uploads to the signed-in owner.
+                    allow writes only when the authenticated UID has a matching,
+                    enabled owner document. Storage rules make profile imagery
+                    publicly readable while restricting uploads to the signed-in
+                    enabled owner.
                     Deploy both rule files before using the manager in production.
                     On the first deploy, accept the Firebase Rules permission that
                     lets Storage check the Firestore owner allowlist.
@@ -331,8 +399,9 @@ export default function SelfHostPage() {
           <p>
             Push your configured fork to GitHub, then import it in Vercel. Set the
             project&apos;s Root Directory to <code>self-hosted-template</code> so
-            Vercel builds only the stripped edition. The framework preset should
-            be detected as Next.js; no custom build command is required.
+            Vercel builds only the stripped edition. The checked-in
+            <code> vercel.json</code> selects Next.js and runs the production
+            environment validator before the build.
           </p>
           <CodeBlock>
             {
@@ -340,13 +409,16 @@ export default function SelfHostPage() {
             }
           </CodeBlock>
           <p>
-            In Vercel Project Settings → Environment Variables, add every
-            <code>NEXT_PUBLIC_FIREBASE_*</code> value from <code>.env.example</code>
-            for Production, Preview, and Development as appropriate. If developer
-            activity needs higher GitHub limits, also add the server-only
-            <code> GITHUB_TOKEN</code> with no private-repository access. Redeploy
-            after changing a public value because public Next.js variables are
-            embedded into the browser bundle during the build.
+            In Vercel Project Settings → Environment Variables, add every value
+            from <code>.env.example</code> for Production, Preview, and Development
+            as appropriate, including the final <code>NEXT_PUBLIC_SITE_URL</code>.
+            If developer activity needs higher GitHub limits, add the server-only
+            <code> GITHUB_TOKEN</code> with no private-repository access. Configure
+            a Vercel Firewall rate limit for <code>/api/github-activity</code>, then
+            set <code>VERCEL_FIREWALL_CONFIGURED=true</code> for Production so the
+            deployment validator can confirm that operational step. Redeploy after
+            changing a public value because public Next.js variables are embedded
+            into the browser bundle during the build.
           </p>
           <Notice title="Two deployments protect two different things" tone="signal">
             <p>

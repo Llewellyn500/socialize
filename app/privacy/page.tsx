@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal-page";
+import { contactConfig, mailto } from "@/lib/contact-config";
+import { legalConfig } from "@/lib/legal-config";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "Draft privacy policy for Socialize accounts, public developer profiles, optional analytics, and service operations.",
+    "Privacy policy for Socialize accounts, public developer profiles, optional analytics, and service operations.",
   alternates: { canonical: "/privacy" },
 };
 
@@ -13,7 +15,7 @@ const sections: LegalSection[] = [
   {
     id: "scope",
     title: "Scope",
-    lead: "This draft covers the managed Socialize service, not a developer's independent deployment.",
+    lead: "This policy covers the managed Socialize service, not a developer's independent deployment.",
     content: (
       <>
         <p>
@@ -143,8 +145,9 @@ const sections: LegalSection[] = [
           information to comply with law or protect vital interests in an emergency.
         </p>
         <p>
-          The final policy must identify the legal operator, relevant jurisdictions,
-          and any additional lawful bases confirmed during counsel review.
+          The legal operator is {legalConfig.operatorName}, located at{" "}
+          {legalConfig.operatorAddress}. Additional lawful bases may apply when
+          required by the law governing a specific request or user.
         </p>
       </>
     ),
@@ -192,8 +195,8 @@ const sections: LegalSection[] = [
         </ul>
         <p>
           Socialize does not intend to sell personal information or share it for
-          cross-context behavioral advertising. The production service must be
-          audited before launch to confirm that this statement remains accurate.
+          cross-context behavioral advertising. Provider and analytics changes are
+          reviewed to keep this statement accurate.
         </p>
       </>
     ),
@@ -232,26 +235,34 @@ const sections: LegalSection[] = [
       <>
         <p>
           Account and profile data is generally kept while the account remains
-          active. When an account is deleted, the intended launch target is removal
-          from primary service systems within 30 days, unless a longer period is
-          needed for security, dispute resolution, legal compliance, or recovery
-          from accidental deletion.
+          active. When in-product account deletion completes, the authentication
+          account, claimed handle, profile records, click totals, and uploaded
+          profile media are removed from the primary service systems during that
+          request. A failed cleanup leaves the sign-in account available so the
+          deletion can be retried.
         </p>
         <p>
           Backups and provider logs may age out on separate schedules. Abuse,
           transaction, or security records may be retained longer when reasonably
-          necessary to prevent repeat harm or meet legal obligations. Final
-          schedules must be confirmed against production provider settings before
-          this policy is approved.
+          necessary to prevent repeat harm or meet legal obligations. Exact periods
+          can vary with the production provider configuration and an applicable
+          legal hold; request the current schedule from{" "}
+          <a href={mailto(contactConfig.privacy)}>{contactConfig.privacy}</a>.
         </p>
         <p>
-          Public GitHub events are revalidated after five minutes. Contribution
-          calendars, repository, commit, and language results may remain in the application cache for up
-          to one hour, and a successful CDN response may be served stale while it
-          revalidates for up to one additional hour. GitHub&apos;s own public event
-          feed may lag by about 30 seconds to six hours. Disabling the panel stops
-          the profile from initiating new activity requests, but it does not erase
-          third-party copies or cached responses before those windows expire.
+          Public GitHub events are revalidated after five minutes, while repository,
+          commit, contribution, and language fetch results are revalidated after up
+          to one hour. Activity API responses themselves are marked private and
+          no-store. To avoid repeatedly scraping GitHub and to support the calendar
+          year selector, normalized contribution and language summaries are also
+          retained in a shared server cache keyed by the public GitHub username.
+          Contribution records are bounded to 5,500 dates and at most 15 available
+          years; language records are bounded to 15 years. Current-year entries are
+          refreshed as activity requests occur, while historical entries may remain
+          until replaced or removed during maintenance. Because those caches are
+          derived from public GitHub data and can serve more than one profile, they
+          are not automatically erased with one Socialize account. Disabling the
+          panel stops that profile from initiating new activity requests.
         </p>
       </>
     ),
@@ -281,7 +292,7 @@ const sections: LegalSection[] = [
           Withdrawing consent stops future analytics collection from Socialize.
         </p>
         <p>
-          Send a request to <a href="mailto:privacy@socialize.you">privacy@socialize.you</a>.
+          Send a request to <a href={mailto(contactConfig.privacy)}>{contactConfig.privacy}</a>.
           We may need to verify account control before acting. You may also complain
           to the data-protection authority available in your jurisdiction.
         </p>
@@ -299,8 +310,9 @@ const sections: LegalSection[] = [
       <>
         <p>
           Socialize and its providers may process information in countries other
-          than yours. Before launch, the operator must document relevant transfer
-          mechanisms and provider locations for the users it serves.
+          than yours. Where applicable law requires a transfer safeguard, the
+          operator relies on the provider&apos;s approved contractual safeguards or
+          another legally recognized transfer mechanism.
         </p>
         <p>
           The managed service is not directed to children under 13, or a higher
@@ -323,9 +335,9 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Privacy questions and rights requests can be sent to
-          <a href="mailto:privacy@socialize.you"> privacy@socialize.you</a>. The
-          legal name, registration details, and postal address of the service
-          operator must be inserted here before public launch.
+          <a href={mailto(contactConfig.privacy)}> {contactConfig.privacy}</a>. The
+          service operator is {legalConfig.operatorName}, at{" "}
+          {legalConfig.operatorAddress}.
         </p>
       </>
     ),
@@ -335,9 +347,9 @@ const sections: LegalSection[] = [
 export default function PrivacyPage() {
   return (
     <LegalPage
-      contactEmail="privacy@socialize.you"
+      contactEmail={contactConfig.privacy}
       sections={sections}
-      summary="This draft explains the information Socialize expects to handle for developer accounts, public profiles, optional public GitHub activity, service operations, and consented analytics."
+      summary="This policy explains the information Socialize handles for developer accounts, public profiles, optional public GitHub activity, service operations, and consented analytics."
       title="Privacy Policy"
       related={[
         {

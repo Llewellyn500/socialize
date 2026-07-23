@@ -115,7 +115,9 @@ export function LandingPage() {
   );
 
   async function copyInstallCommand() {
-    await navigator.clipboard?.writeText("git clone https://github.com/Llewellyn500/socialize");
+    await navigator.clipboard?.writeText(
+      "git clone https://github.com/Llewellyn500/socialize.git",
+    );
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   }
@@ -147,7 +149,7 @@ export function LandingPage() {
             <div className="hero-bottom">
               <p>
                 Publish a sharp developer profile in minutes, or take the code and
-                run it yourself. Your projects, writing, and socials—without the
+                run it yourself. Your projects, writing, and socials without the
                 creator-economy clutter. Free to use, with no trial, credit card,
                 or feature gate.
               </p>
@@ -359,7 +361,7 @@ export function LandingPage() {
             <h2>Your developer footprint, pulled into focus.</h2>
             <p>
               Socialize is designed for the work developers already publish across
-              the web. Integrations can arrive as focused blocks—not an endless feed.
+              the web.
             </p>
           </div>
           <div className="signal-field" data-reveal>
@@ -413,7 +415,7 @@ export function LandingPage() {
           <div className="terminal-card" data-reveal>
             <div className="terminal-card__bar"><i /><i /><i /><span>socialize — zsh</span></div>
             <div className="terminal-card__body">
-              <p><span>$</span> git clone github.com/Llewellyn500/socialize</p>
+              <p><span>$</span> git clone https://github.com/Llewellyn500/socialize.git</p>
               <p className="terminal-muted">◇ Open self-hosted-template</p>
               <p className="terminal-success">◆ Cloud backend connected</p>
               <p className="terminal-success">◆ Owner account secured</p>

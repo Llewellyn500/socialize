@@ -6,7 +6,6 @@ import type {
   GitHubContributionWeek,
 } from "@/lib/github-activity";
 import { firestoreAdminRequest } from "@/lib/firebase-admin-rest";
-import { firebasePublicDocumentUrl } from "@/lib/firebase-public-rest";
 
 export type ContributionDayCacheEntry = {
   count: number;
@@ -389,9 +388,8 @@ function encodeDayMap(days: ContributionDayMap): FirestoreValue {
 }
 
 async function fetchDocument(path: string) {
-  const url = firebasePublicDocumentUrl(path);
-  if (!url) return null;
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await firestoreAdminRequest(path);
+  if (!response) return null;
   if (response.status === 404) return null;
   if (!response.ok) return null;
 

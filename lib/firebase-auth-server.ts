@@ -1,6 +1,9 @@
+import { firebaseAdminAccessToken } from "@/lib/firebase-admin-rest";
+
 export type FirebaseIdentity = {
   uid: string;
   emailVerified: boolean;
+  authTime: number | null;
 };
 
 function bearerToken(request: Request) {
@@ -9,26 +12,55 @@ function bearerToken(request: Request) {
   return match?.[1]?.trim() || "";
 }
 
+function authTimeFromVerifiedToken(idToken: string) {
+  try {
+    const payload = idToken.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const bytes = Uint8Array.from(atob(padded), (character) =>
+      character.charCodeAt(0),
+    );
+    const decoded = JSON.parse(
+      new TextDecoder().decode(bytes),
+    ) as { auth_time?: unknown };
+    return typeof decoded.auth_time === "number" &&
+      Number.isInteger(decoded.auth_time)
+      ? decoded.auth_time
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function firebaseBearerToken(request: Request) {
+  return bearerToken(request);
+}
+
 /**
- * Verifies a Firebase ID token through the Identity Toolkit endpoint. This is
- * intentionally useful in Edge routes, where the Node Firebase Admin SDK is
- * not available. The Firebase Web API key identifies the project; the signed
- * ID token remains the authentication credential.
+ * Verifies a Firebase ID token through Identity Toolkit using the production
+ * service account. This avoids coupling trusted server routes to browser
+ * API-key referrer restrictions.
  */
 export async function verifyFirebaseRequest(
   request: Request,
 ): Promise<FirebaseIdentity | null> {
   const idToken = bearerToken(request);
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
-  if (!idToken || !apiKey) return null;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  if (!idToken || !projectId) return null;
 
   try {
+    const accessToken = await firebaseAdminAccessToken();
+    if (!accessToken) return null;
     const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+      `https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:lookup`,
       {
         method: "POST",
         cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ idToken }),
         signal: AbortSignal.timeout(8_000),
       },
@@ -43,6 +75,9 @@ export async function verifyFirebaseRequest(
     return {
       uid: user.localId,
       emailVerified: Boolean(user.emailVerified),
+      // accounts:lookup above validates the token signature, issuer, audience,
+      // and expiry before we inspect its standard auth_time claim.
+      authTime: authTimeFromVerifiedToken(idToken),
     };
   } catch {
     return null;

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ArrowUpRight, MapPin, SignIn } from "@phosphor-icons/react";
 import { useEffect, useState, type CSSProperties } from "react";
-import { selfHostedConfig } from "@/profile.config";
 import { DeveloperActivity } from "@/components/developer-activity";
 import {
   cloneProfile,
@@ -21,8 +20,8 @@ function newTabProps(url: string) {
     : {};
 }
 
-export function ProfileView() {
-  const [profile, setProfile] = useState<Profile>(() => cloneProfile(selfHostedConfig.profile));
+export function ProfileView({ initialProfile }: { initialProfile: Profile }) {
+  const [profile, setProfile] = useState<Profile>(() => cloneProfile(initialProfile));
 
   useEffect(() => subscribeToProfile(setProfile), []);
 

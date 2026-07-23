@@ -11,12 +11,14 @@ import {
   Plus,
   SignOut,
   Trash,
+  UploadSimple,
   UserCircle
 } from "@phosphor-icons/react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { getFirebaseServices } from "@/lib/firebase";
+import { parseHostedProfileExport } from "@/lib/hosted-profile-import";
 import {
   cloneProfile,
   developerActivityHasVisibleModules,
@@ -26,7 +28,11 @@ import {
   normalizeRepositoryNames,
   repositoryNameTokens,
 } from "@/lib/profile-utils";
-import { saveProfile, subscribeToProfile } from "@/lib/profile-store";
+import {
+  ProfileRevisionConflictError,
+  saveProfile,
+  subscribeToProfile
+} from "@/lib/profile-store";
 import { ManageLinks } from "@/components/manage-links";
 import { selfHostedConfig } from "@/profile.config";
 import type {
@@ -47,7 +53,7 @@ function validateProfile(profile: Profile): string {
   if (!profile.name.trim()) return "Add a display name before saving.";
   if (!profile.handle.trim()) return "Add a handle before saving.";
   if (profile.avatarUrl.trim() && !isSafeImageUrl(profile.avatarUrl)) {
-    return "The avatar must use a local path or an http or https URL.";
+    return "The avatar must use a local path or an https URL.";
   }
 
   const invalidLink = profile.links.find(
@@ -57,12 +63,12 @@ function validateProfile(profile: Profile): string {
   const invalidLinkMedia = profile.links.find(
     (link) => link.mediaUrl && !isSafeImageUrl(link.mediaUrl)
   );
-  if (invalidLinkMedia) return "Link images must use a local path or an http or https URL.";
+  if (invalidLinkMedia) return "Link images must use a local path or an https URL.";
 
   const invalidSection = profile.sections.find(
     (section) => !section.title.trim() || (section.mediaUrl && !isSafeImageUrl(section.mediaUrl))
   );
-  if (invalidSection) return "Every section needs a heading and a valid image path or URL.";
+  if (invalidSection) return "Every section needs a heading and a valid local path or https image URL.";
 
   const invalidSocial = profile.socials.find(
     (social) => !social.label.trim() || !isSafePublicUrl(social.url, false)
@@ -100,14 +106,26 @@ function validateProfile(profile: Profile): string {
 export function ManageProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile>(() => cloneProfile(selfHostedConfig.profile));
+  const [persistedProfile, setPersistedProfile] = useState<Profile>(
+    () => cloneProfile(selfHostedConfig.profile)
+  );
+  const [persistedRevision, setPersistedRevision] = useState("");
+  const [persistedReady, setPersistedReady] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const [mediaUploading, setMediaUploading] = useState(false);
   const developerActivity = profile.developerActivity ?? selfHostedConfig.profile.developerActivity!;
   const repositoryKey = developerActivity.repositories.names.join("\n");
   const [repositoryDraft, setRepositoryDraft] = useState(repositoryKey);
 
   useEffect(
-    () => subscribeToProfile((storedProfile) => setProfile(cloneProfile(storedProfile))),
+    () => subscribeToProfile((storedProfile, revision) => {
+      const next = cloneProfile(storedProfile);
+      setProfile(next);
+      setPersistedProfile(cloneProfile(storedProfile));
+      setPersistedRevision(revision);
+      setPersistedReady(true);
+    }),
     []
   );
 
@@ -147,6 +165,11 @@ export function ManageProfile() {
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mediaUploading) {
+      setSaveState("error");
+      setMessage("Wait for image uploads to finish before publishing.");
+      return;
+    }
     const validationError = validateProfile(profile);
 
     if (validationError) {
@@ -159,19 +182,57 @@ export function ManageProfile() {
     setMessage("");
 
     try {
-      await saveProfile(profile);
+      const saved = await saveProfile(profile, persistedRevision);
+      setProfile(cloneProfile(saved.profile));
+      setPersistedProfile(cloneProfile(saved.profile));
+      setPersistedRevision(saved.revision);
       setSaveState("saved");
       setMessage("Profile published.");
-    } catch {
+    } catch (error) {
       setSaveState("error");
-      setMessage("Could not save the profile. Check the owner document and database rules.");
+      setMessage(
+        error instanceof ProfileRevisionConflictError
+          ? error.message
+          : "Could not save the profile. Check the owner document and database rules."
+      );
     }
   }
 
   async function handleSignOut() {
+    if (mediaUploading) {
+      setSaveState("error");
+      setMessage("Wait for image uploads to finish before signing out.");
+      return;
+    }
     const services = getFirebaseServices();
     if (services) await signOut(services.auth);
     router.replace("/login");
+  }
+
+  async function handleHostedImport(file?: File) {
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      setSaveState("error");
+      setMessage("The profile export must be 1 MB or smaller.");
+      return;
+    }
+
+    try {
+      const result = parseHostedProfileExport(
+        await file.text(),
+        selfHostedConfig.profile
+      );
+      setProfile(cloneProfile(result.profile));
+      setSaveState("idle");
+      setMessage(
+        result.warnings.length
+          ? `Imported for review. ${result.warnings.join(" ")}`
+          : "Imported for review. Publish changes when everything looks right."
+      );
+    } catch (error) {
+      setSaveState("error");
+      setMessage(error instanceof Error ? error.message : "The profile export could not be imported.");
+    }
   }
 
   return (
@@ -185,7 +246,7 @@ export function ManageProfile() {
             View profile
             <ArrowUpRight aria-hidden="true" size={17} weight="bold" />
           </Link>
-          <button className="text-button" onClick={handleSignOut} type="button">
+          <button className="text-button" disabled={mediaUploading} onClick={handleSignOut} type="button">
             <SignOut aria-hidden="true" size={17} weight="bold" />
             Sign out
           </button>
@@ -199,9 +260,9 @@ export function ManageProfile() {
             <h1>Manage your profile</h1>
             <p>Edits publish to the public page as soon as the save is confirmed.</p>
           </div>
-          <button className="primary-button save-button" disabled={saveState === "saving"} type="submit">
+          <button className="primary-button save-button" disabled={saveState === "saving" || mediaUploading} type="submit">
             <FloppyDisk aria-hidden="true" size={19} weight="bold" />
-            {saveState === "saving" ? "Publishing" : "Publish changes"}
+            {saveState === "saving" ? "Publishing" : mediaUploading ? "Uploading image" : "Publish changes"}
           </button>
         </div>
 
@@ -210,6 +271,31 @@ export function ManageProfile() {
             {message}
           </p>
         ) : null}
+
+        <section className="editor-section import-section" aria-labelledby="import-heading">
+          <div className="section-heading section-heading-action">
+            <div className="heading-copy">
+              <UploadSimple aria-hidden="true" size={25} weight="duotone" />
+              <div>
+                <h2 id="import-heading">Moving from hosted Socialize?</h2>
+                <p>Choose the JSON from the hosted dashboard. Nothing is published until you review and save.</p>
+              </div>
+            </div>
+            <label className="secondary-button import-button">
+              <input
+                accept="application/json,.json"
+                disabled={mediaUploading}
+                type="file"
+                onChange={(event) => {
+                  void handleHostedImport(event.target.files?.[0]);
+                  event.currentTarget.value = "";
+                }}
+              />
+              <UploadSimple aria-hidden="true" size={17} weight="bold" />
+              Import hosted JSON
+            </label>
+          </div>
+        </section>
 
         <section className="editor-section" aria-labelledby="identity-heading">
           <div className="section-heading">
@@ -311,7 +397,13 @@ export function ManageProfile() {
               </div>
             </div>
           </div>
-          <ManageLinks profile={profile} onChange={patchProfile} />
+          <ManageLinks
+            profile={profile}
+            persistedProfile={persistedProfile}
+            persistedReady={persistedReady}
+            onChange={patchProfile}
+            onUploadActivityChange={setMediaUploading}
+          />
         </section>
 
         <section className="editor-section" aria-labelledby="developer-activity-heading">
@@ -643,9 +735,9 @@ export function ManageProfile() {
         </section>
 
         <div className="mobile-save-bar">
-          <button className="primary-button" disabled={saveState === "saving"} type="submit">
+          <button className="primary-button" disabled={saveState === "saving" || mediaUploading} type="submit">
             <FloppyDisk aria-hidden="true" size={19} weight="bold" />
-            {saveState === "saving" ? "Publishing" : "Publish changes"}
+            {saveState === "saving" ? "Publishing" : mediaUploading ? "Uploading image" : "Publish changes"}
           </button>
         </div>
       </form>

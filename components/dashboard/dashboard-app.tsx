@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import {
@@ -27,7 +27,12 @@ import { ProfilePreview } from "@/components/profile-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MotionToggle } from "@/components/motion-toggle";
 import { uploadUserAvatar } from "@/lib/avatar-upload";
-import { uploadProfileMedia } from "@/lib/profile-media-upload";
+import {
+  deleteProfileMedia,
+  uploadProfileMedia,
+  type ProfileMediaScope,
+} from "@/lib/profile-media-upload";
+import { sameProfileMediaObject } from "@/lib/profile-media-identity";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { hasLinkedGitHub, resolveGitHubLogin } from "@/lib/auth-providers";
 import {
@@ -83,6 +88,11 @@ type HandleCheckStatus =
   | "taken"
   | "invalid"
   | "error";
+type PendingDraftMedia = {
+  scope: ProfileMediaScope;
+  itemId: string;
+  mediaUrl: string;
+};
 
 const navItems = [
   ["overview", "Overview", FiMonitor],
@@ -113,6 +123,7 @@ export function DashboardApp() {
   const [host, setHost] = useState("socialize.you");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [activeMediaUploads, setActiveMediaUploads] = useState(0);
   const [status, setStatus] = useState<Status>(null);
   const [urlCopied, setUrlCopied] = useState(false);
   const [overviewStats, setOverviewStats] = useState<ProfileStats | null>(null);
@@ -121,6 +132,11 @@ export function DashboardApp() {
   const [draftBaseUpdatedAt, setDraftBaseUpdatedAt] = useState("");
   const [lastSavedProfile, setLastSavedProfile] = useState<ProfileConfig | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
+  const pendingDraftMedia = useRef(new Map<string, PendingDraftMedia>());
+  const mediaIntentVersions = useRef(new Map<string, number>());
+  const activeMediaUploadsRef = useRef(0);
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
 
   useEffect(() => {
     setHost(window.location.host);
@@ -329,8 +345,143 @@ export function DashboardApp() {
     };
   }, [overviewStats, profile.links]);
   function update<K extends keyof ProfileConfig>(key: K, value: ProfileConfig[K]) {
+    if (key === "avatarUrl") {
+      invalidateMediaIntent("avatars", "avatar");
+      discardDraftMedia(
+        "avatars",
+        "avatar",
+        typeof value === "string" ? value : undefined,
+      );
+    }
     setProfile((current) => ({ ...current, [key]: value }));
     setStatus(null);
+  }
+
+  function draftMediaKey(scope: ProfileMediaScope, itemId: string) {
+    return `${scope}:${itemId}`;
+  }
+
+  function beginMediaIntent(scope: ProfileMediaScope, itemId: string) {
+    const key = draftMediaKey(scope, itemId);
+    const version = (mediaIntentVersions.current.get(key) ?? 0) + 1;
+    mediaIntentVersions.current.set(key, version);
+    return version;
+  }
+
+  function invalidateMediaIntent(scope: ProfileMediaScope, itemId: string) {
+    const key = draftMediaKey(scope, itemId);
+    mediaIntentVersions.current.set(
+      key,
+      (mediaIntentVersions.current.get(key) ?? 0) + 1,
+    );
+  }
+
+  function mediaIntentIsCurrent(
+    scope: ProfileMediaScope,
+    itemId: string,
+    version: number,
+  ) {
+    return mediaIntentVersions.current.get(draftMediaKey(scope, itemId)) === version;
+  }
+
+  function invalidateAllMediaIntents() {
+    for (const [key, version] of mediaIntentVersions.current) {
+      mediaIntentVersions.current.set(key, version + 1);
+    }
+  }
+
+  function trackMediaUpload(delta: 1 | -1) {
+    activeMediaUploadsRef.current = Math.max(
+      0,
+      activeMediaUploadsRef.current + delta,
+    );
+    setActiveMediaUploads(activeMediaUploadsRef.current);
+  }
+
+  function rememberDraftMedia(
+    scope: ProfileMediaScope,
+    itemId: string,
+    mediaUrl: string,
+  ) {
+    const key = draftMediaKey(scope, itemId);
+    const previous = pendingDraftMedia.current.get(key);
+    pendingDraftMedia.current.set(key, {
+      scope,
+      itemId,
+      mediaUrl,
+    });
+    const previousUsedElsewhere =
+      previous &&
+      (
+        profileRef.current.links.some(
+          (item) =>
+            !(scope === "links" && item.id === itemId) &&
+            sameProfileMediaObject(item.mediaUrl, previous.mediaUrl),
+        ) ||
+        (profileRef.current.sections ?? []).some(
+          (item) =>
+            !(scope === "sections" && item.id === itemId) &&
+            sameProfileMediaObject(item.mediaUrl, previous.mediaUrl),
+        ) ||
+        (scope !== "avatars" &&
+          sameProfileMediaObject(
+            profileRef.current.avatarUrl,
+            previous.mediaUrl,
+          ))
+      );
+    if (
+      previous &&
+      !sameProfileMediaObject(previous.mediaUrl, mediaUrl) &&
+      !previousUsedElsewhere &&
+      user
+    ) {
+      void deleteProfileMedia(
+        user.uid,
+        previous.scope,
+        previous.itemId,
+        previous.mediaUrl,
+      ).catch((error) => {
+        console.error("Failed to remove superseded draft media", error);
+      });
+    }
+  }
+
+  function discardDraftMedia(
+    scope: ProfileMediaScope,
+    itemId: string,
+    nextMediaUrl?: string,
+  ) {
+    const key = draftMediaKey(scope, itemId);
+    const pending = pendingDraftMedia.current.get(key);
+    if (!pending || sameProfileMediaObject(pending.mediaUrl, nextMediaUrl)) return;
+
+    pendingDraftMedia.current.delete(key);
+    const usedElsewhere =
+      profileRef.current.links.some(
+        (item) =>
+          !(pending.scope === "links" && item.id === pending.itemId) &&
+          sameProfileMediaObject(item.mediaUrl, pending.mediaUrl),
+      ) ||
+      (profileRef.current.sections ?? []).some(
+        (item) =>
+          !(pending.scope === "sections" && item.id === pending.itemId) &&
+          sameProfileMediaObject(item.mediaUrl, pending.mediaUrl),
+      ) ||
+      (pending.scope !== "avatars" &&
+        sameProfileMediaObject(
+          profileRef.current.avatarUrl,
+          pending.mediaUrl,
+        ));
+    if (usedElsewhere) return;
+    if (!user) return;
+    void deleteProfileMedia(
+      user.uid,
+      pending.scope,
+      pending.itemId,
+      pending.mediaUrl,
+    ).catch((error) => {
+      console.error("Failed to remove discarded draft media", error);
+    });
   }
 
   function addSection() {
@@ -342,6 +493,10 @@ export function DashboardApp() {
   }
 
   function updateSection(sectionId: string, patch: Partial<ProfileSection>) {
+    if (Object.prototype.hasOwnProperty.call(patch, "mediaUrl")) {
+      invalidateMediaIntent("sections", sectionId);
+      discardDraftMedia("sections", sectionId, patch.mediaUrl);
+    }
     setProfile((current) => ({
       ...current,
       sections: (current.sections ?? []).map((section) =>
@@ -361,6 +516,8 @@ export function DashboardApp() {
   }
 
   function removeSection(sectionId: string) {
+    invalidateMediaIntent("sections", sectionId);
+    discardDraftMedia("sections", sectionId);
     setProfile((current) => ({
       ...current,
       sections: (current.sections ?? []).filter((section) => section.id !== sectionId),
@@ -390,6 +547,10 @@ export function DashboardApp() {
     linkId: string,
     patch: Partial<ProfileLink>,
   ) {
+    if (Object.prototype.hasOwnProperty.call(patch, "mediaUrl")) {
+      invalidateMediaIntent("links", linkId);
+      discardDraftMedia("links", linkId, patch.mediaUrl);
+    }
     setProfile((current) => ({
       ...current,
       links: current.links.map((link) =>
@@ -509,19 +670,69 @@ export function DashboardApp() {
 
   async function uploadLinkMedia(linkId: string, file: File) {
     if (!user) throw new Error("Sign in before uploading a link image.");
-    const mediaUrl = await uploadProfileMedia(user.uid, "links", linkId, file);
-    updateLink(linkId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
-    setStatus({ tone: "success", message: "Link image uploaded. Save changes to publish it." });
+    const intentVersion = beginMediaIntent("links", linkId);
+    trackMediaUpload(1);
+    try {
+      const mediaUrl = await uploadProfileMedia(
+        user.uid,
+        "links",
+        linkId,
+        file,
+      );
+      if (
+        !mediaIntentIsCurrent("links", linkId, intentVersion) ||
+        !profileRef.current.links.some((link) => link.id === linkId)
+      ) {
+        void deleteProfileMedia(user.uid, "links", linkId, mediaUrl).catch(
+          (error) => {
+            console.error("Failed to remove a stale link image upload", error);
+          },
+        );
+        return;
+      }
+      rememberDraftMedia("links", linkId, mediaUrl);
+      updateLink(linkId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
+      setStatus({ tone: "success", message: "Link image uploaded. Save changes to publish it." });
+    } finally {
+      trackMediaUpload(-1);
+    }
   }
 
   async function uploadSectionMedia(sectionId: string, file: File) {
     if (!user) throw new Error("Sign in before uploading a section image.");
-    const mediaUrl = await uploadProfileMedia(user.uid, "sections", sectionId, file);
-    updateSection(sectionId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
-    setStatus({ tone: "success", message: "Section image uploaded. Save changes to publish it." });
+    const intentVersion = beginMediaIntent("sections", sectionId);
+    trackMediaUpload(1);
+    try {
+      const mediaUrl = await uploadProfileMedia(
+        user.uid,
+        "sections",
+        sectionId,
+        file,
+      );
+      if (
+        !mediaIntentIsCurrent("sections", sectionId, intentVersion) ||
+        !(profileRef.current.sections ?? []).some(
+          (section) => section.id === sectionId,
+        )
+      ) {
+        void deleteProfileMedia(user.uid, "sections", sectionId, mediaUrl).catch(
+          (error) => {
+            console.error("Failed to remove a stale section image upload", error);
+          },
+        );
+        return;
+      }
+      rememberDraftMedia("sections", sectionId, mediaUrl);
+      updateSection(sectionId, { mediaUrl, mediaIcon: undefined, mediaType: "icon" });
+      setStatus({ tone: "success", message: "Section image uploaded. Save changes to publish it." });
+    } finally {
+      trackMediaUpload(-1);
+    }
   }
 
   function removeLink(linkId: string) {
+    invalidateMediaIntent("links", linkId);
+    discardDraftMedia("links", linkId);
     update("links", profile.links.filter((link) => link.id !== linkId));
   }
 
@@ -535,6 +746,14 @@ export function DashboardApp() {
     nextProfile: ProfileConfig = profile,
     successMessage?: string,
   ) {
+    if (activeMediaUploadsRef.current > 0) {
+      setStatus({
+        tone: "neutral",
+        message: "Wait for image uploads to finish before saving.",
+      });
+      return false;
+    }
+    invalidateAllMediaIntents();
     setSaving(true);
     setStatus(null);
     try {
@@ -642,7 +861,12 @@ export function DashboardApp() {
         throw new Error("Add at least one repository or use automatic selection.");
       }
       if (auth && user) {
-        const saved = await saveProfile(user.uid, profileToSave);
+        const saved = await saveProfile(
+          user.uid,
+          profileToSave,
+          draftBaseUpdatedAt,
+        );
+        pendingDraftMedia.current.clear();
         setProfile(saved);
         setClaimedHandle(saved.handle);
         setHandleCheck("current");
@@ -651,6 +875,7 @@ export function DashboardApp() {
         clearProfileDraft(user.uid);
       } else {
         window.localStorage.setItem("socialize-demo-profile", JSON.stringify(profileToSave));
+        pendingDraftMedia.current.clear();
         setProfile(profileToSave);
         setClaimedHandle(profileToSave.handle);
         setHandleCheck("current");
@@ -709,10 +934,24 @@ export function DashboardApp() {
       return;
     }
 
+    const intentVersion = beginMediaIntent("avatars", "avatar");
     setUploadingAvatar(true);
+    trackMediaUpload(1);
     setStatus(null);
     try {
       const avatarUrl = await uploadUserAvatar(user.uid, file);
+      if (!mediaIntentIsCurrent("avatars", "avatar", intentVersion)) {
+        void deleteProfileMedia(
+          user.uid,
+          "avatars",
+          "avatar",
+          avatarUrl,
+        ).catch((error) => {
+          console.error("Failed to remove a stale avatar upload", error);
+        });
+        return;
+      }
+      rememberDraftMedia("avatars", "avatar", avatarUrl);
       update("avatarUrl", avatarUrl);
       setStatus({ tone: "success", message: "Avatar uploaded. Save changes to keep it on your profile." });
     } catch (error) {
@@ -722,6 +961,7 @@ export function DashboardApp() {
       });
     } finally {
       setUploadingAvatar(false);
+      trackMediaUpload(-1);
     }
   }
 
@@ -743,6 +983,13 @@ export function DashboardApp() {
   }
 
   async function logOut() {
+    if (activeMediaUploadsRef.current > 0) {
+      setStatus({
+        tone: "neutral",
+        message: "Wait for image uploads to finish before signing out.",
+      });
+      return;
+    }
     if (auth) await signOut(auth);
     router.push("/sign-in");
   }
@@ -786,7 +1033,7 @@ export function DashboardApp() {
             {urlCopied ? <><FiCheck /> Copied!</> : <><FiCopy /> Copy URL</>}
           </button>
           <Link href={`/${profile.handle}`} target="_blank"><FiEye /> Preview</Link>
-          <button className={styles.publish} type="button" onClick={togglePublished} disabled={saving || handleBlocksSave}>
+          <button className={styles.publish} type="button" onClick={togglePublished} disabled={saving || activeMediaUploads > 0 || handleBlocksSave}>
             {profile.published ? "Unpublish" : "Publish"}
           </button>
         </div>
@@ -808,7 +1055,7 @@ export function DashboardApp() {
             <button key={id} className={tab === id ? styles.active : ""} type="button" onClick={() => setTab(id)}><Icon /><span>{label}</span></button>
           ))}
           <div className={styles.sidebarBottom}>
-            <button type="button" onClick={logOut}><FiLogOut /><span>Sign out</span></button>
+            <button type="button" onClick={logOut} disabled={activeMediaUploads > 0}><FiLogOut /><span>Sign out</span></button>
           </div>
         </aside>
 
@@ -911,7 +1158,7 @@ export function DashboardApp() {
                 </div>
                 <Field label="Location"><input value={profile.location || ""} onChange={(event) => update("location",event.target.value)} /></Field>
                 <Field label="Availability"><input value={profile.availability || ""} onChange={(event) => update("availability",event.target.value)} /></Field>
-                <Field label="Avatar image" wide hint="JPEG, PNG, WebP, or GIF up to 5 MB.">
+                <Field label="Avatar image" wide hint="JPEG, PNG, WebP, or GIF smaller than 3 MB.">
                   <div className={styles.filePicker}>
                     {profile.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -973,8 +1220,12 @@ export function DashboardApp() {
               </div>
               <LinkedSignInMethods />
               <div className={styles.settingsBlock}><div><h3>Export profile data</h3><p>Download a JSON backup for migration or conversion to the self-hosted format.</p></div><button type="button" onClick={exportProfile}><FiDownload /> Export</button></div>
-              <DeleteAccountPanel user={user} handle={profile.handle} />
-              <div className={styles.settingsBlock}><div><h3>Session</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut}><FiLogOut /> Sign out</button></div>
+              <DeleteAccountPanel
+                user={user}
+                handle={claimedHandle}
+                disabled={activeMediaUploads > 0}
+              />
+              <div className={styles.settingsBlock}><div><h3>Session</h3><p>{user ? `Signed in as ${user.email || "a connected provider"}.` : "Local demo mode; no account is connected."}</p></div><button type="button" onClick={logOut} disabled={activeMediaUploads > 0}><FiLogOut /> Sign out</button></div>
               <div className={styles.settingsBlock}><div><h3>Self-host this profile</h3><p>Use your export with the stripped edition and run it on your own infrastructure.</p></div><Link href="/self-host">Open guide</Link></div>
             </>
           ) : null}
@@ -985,9 +1236,9 @@ export function DashboardApp() {
                 className={styles.primaryAction}
                 type="button"
                 onClick={() => void persistProfile()}
-                disabled={saving || handleBlocksSave}
+                disabled={saving || activeMediaUploads > 0 || handleBlocksSave}
               >
-                <FiSave /> {saving ? "Saving…" : "Save changes"}
+                <FiSave /> {saving ? "Saving…" : activeMediaUploads > 0 ? "Uploading image…" : "Save changes"}
               </button>
               {status ? (
                 <p className={styles.status} data-tone={status.tone}>

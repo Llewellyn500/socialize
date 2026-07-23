@@ -61,6 +61,7 @@ export function normalizeRepositoryNames(value: unknown): string[] {
 export function isSafePublicUrl(value: string, allowMail = true): boolean {
   try {
     const url = new URL(value);
+    if (url.username || url.password) return false;
     return url.protocol === "https:" || url.protocol === "http:" || (allowMail && url.protocol === "mailto:");
   } catch {
     return false;
@@ -68,7 +69,13 @@ export function isSafePublicUrl(value: string, allowMail = true): boolean {
 }
 
 export function isSafeImageUrl(value: string): boolean {
-  return (value.startsWith("/") && !value.startsWith("//")) || isSafePublicUrl(value, false);
+  if (value.startsWith("/") && !value.startsWith("//")) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
 }
 
 function mediaUrl(value: unknown): string | undefined {
@@ -99,8 +106,8 @@ function normalizeLink(value: unknown, index: number): ProfileLink | null {
   }
 
   const candidate = value as Partial<ProfileLink>;
-  const title = text(candidate.title);
-  const url = text(candidate.url);
+  const title = text(candidate.title).slice(0, 100);
+  const url = text(candidate.url).slice(0, 2048);
   const linkMediaUrl = mediaUrl(candidate.mediaUrl);
 
   if (!title || !isSafePublicUrl(url)) {
@@ -108,9 +115,9 @@ function normalizeLink(value: unknown, index: number): ProfileLink | null {
   }
 
   return {
-    id: text(candidate.id, `link-${index + 1}`),
+    id: text(candidate.id, `link-${index + 1}`).slice(0, 80),
     title,
-    description: text(candidate.description),
+    description: text(candidate.description).slice(0, 160),
     url,
     enabled: candidate.enabled !== false,
     ...(text(candidate.sectionId) ? { sectionId: text(candidate.sectionId).slice(0, 80) } : {}),
@@ -127,15 +134,15 @@ function normalizeSocial(value: unknown, index: number): SocialLink | null {
   }
 
   const candidate = value as Partial<SocialLink>;
-  const label = text(candidate.label);
-  const url = text(candidate.url);
+  const label = text(candidate.label).slice(0, 50);
+  const url = text(candidate.url).slice(0, 2048);
 
   if (!label || !isSafePublicUrl(url)) {
     return null;
   }
 
   return {
-    id: text(candidate.id, `social-${index + 1}`),
+    id: text(candidate.id, `social-${index + 1}`).slice(0, 80),
     label,
     url
   };
@@ -275,6 +282,7 @@ export function normalizeProfile(value: unknown, fallback: Profile): Profile {
   const sectionIds = new Set(sections.map((section) => section.id));
   const links = (Array.isArray(candidate.links)
     ? candidate.links
+        .slice(0, 60)
         .map(normalizeLink)
         .filter((link): link is ProfileLink => Boolean(link))
     : cloneProfile(fallback).links)
@@ -283,6 +291,7 @@ export function normalizeProfile(value: unknown, fallback: Profile): Profile {
       : link);
   const socials = Array.isArray(candidate.socials)
     ? candidate.socials
+        .slice(0, 40)
         .map(normalizeSocial)
         .filter((social): social is SocialLink => Boolean(social))
     : cloneProfile(fallback).socials;
@@ -292,12 +301,12 @@ export function normalizeProfile(value: unknown, fallback: Profile): Profile {
   );
 
   const normalized: Profile = {
-    name: text(candidate.name, fallback.name),
-    handle: text(candidate.handle, fallback.handle),
-    role: text(candidate.role, fallback.role),
-    bio: text(candidate.bio, fallback.bio),
-    location: text(candidate.location, fallback.location),
-    availability: text(candidate.availability, fallback.availability),
+    name: text(candidate.name, fallback.name).slice(0, 80),
+    handle: text(candidate.handle, fallback.handle).slice(0, 50),
+    role: text(candidate.role, fallback.role).slice(0, 120),
+    bio: text(candidate.bio, fallback.bio).slice(0, 240),
+    location: text(candidate.location, fallback.location).slice(0, 80),
+    availability: text(candidate.availability, fallback.availability).slice(0, 90),
     avatarUrl: avatarUrl && isSafeImageUrl(avatarUrl) ? avatarUrl : "",
     accent: HEX_COLOR.test(text(candidate.accent)) ? text(candidate.accent) : fallback.accent,
     sections,

@@ -324,11 +324,11 @@ export function ActionBand({
 
 export function LegalDraftNote() {
   return (
-    <Notice title="Draft for legal review" tone="warning">
+    <Notice title="Production policy configuration required" tone="warning">
       <p>
-        This page is an operational product draft, not legal advice. It must be
-        reviewed and approved by qualified counsel before Socialize opens to the
-        public.
+        This local or preview build does not have every required legal or contact
+        setting. The production build validator prevents this placeholder state
+        from being deployed.
       </p>
     </Notice>
   );

@@ -10,9 +10,8 @@ service firebase.storage {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    function isValidAvatar() {
-      return request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
+    function canWriteOwnedPath(uid) {
+      return ownsPath(uid) && request.auth.token.email_verified == true;
     }
 
     function isValidOgImage() {
@@ -20,30 +19,33 @@ service firebase.storage {
         && request.resource.contentType == 'image/png';
     }
 
-    function isValidProfileMedia() {
-      return request.resource.size < 3 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|gif)');
-    }
-
     match /avatars/{uid}/{fileName} {
-      allow read: if true;
-      allow create, update: if ownsPath(uid) && isValidAvatar();
-      allow delete: if ownsPath(uid);
+      allow get: if true;
+      allow list: if false;
+      allow delete: if canWriteOwnedPath(uid)
+        && fileName in [
+          'avatar', 'avatar.jpg', 'avatar.jpeg', 'avatar.png',
+          'avatar.webp', 'avatar.gif'
+        ];
     }
 
     match /og/{uid}/{fileName} {
-      allow read: if true;
-      allow create, update: if ownsPath(uid) && isValidOgImage();
-      allow delete: if ownsPath(uid);
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if canWriteOwnedPath(uid)
+        && fileName == 'opengraph.png'
+        && isValidOgImage();
+      allow delete: if canWriteOwnedPath(uid) && fileName == 'opengraph.png';
     }
 
-    match /profile-media/{uid}/{scope}/{itemId}/{fileName} {
-      allow read: if true;
-      allow create, update: if ownsPath(uid)
-        && scope in ['links', 'sections']
-        && fileName == 'media'
-        && isValidProfileMedia();
-      allow delete: if ownsPath(uid);
+    // Hosted profile media is created and removed only by the authenticated
+    // server route. Service-account requests bypass these browser rules.
+    // Token-bearing object gets remain public; directory enumeration and all
+    // client writes are denied for both the pool and legacy paths.
+    match /profile-media/{allPaths=**} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if false;
     }
 
     match /{allPaths=**} {

@@ -22,7 +22,7 @@ const routes: StaticRoute[] = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you").replace(
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.socialize.you").replace(
     /\/$/,
     "",
   );

@@ -5,15 +5,12 @@ import { loadPublicProfileServer } from "@/lib/profile-server";
 export const alt = "Socialize profile";
 export const size = OG_SIZE;
 export const contentType = "image/png";
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const revalidate = 3600;
 
 type Props = { params: Promise<{ handle: string }> };
 
-/**
- * Fallback OG route for profiles that do not yet have a stored CDN image.
- * Published profiles normally serve a pre-generated Storage URL from metadata.
- */
+/** Render the canonical social card from the current published profile. */
 export default async function ProfileOpenGraphImage({ params }: Props) {
   const { handle } = await params;
   const profile = await loadPublicProfileServer(handle);

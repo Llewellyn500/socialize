@@ -7,5 +7,5 @@ export async function hasOwnerAccess(user: User): Promise<boolean> {
   if (!services) return false;
 
   const ownerDocument = await getDoc(doc(services.db, "owners", user.uid));
-  return ownerDocument.exists();
+  return ownerDocument.exists() && ownerDocument.data().enabled === true;
 }

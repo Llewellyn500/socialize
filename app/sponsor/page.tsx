@@ -13,6 +13,7 @@ import {
   ServiceShell,
   serviceContentStyles as styles,
 } from "@/components/service-content";
+import { contactConfig, mailto } from "@/lib/contact-config";
 import { githubSponsorUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -154,7 +155,7 @@ export default function SponsorPage() {
                 description: "Choose the amount and visibility through GitHub Sponsors.",
               },
               {
-                href: "mailto:sponsors@socialize.you?subject=Socialize%20organization%20sponsorship",
+                href: mailto(contactConfig.sponsors, "Socialize organization sponsorship"),
                 title: "Organization sponsorship",
                 description: "Ask about a larger voluntary contribution or optional public acknowledgement before sending funds.",
               },
@@ -229,7 +230,7 @@ export default function SponsorPage() {
           <p>
             GitHub provides payment records for GitHub Sponsors transactions.
             Organizations that want to discuss a voluntary contribution can email
-            <a href="mailto:sponsors@socialize.you"> sponsors@socialize.you</a>
+            <a href={mailto(contactConfig.sponsors)}> {contactConfig.sponsors}</a>
             before paying.
           </p>
           <h3>Is a sponsorship tax deductible?</h3>

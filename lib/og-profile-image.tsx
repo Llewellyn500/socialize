@@ -36,7 +36,7 @@ function absoluteAvatarUrl(avatarUrl: string | undefined, siteUrl: string) {
 }
 
 export async function renderProfileOgImage(profile: ProfileOgInput) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.socialize.you";
   const fonts = await loadOgFonts();
   const avatarSrc = absoluteAvatarUrl(profile.avatarUrl, siteUrl);
 

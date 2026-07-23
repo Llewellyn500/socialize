@@ -5,12 +5,11 @@ import {
   getDoc,
   runTransaction,
   serverTimestamp,
-  setDoc,
-  updateDoc,
   deleteField,
 } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { uploadProfileOgImage } from "@/lib/og-image-upload";
+import { db } from "@/lib/firebase";
+import { deleteProfileOgImage } from "@/lib/og-image-upload";
+import { profileUpdatedAtKey } from "@/lib/profile-draft";
 import {
   developerActivityHasVisibleModules,
   normalizeHandle,
@@ -60,69 +59,22 @@ export async function isHandleAvailableForUser(handle: string, ownerUid?: string
   return Boolean(ownerUid && existingUid === ownerUid);
 }
 
-async function regenerateOgImage(uid: string, profile: ProfileConfig) {
-  if (!profile.published) {
-    if (!db) return profile;
-    try {
-      await updateDoc(doc(db, "profiles", uid), {
-        ogImageUrl: deleteField(),
-        updatedAt: serverTimestamp(),
-      });
-    } catch {
-      // Non-fatal: profile save already succeeded.
-    }
-    const { ogImageUrl: _removed, ...rest } = profile;
-    return rest;
-  }
-
-  const idToken = await auth?.currentUser?.getIdToken();
-  if (!idToken) {
-    throw new Error("Sign in again to generate an Open Graph image.");
-  }
-
-  const response = await fetch("/api/og-image", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      uid,
-      profile: {
-        handle: profile.handle,
-        displayName: profile.displayName,
-        role: profile.role,
-        bio: profile.bio,
-        accent: profile.accent,
-        avatarUrl: profile.avatarUrl,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Open Graph image generation failed.");
-  }
-
-  const blob = await response.blob();
-  const ogImageUrl = await uploadProfileOgImage(uid, blob);
-
-  if (db) {
-    await updateDoc(doc(db, "profiles", uid), {
-      ogImageUrl,
-      updatedAt: serverTimestamp(),
-    });
-  }
-
-  return { ...profile, ogImageUrl };
-}
-
-export async function saveProfile(uid: string, profile: ProfileConfig) {
+export async function saveProfile(
+  uid: string,
+  profile: ProfileConfig,
+  expectedUpdatedAt?: string,
+) {
   const firestore = db;
   if (!firestore) throw new Error("Accounts are not configured.");
   const cleanProfile = sanitizeProfile(profile);
-  const { developerActivity, ...publicProfile } = cleanProfile;
+  const {
+    developerActivity,
+    ogImageUrl: _legacyOgImageUrl,
+    ...publicProfile
+  } = cleanProfile;
   const handleRef = doc(firestore, "handles", cleanProfile.handle);
   const profileRef = doc(firestore, "profiles", uid);
+  const userRef = doc(firestore, "users", uid);
 
   await runTransaction(firestore, async (transaction) => {
     const [handleSnapshot, profileSnapshot] = await Promise.all([
@@ -134,11 +86,20 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
       throw new Error("That handle is already taken.");
     }
 
+    const currentUpdatedAt = profileSnapshot.exists()
+      ? profileUpdatedAtKey(profileSnapshot.data() as ProfileConfig)
+      : "";
+    if (
+      expectedUpdatedAt !== undefined &&
+      (!profileSnapshot.exists() || currentUpdatedAt !== expectedUpdatedAt)
+    ) {
+      throw new Error(
+        "This profile changed in another tab. Refresh to review the latest version before saving.",
+      );
+    }
+
     const previousHandle = profileSnapshot.exists()
       ? (profileSnapshot.data().handle as string | undefined)
-      : undefined;
-    const previousOgImageUrl = profileSnapshot.exists()
-      ? (profileSnapshot.data().ogImageUrl as string | undefined)
       : undefined;
 
     if (previousHandle && previousHandle !== cleanProfile.handle) {
@@ -154,25 +115,23 @@ export async function saveProfile(uid: string, profile: ProfileConfig) {
         : {}),
       ownerUid: uid,
       updatedAt: serverTimestamp(),
-      ...(cleanProfile.published && previousOgImageUrl
-        ? { ogImageUrl: previousOgImageUrl }
-        : {}),
-    });  });
-
-  await setDoc(
-    doc(firestore, "users", uid),
-    {
+    });
+    transaction.set(userRef, {
       profileHandle: cleanProfile.handle,
       developerActivity: developerActivity ?? deleteField(),
       updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+    }, { merge: true });
+  });
 
-  try {
-    return await regenerateOgImage(uid, cleanProfile);
-  } catch (error) {
-    console.error("Failed to regenerate profile Open Graph image", error);
-    return cleanProfile;
+  // The handle-specific dynamic image route is the canonical social card.
+  // Remove the legacy fixed object without making an otherwise successful save fail.
+  void deleteProfileOgImage(uid).catch((error) => {
+    console.error("Failed to remove a legacy Open Graph image", error);
+  });
+
+  const saved = await loadProfile(uid);
+  if (!saved) {
+    throw new Error("Your profile saved, but the updated version could not be loaded.");
   }
+  return saved;
 }
