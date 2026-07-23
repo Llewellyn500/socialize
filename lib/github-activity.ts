@@ -445,7 +445,7 @@ async function fetchContributionCalendarFromProfile(
       headers: {
         Accept: "text/html",
         "User-Agent":
-          "Mozilla/5.0 (compatible; SocializeBot/1.0; +https://socialize.you)",
+          "Mozilla/5.0 (compatible; SocializeBot/1.0; +https://www.socialize.you)",
       },
       signal: AbortSignal.timeout(10_000),
     });

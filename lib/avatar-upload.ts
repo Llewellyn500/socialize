@@ -1,43 +1,50 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, ref } from "firebase/storage";
 import { storage } from "@/lib/firebase";
+import { uploadProfileMedia } from "@/lib/profile-media-upload";
 
 const ACCEPTED_TYPES = /^image\/(jpeg|jpg|png|webp|gif)$/i;
-const MAX_BYTES = 5 * 1024 * 1024;
-
-const extensionByType: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/jpg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
+const MAX_BYTES = 3 * 1024 * 1024;
 
 export function validateAvatarFile(file: File) {
   if (!ACCEPTED_TYPES.test(file.type)) {
     throw new Error("Use a JPEG, PNG, WebP, or GIF image.");
   }
-  if (file.size > MAX_BYTES) {
-    throw new Error("Avatar images must be smaller than 5 MB.");
+  if (file.size >= MAX_BYTES) {
+    throw new Error("Avatar images must be smaller than 3 MB.");
   }
 }
 
 /** Upload an avatar to Firebase Storage and return its public download URL. */
 export async function uploadUserAvatar(uid: string, file: File) {
-  const firestoreStorage = storage;
-  if (!firestoreStorage) {
-    throw new Error("Cloud storage is not configured for this deployment.");
-  }
-
   validateAvatarFile(file);
+  return uploadProfileMedia(uid, "avatars", "avatar", file);
+}
 
-  const contentType = file.type === "image/jpg" ? "image/jpeg" : file.type;
-  const extension = extensionByType[contentType] ?? "jpg";
-  const avatarRef = ref(firestoreStorage, `avatars/${uid}/avatar.${extension}`);
-
-  await uploadBytes(avatarRef, file, {
-    contentType,
-    cacheControl: "public,max-age=3600",
-  });
-
-  return getDownloadURL(avatarRef);
+export async function deleteObsoleteAvatarFiles(
+  uid: string,
+  options: { keepCurrent: boolean },
+) {
+  const firestoreStorage = storage;
+  if (!firestoreStorage) return;
+  const paths = [
+    "avatar.jpg",
+    "avatar.jpeg",
+    "avatar.png",
+    "avatar.webp",
+    "avatar.gif",
+    ...(options.keepCurrent ? [] : ["avatar"]),
+  ];
+  await Promise.all(
+    paths.map(async (fileName) => {
+      try {
+        await deleteObject(ref(firestoreStorage, `avatars/${uid}/${fileName}`));
+      } catch (error) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String(error.code)
+            : "";
+        if (!code.includes("object-not-found")) throw error;
+      }
+    }),
+  );
 }

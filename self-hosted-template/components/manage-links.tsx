@@ -11,8 +11,14 @@ import {
   UploadSimple,
   X
 } from "@phosphor-icons/react";
-import { useId, useState, type DragEvent } from "react";
-import { uploadProfileMedia } from "@/lib/profile-media-upload";
+import { useEffect, useId, useRef, useState, type DragEvent } from "react";
+import {
+  deleteProfileMedia,
+  reconcileProfileMedia,
+  uploadProfileMedia,
+  type ProfileMediaScope
+} from "@/lib/profile-media-upload";
+import { sameProfileMediaObject } from "@/lib/profile-media-identity";
 import { groupLinksBySection } from "@/lib/profile-utils";
 import type {
   Profile,
@@ -29,19 +35,275 @@ type MediaPatch = {
 
 type ManageLinksProps = {
   profile: Profile;
+  persistedProfile: Profile;
+  persistedReady: boolean;
   onChange: (patch: Partial<Profile>) => void;
+  onUploadActivityChange?: (active: boolean) => void;
 };
+
+type PendingDraftMedia = {
+  scope: ProfileMediaScope;
+  itemId: string;
+  mediaUrl: string;
+  createdAt: number;
+  restored?: boolean;
+};
+
+const PENDING_MEDIA_STORAGE_KEY = "socialize-selfhost-pending-media";
+const ABANDONED_MEDIA_MAX_AGE_MS = 24 * 60 * 60 * 1_000;
 
 function createId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-export function ManageLinks({ profile, onChange }: ManageLinksProps) {
+function mediaUrlFor(
+  profile: Profile,
+  scope: ProfileMediaScope,
+  itemId: string
+) {
+  const items = scope === "links" ? profile.links : profile.sections;
+  return items.find((item) => item.id === itemId)?.mediaUrl;
+}
+
+export function ManageLinks({
+  profile,
+  persistedProfile,
+  persistedReady,
+  onChange,
+  onUploadActivityChange
+}: ManageLinksProps) {
   const groups = groupLinksBySection(profile);
   const [draggedLinkId, setDraggedLinkId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const pendingDraftMedia = useRef(new Map<string, PendingDraftMedia>());
+  const mediaIntentVersions = useRef(new Map<string, number>());
+  const activeUploads = useRef(0);
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+
+  function draftMediaKey(scope: ProfileMediaScope, itemId: string) {
+    return `${scope}:${itemId}`;
+  }
+
+  function rememberDraftMedia(
+    scope: ProfileMediaScope,
+    itemId: string,
+    mediaUrl: string
+  ) {
+    const key = draftMediaKey(scope, itemId);
+    const previous = pendingDraftMedia.current.get(key);
+    pendingDraftMedia.current.set(key, {
+      scope,
+      itemId,
+      mediaUrl,
+      createdAt: Date.now()
+    });
+    persistPendingDraftMedia();
+    const previousUsedElsewhere =
+      previous &&
+      (
+        profileRef.current.links.some(
+          (item) =>
+            !(scope === "links" && item.id === itemId) &&
+            sameProfileMediaObject(item.mediaUrl, previous.mediaUrl)
+        ) ||
+        profileRef.current.sections.some(
+          (item) =>
+            !(scope === "sections" && item.id === itemId) &&
+            sameProfileMediaObject(item.mediaUrl, previous.mediaUrl)
+        )
+      );
+    if (
+      previous &&
+      !sameProfileMediaObject(previous.mediaUrl, mediaUrl) &&
+      !previousUsedElsewhere
+    ) {
+      void deleteProfileMedia(
+        previous.scope,
+        previous.itemId,
+        previous.mediaUrl
+      ).catch((error) => {
+        console.error("Failed to remove superseded draft media", error);
+      });
+    }
+  }
+
+  function persistPendingDraftMedia() {
+    try {
+      const entries = [...pendingDraftMedia.current.values()].map(
+        ({ scope, itemId, mediaUrl, createdAt }) => ({
+          scope,
+          itemId,
+          mediaUrl,
+          createdAt
+        })
+      );
+      window.localStorage.setItem(
+        PENDING_MEDIA_STORAGE_KEY,
+        JSON.stringify(entries)
+      );
+    } catch {
+      // Cleanup remains best-effort when browser storage is unavailable.
+    }
+  }
+
+  function beginMediaIntent(scope: ProfileMediaScope, itemId: string) {
+    const key = draftMediaKey(scope, itemId);
+    const version = (mediaIntentVersions.current.get(key) ?? 0) + 1;
+    mediaIntentVersions.current.set(key, version);
+    return version;
+  }
+
+  function invalidateMediaIntent(scope: ProfileMediaScope, itemId: string) {
+    const key = draftMediaKey(scope, itemId);
+    mediaIntentVersions.current.set(
+      key,
+      (mediaIntentVersions.current.get(key) ?? 0) + 1
+    );
+  }
+
+  function mediaIntentIsCurrent(
+    scope: ProfileMediaScope,
+    itemId: string,
+    version: number
+  ) {
+    return mediaIntentVersions.current.get(draftMediaKey(scope, itemId)) === version;
+  }
+
+  async function trackUpload<T>(upload: () => Promise<T>) {
+    activeUploads.current += 1;
+    if (activeUploads.current === 1) onUploadActivityChange?.(true);
+    try {
+      return await upload();
+    } finally {
+      activeUploads.current = Math.max(0, activeUploads.current - 1);
+      if (activeUploads.current === 0) onUploadActivityChange?.(false);
+    }
+  }
+
+  function discardDraftMedia(
+    scope: ProfileMediaScope,
+    itemId: string,
+    nextMediaUrl?: string
+  ) {
+    const key = draftMediaKey(scope, itemId);
+    const pending = pendingDraftMedia.current.get(key);
+    if (!pending || sameProfileMediaObject(pending.mediaUrl, nextMediaUrl)) return;
+
+    pendingDraftMedia.current.delete(key);
+    persistPendingDraftMedia();
+    const usedElsewhere =
+      profileRef.current.links.some(
+        (item) =>
+          !(pending.scope === "links" && item.id === pending.itemId) &&
+          sameProfileMediaObject(item.mediaUrl, pending.mediaUrl)
+      ) ||
+      profileRef.current.sections.some(
+        (item) =>
+          !(pending.scope === "sections" && item.id === pending.itemId) &&
+          sameProfileMediaObject(item.mediaUrl, pending.mediaUrl)
+      );
+    if (usedElsewhere) return;
+    void deleteProfileMedia(
+      pending.scope,
+      pending.itemId,
+      pending.mediaUrl
+    ).catch((error) => {
+      console.error("Failed to remove discarded draft media", error);
+    });
+  }
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(
+        window.localStorage.getItem(PENDING_MEDIA_STORAGE_KEY) || "[]"
+      ) as unknown;
+      if (!Array.isArray(parsed)) return;
+
+      for (const value of parsed) {
+        if (!value || typeof value !== "object") continue;
+        const entry = value as Partial<PendingDraftMedia>;
+        if (
+          (entry.scope !== "links" && entry.scope !== "sections") ||
+          typeof entry.itemId !== "string" ||
+          typeof entry.mediaUrl !== "string" ||
+          typeof entry.createdAt !== "number"
+        ) {
+          continue;
+        }
+        pendingDraftMedia.current.set(
+          draftMediaKey(entry.scope, entry.itemId),
+          {
+            scope: entry.scope,
+            itemId: entry.itemId,
+            mediaUrl: entry.mediaUrl,
+            createdAt: entry.createdAt,
+            restored: true
+          }
+        );
+      }
+    } catch {
+      window.localStorage.removeItem(PENDING_MEDIA_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!persistedReady) return;
+    let changed = false;
+    for (const [key, pending] of pendingDraftMedia.current) {
+      const isPersisted = [
+        ...persistedProfile.links,
+        ...persistedProfile.sections
+      ].some((item) => sameProfileMediaObject(item.mediaUrl, pending.mediaUrl));
+      if (isPersisted) {
+        pendingDraftMedia.current.delete(key);
+        changed = true;
+      } else if (
+        pending.restored &&
+        Date.now() - pending.createdAt >= ABANDONED_MEDIA_MAX_AGE_MS
+      ) {
+        pendingDraftMedia.current.delete(key);
+        changed = true;
+        void deleteProfileMedia(
+          pending.scope,
+          pending.itemId,
+          pending.mediaUrl
+        ).catch((error) => {
+          console.error("Failed to remove abandoned draft media", error);
+        });
+      }
+    }
+    if (changed) persistPendingDraftMedia();
+  }, [persistedProfile, persistedReady]);
+
+  useEffect(() => {
+    for (const pending of pendingDraftMedia.current.values()) {
+      if (pending.restored) continue;
+      if (
+        !sameProfileMediaObject(
+          mediaUrlFor(profile, pending.scope, pending.itemId),
+          pending.mediaUrl
+        )
+      ) {
+        discardDraftMedia(pending.scope, pending.itemId);
+      }
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (!persistedReady) return;
+    void reconcileProfileMedia(
+      [...pendingDraftMedia.current.values()].map((item) => item.mediaUrl)
+    ).catch((error) => {
+      console.error("Failed to reconcile abandoned profile media", error);
+    });
+  }, [persistedProfile, persistedReady]);
 
   function patchSection(sectionId: string, patch: Partial<ProfileSection>) {
+    if (Object.prototype.hasOwnProperty.call(patch, "mediaUrl")) {
+      invalidateMediaIntent("sections", sectionId);
+      discardDraftMedia("sections", sectionId, patch.mediaUrl);
+    }
     onChange({
       sections: profile.sections.map((section) =>
         section.id === sectionId ? { ...section, ...patch } : section
@@ -50,12 +312,20 @@ export function ManageLinks({ profile, onChange }: ManageLinksProps) {
   }
 
   function removeSection(sectionId: string) {
+    invalidateMediaIntent("sections", sectionId);
+    discardDraftMedia("sections", sectionId);
     onChange({
       sections: profile.sections.filter((section) => section.id !== sectionId),
       links: profile.links.map((link) =>
         link.sectionId === sectionId ? { ...link, sectionId: undefined } : link
       )
     });
+  }
+
+  function removeLink(linkId: string) {
+    invalidateMediaIntent("links", linkId);
+    discardDraftMedia("links", linkId);
+    onChange({ links: profile.links.filter((item) => item.id !== linkId) });
   }
 
   function moveSection(sectionId: string, direction: -1 | 1) {
@@ -68,6 +338,10 @@ export function ManageLinks({ profile, onChange }: ManageLinksProps) {
   }
 
   function patchLink(linkId: string, patch: Partial<ProfileLink>) {
+    if (Object.prototype.hasOwnProperty.call(patch, "mediaUrl")) {
+      invalidateMediaIntent("links", linkId);
+      discardDraftMedia("links", linkId, patch.mediaUrl);
+    }
     onChange({
       links: profile.links.map((link) =>
         link.id === linkId ? { ...link, ...patch } : link
@@ -238,9 +512,43 @@ export function ManageLinks({ profile, onChange }: ManageLinksProps) {
                     mediaType={section.mediaType}
                     mediaUrl={section.mediaUrl}
                     onPatch={(patch) => patchSection(section.id, patch)}
+                    onClear={async () => {
+                      patchSection(section.id, {
+                        mediaUrl: undefined,
+                        mediaType: undefined,
+                        hideTitle: false
+                      });
+                    }}
                     onUpload={async (file) => {
-                      const mediaUrl = await uploadProfileMedia("sections", section.id, file);
-                      patchSection(section.id, { mediaUrl });
+                      const intentVersion = beginMediaIntent("sections", section.id);
+                      await trackUpload(async () => {
+                        const mediaUrl = await uploadProfileMedia(
+                          "sections",
+                          section.id,
+                          file
+                        );
+                        if (
+                          !mediaIntentIsCurrent(
+                            "sections",
+                            section.id,
+                            intentVersion
+                          ) ||
+                          !profileRef.current.sections.some(
+                            (item) => item.id === section.id
+                          )
+                        ) {
+                          void deleteProfileMedia(
+                            "sections",
+                            section.id,
+                            mediaUrl
+                          ).catch((error) => {
+                            console.error("Failed to remove a stale heading upload", error);
+                          });
+                          return;
+                        }
+                        rememberDraftMedia("sections", section.id, mediaUrl);
+                        patchSection(section.id, { mediaUrl });
+                      });
                     }}
                     supportsMediaOnly
                   />
@@ -310,9 +618,7 @@ export function ManageLinks({ profile, onChange }: ManageLinksProps) {
                         <button
                           aria-label={`Remove ${link.title || "link"}`}
                           className="icon-button danger-button"
-                          onClick={() => onChange({
-                            links: profile.links.filter((item) => item.id !== link.id)
-                          })}
+                          onClick={() => removeLink(link.id)}
                           type="button"
                         >
                           <Trash aria-hidden="true" size={17} weight="bold" />
@@ -374,9 +680,42 @@ export function ManageLinks({ profile, onChange }: ManageLinksProps) {
                       mediaType={link.mediaType}
                       mediaUrl={link.mediaUrl}
                       onPatch={(patch) => patchLink(link.id, patch)}
+                      onClear={async () => {
+                        patchLink(link.id, {
+                          mediaUrl: undefined,
+                          mediaType: undefined
+                        });
+                      }}
                       onUpload={async (file) => {
-                        const mediaUrl = await uploadProfileMedia("links", link.id, file);
-                        patchLink(link.id, { mediaUrl });
+                        const intentVersion = beginMediaIntent("links", link.id);
+                        await trackUpload(async () => {
+                          const mediaUrl = await uploadProfileMedia(
+                            "links",
+                            link.id,
+                            file
+                          );
+                          if (
+                            !mediaIntentIsCurrent(
+                              "links",
+                              link.id,
+                              intentVersion
+                            ) ||
+                            !profileRef.current.links.some(
+                              (item) => item.id === link.id
+                            )
+                          ) {
+                            void deleteProfileMedia(
+                              "links",
+                              link.id,
+                              mediaUrl
+                            ).catch((error) => {
+                              console.error("Failed to remove a stale link upload", error);
+                            });
+                            return;
+                          }
+                          rememberDraftMedia("links", link.id, mediaUrl);
+                          patchLink(link.id, { mediaUrl });
+                        });
                       }}
                     />
                   </article>
@@ -420,6 +759,7 @@ function MediaEditor({
   hideTitle,
   supportsMediaOnly = false,
   onPatch,
+  onClear,
   onUpload
 }: {
   label: string;
@@ -428,6 +768,7 @@ function MediaEditor({
   hideTitle?: boolean;
   supportsMediaOnly?: boolean;
   onPatch: (patch: MediaPatch) => void;
+  onClear: () => Promise<void>;
   onUpload: (file: File) => Promise<void>;
 }) {
   const id = useId();
@@ -449,6 +790,19 @@ function MediaEditor({
     }
   }
 
+  async function clear() {
+    setUploading(true);
+    setMessage("");
+    try {
+      await onClear();
+      setMessage("Image cleared. Publish changes to update the profile.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The image could not be removed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <details className="managed-media-editor">
       <summary>
@@ -465,9 +819,13 @@ function MediaEditor({
             <input
               id={`${id}-url`}
               inputMode="url"
-              onChange={(event) => onPatch(event.target.value
-                ? { mediaUrl: event.target.value }
-                : { mediaUrl: undefined, hideTitle: false })}
+              onChange={(event) => {
+                if (event.target.value) {
+                  onPatch({ mediaUrl: event.target.value });
+                } else {
+                  void clear();
+                }
+              }}
               placeholder="https://... or /image.png"
               value={mediaUrl ?? ""}
             />
@@ -489,7 +847,7 @@ function MediaEditor({
         <div className="managed-media-actions">
           <label className="secondary-button managed-media-upload">
             <input
-              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               disabled={uploading}
               type="file"
               onChange={(event) => {
@@ -503,7 +861,8 @@ function MediaEditor({
           {hasMedia ? (
             <button
               className="text-button"
-              onClick={() => onPatch({ mediaUrl: undefined, hideTitle: false })}
+              disabled={uploading}
+              onClick={() => void clear()}
               type="button"
             >
               <X aria-hidden="true" size={15} weight="bold" /> Clear

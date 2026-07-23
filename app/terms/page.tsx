@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal-page";
+import { contactConfig, mailto } from "@/lib/contact-config";
+import { legalConfig } from "@/lib/legal-config";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -22,11 +24,10 @@ const sections: LegalSection[] = [
           incorporate.
         </p>
         <p>
-          The legal service operator, contact address, governing law, and final
-          consumer-rights wording must be completed before public hosted launch.
-          If you do not agree, do not create or use a hosted account. Browsing a
-          public profile remains subject to applicable law and the provisions that
-          reasonably apply to visitors.
+          The managed service is operated by {legalConfig.operatorName}, at{" "}
+          {legalConfig.operatorAddress}. If you do not agree, do not create or use
+          a hosted account. Browsing a public profile remains subject to applicable
+          law and the provisions that reasonably apply to visitors.
         </p>
       </>
     ),
@@ -109,9 +110,9 @@ const sections: LegalSection[] = [
           control the corresponding GitHub account or repository.
         </p>
         <p>
-          Socialize may create limited screenshots or previews of public profiles
-          to explain or promote the product. The final Terms should confirm whether
-          users may opt out of promotional use before this clause is approved.
+          Socialize will not use an identifiable public profile in promotional
+          material without the profile owner&apos;s permission. Aggregated or
+          fictional examples may be used to explain the product.
         </p>
       </>
     ),
@@ -264,10 +265,12 @@ const sections: LegalSection[] = [
           including public GitHub activity.
         </p>
         <p>
-          The final limitation-of-liability clause, monetary cap, exclusions, and
-          any consumer-law carve-outs must be selected with counsel based on the
-          operator&apos;s jurisdiction and free-service structure. They are intentionally
-          not invented in this draft.
+          To the maximum extent permitted by applicable law, neither Socialize nor
+          its operator is liable for indirect, incidental, special, consequential,
+          or punitive loss, or for lost profits, data, goodwill, or opportunities.
+          Aggregate liability arising from the managed service is limited to{" "}
+          {legalConfig.liabilityCap}. These limits do not exclude liability that
+          applicable law does not allow the parties to limit or exclude.
         </p>
       </>
     ),
@@ -278,15 +281,16 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          The governing law, venue, dispute process, and legal operator address
-          must be inserted before launch. Nothing in the final Terms should remove
-          mandatory rights that applicable consumer law does not allow parties to
-          waive.
+          These Terms are governed by {legalConfig.governingLaw}, without overriding
+          mandatory consumer protections that apply where you live. Subject to
+          those protections, disputes must be brought in {legalConfig.venue}. Before
+          filing a claim, contact <a href={mailto(contactConfig.legal)}>{contactConfig.legal}</a>{" "}
+          so the parties can try to resolve it informally.
         </p>
         <p>
           We may update these Terms. Material changes will receive reasonable
           notice and will apply prospectively where required. Questions can be sent
-          to <a href="mailto:legal@socialize.you">legal@socialize.you</a>.
+          to <a href={mailto(contactConfig.legal)}>{contactConfig.legal}</a>.
         </p>
       </>
     ),
@@ -296,9 +300,9 @@ const sections: LegalSection[] = [
 export default function TermsPage() {
   return (
     <LegalPage
-      contactEmail="legal@socialize.you"
+      contactEmail={contactConfig.legal}
       sections={sections}
-      summary="These terms describe the current free Socialize service, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments. The legal operator details still need to be completed before public hosted launch."
+      summary="These terms describe the free Socialize service, hosted profiles, user content, public GitHub activity, handles, and the boundary between the managed service and independent deployments."
       title="Terms of Service"
       related={[
         {

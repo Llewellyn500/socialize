@@ -1,5 +1,6 @@
+import { cache } from "react";
 import { normalizeHandle, type ProfileConfig } from "@/lib/profile";
-import { firebasePublicDocumentUrl } from "@/lib/firebase-public-rest";
+import { firestoreAdminRequest } from "@/lib/firebase-admin-rest";
 
 type FirestoreValue =
   | { stringValue: string }
@@ -22,26 +23,32 @@ function readBoolean(fields: Record<string, FirestoreValue> | undefined, key: st
 }
 
 async function fetchDocument(path: string) {
-  const url = firebasePublicDocumentUrl(path);
-  if (!url) return null;
-  const response = await fetch(url, {
-    next: { revalidate: 60 },
-  });
+  try {
+    const response = await firestoreAdminRequest(path);
 
-  if (response.status === 404) return null;
-  if (!response.ok) return null;
+    if (!response) return null;
+    if (response.status === 404) return null;
+    if (!response.ok) return null;
 
-  const data = (await response.json()) as {
-    fields?: Record<string, FirestoreValue>;
-  };
-  return data.fields ?? null;
+    const data = (await response.json()) as {
+      fields?: Record<string, FirestoreValue>;
+    };
+    return data.fields ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Server-side public profile loader via Firestore REST (unauthenticated).
- * Respects security rules: only published profiles are readable.
+ * Server-side public profile loader using the trusted runtime credential so
+ * metadata and no-JavaScript rendering keep working after App Check
+ * enforcement. Because Admin requests bypass Security Rules, this loader
+ * explicitly returns only a profile whose public handle resolves and whose
+ * `published` flag is true.
  */
-export async function loadPublicProfileServer(handle: string): Promise<ProfileConfig | null> {
+export const loadPublicProfileServer = cache(async (
+  handle: string,
+): Promise<ProfileConfig | null> => {
   const normalized = normalizeHandle(handle);
   if (!normalized) return null;
 
@@ -83,4 +90,4 @@ export async function loadPublicProfileServer(handle: string): Promise<ProfileCo
     ogImageUrl: readString(profileFields, "ogImageUrl"),
     updatedAt: readString(profileFields, "updatedAt"),
   };
-}
+});

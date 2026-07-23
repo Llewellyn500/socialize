@@ -7,7 +7,6 @@ import type { SelfHostedConfig } from "@/types/profile";
  * unavailable. Once you save from /manage, the saved profile record takes over.
  */
 export const selfHostedConfig: SelfHostedConfig = {
-  ownerEmail: "you@example.com",
   firestoreDocumentPath: "profiles/main",
   profile: {
     name: "Avery Mensah",

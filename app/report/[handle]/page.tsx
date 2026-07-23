@@ -13,6 +13,7 @@ import {
   serviceContentStyles as styles,
 } from "@/components/service-content";
 import { ReportForm } from "@/components/report-form";
+import { contactConfig, mailto } from "@/lib/contact-config";
 
 type ReportPageProps = {
   params: Promise<{ handle: string }>;
@@ -43,9 +44,9 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
   const profilePath = `/${handle}`;
   const subject = encodeURIComponent(`Report @${handle} on Socialize`);
   const body = encodeURIComponent(
-    `Profile: https://socialize.you/${handle}\n\nReason:\n\nSpecific link or content:\n\nContext or evidence:\n`,
+    `Profile: https://www.socialize.you/${handle}\n\nReason:\n\nSpecific link or content:\n\nContext or evidence:\n`,
   );
-  const reportEmail = `mailto:safety@socialize.you?subject=${subject}&body=${body}`;
+  const reportEmail = `mailto:${contactConfig.safety}?subject=${subject}&body=${body}`;
 
   const pageNav = [
     { href: "#report-form", label: "Report details" },
@@ -91,7 +92,7 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
               {
                 href: reportEmail,
                 title: "Send a report by email",
-                description: `A prefilled message for @${handle} to safety@socialize.you.`,
+                description: `A prefilled message for @${handle} to ${contactConfig.safety}.`,
               },
               {
                 href: "/acceptable-use#reporting",
@@ -135,9 +136,9 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
           </p>
           <p>
             Copyright or trademark notices that require formal legal statements can
-            be sent to <a href="mailto:legal@socialize.you">legal@socialize.you</a>.
+            be sent to <a href={mailto(contactConfig.legal)}>{contactConfig.legal}</a>.
             A security weakness in Socialize itself belongs at
-            <a href="mailto:security@socialize.you"> security@socialize.you</a>.
+            <a href={mailto(contactConfig.security)}> {contactConfig.security}</a>.
           </p>
         </ContentSection>
 
@@ -175,7 +176,7 @@ export default async function ReportProfilePage({ params }: ReportPageProps) {
           <p>
             Contact the emergency service or appropriate authority in your location
             first. Then send the profile URL and reference information to
-            <a href="mailto:safety@socialize.you?subject=Urgent%20hosted-profile%20safety%20report"> safety@socialize.you</a>.
+            <a href={mailto(contactConfig.safety, "Urgent hosted-profile safety report")}> {contactConfig.safety}</a>.
           </p>
           <h3>Credentials or active compromise</h3>
           <p>

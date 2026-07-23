@@ -70,7 +70,6 @@ export type Profile = {
 };
 
 export type SelfHostedConfig = {
-  ownerEmail: string;
   firestoreDocumentPath: string;
   profile: Profile;
 };

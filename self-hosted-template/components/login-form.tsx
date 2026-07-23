@@ -20,7 +20,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { firebaseIsConfigured, getFirebaseServices } from "@/lib/firebase";
 import { hasOwnerAccess } from "@/lib/owner-access";
-import { selfHostedConfig } from "@/profile.config";
 
 type LoginState = "idle" | "working";
 
@@ -42,9 +41,7 @@ function readableAuthError(error: unknown): string {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState(
-    selfHostedConfig.ownerEmail === "you@example.com" ? "" : selfHostedConfig.ownerEmail
-  );
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [state, setState] = useState<LoginState>("idle");
   const [error, setError] = useState(
@@ -95,7 +92,7 @@ export function LoginForm() {
     event.preventDefault();
     const services = getFirebaseServices();
     if (!services) return;
-    await runSignIn(() => signInWithEmailAndPassword(services.auth, email, password));
+    await runSignIn(() => signInWithEmailAndPassword(services.auth, email.trim(), password));
   }
 
   const services = getFirebaseServices();

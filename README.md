@@ -5,12 +5,11 @@ Socialize is a free, developer-first link page with two ways to use it:
 - **Hosted service:** create an account, claim a handle, edit visually, and publish on the Socialize domain at no cost.
 - **Self-hosted edition:** run the stripped profile and owner dashboard on your own infrastructure and domain.
 
-The hosted product and self-hosted starter use related profile models, but their
-top-level schemas are not interchangeable. A hosted JSON export is a backup and
-migration source, not a file the stripped edition imports unchanged. There is no
-one-click hosted-to-self-hosted importer yet; use the documented conversion
-process when moving a profile. The optional nested `developerActivity` shape is
-portable between both editions.
+The hosted product and self-hosted starter use related profile models. The
+self-hosted `/manage` workspace includes a review-before-publish importer that
+converts the hosted dashboard's JSON export into the stripped schema. The optional
+nested `developerActivity` shape is portable between both editions; hosted icon
+IDs and Firebase-hosted images are reported when they need replacement.
 
 All current Socialize functionality is free. There are no paid product tiers,
 feature gates, or sponsor-only features. If the project helps, you can
@@ -85,15 +84,20 @@ resources, keep its credential in the CI secret store, and limit access to the
 deployment job.
 
 The hosted app also uses a **separate, server-only** Firebase service-account
-credential for click aggregation, the abuse-report queue, and GitHub activity
-caches. Put the complete JSON value in `FIREBASE_SERVICE_ACCOUNT_JSON` in the
-production runtime's encrypted environment variables (for example, Vercel
-Project Settings). It must never be committed, embedded in a Docker image,
-exported to the browser, or use a `NEXT_PUBLIC_` name. Give this runtime account
-only the Firestore access the hosted project needs. Without it, public profiles
-remain available but click analytics, browser report submissions, and persistent
-GitHub caches intentionally stay disabled rather than opening direct browser
-writes to Firestore.
+credential for click aggregation, the abuse-report queue, GitHub activity caches,
+trusted account cleanup, and server-rendered public profile metadata after App
+Check enforcement. The public-profile loader still checks the handle mapping and
+`published` flag explicitly because this credential bypasses Security Rules. Put
+the complete JSON value in
+`FIREBASE_SERVICE_ACCOUNT_JSON` in the production runtime's encrypted environment
+variables (for example, Vercel Project Settings). It must never be committed,
+embedded in a Docker image, exported to the browser, or use a `NEXT_PUBLIC_`
+name. Grant only the Firestore document access, Cloud Storage object
+create/get/list/delete,
+and Firebase Authentication user get/delete access required by these flows, plus
+the Firebase App Check Token Verifier role. Without it, privileged server writes
+and complete account deletion fail closed instead of opening direct browser-write
+rules.
 
 Firebase Web API keys are identifiers and are expected in the browser. Your real security boundary is Authentication, Firestore/Storage rules, authorized domains, App Check, and server-side handling for any future private integration token.
 
@@ -119,20 +123,30 @@ profiles/{uid}     publishable ProfileConfig plus ownerUid
 handles/{handle}   public handle → uid lookup, reserved transactionally
 reports/{id}       write-only abuse reports for future moderation tooling
 avatars/{uid}/*    user-owned Firebase Storage path
-profile-media/{uid}/{links|sections}/{itemId}/media
+profile-media/{uid}/objects/{000..127}
 ```
 
 `socialize.config.ts` documents the hosted profile contract, which hosted accounts
 store in Firestore. The stripped edition has its own top-level profile schema in
-`self-hosted-template/profile.config.ts`. Hosted exports are useful backups and a
-stable migration source, but identity, social, and link fields need conversion
-before they are used by the stripped template. The nested `developerActivity`
-object intentionally uses the same shape in both editions.
+`self-hosted-template/profile.config.ts`. The self-hosted manager converts a
+hosted export's identity, social, section, link, and activity fields for review
+before publish. Built-in hosted icon IDs are not portable image assets, and
+Firebase Storage images must be re-uploaded before deleting the hosted account.
 
 Links retain their array order and can be dragged within or between sections.
 Each link and section heading accepts an optional compact icon or wide thumbnail.
-Hosted uploads use the owner-only `profile-media/{uid}/...` Storage path; the
-self-hosted editor supports the same controls and also accepts local `/public` paths.
+Hosted image writes use an authenticated, App Check-protected server route; the
+self-hosted editor supports the same controls and also accepts local `/public`
+paths. Hosted objects are immutable, generation-pinned, and stored in a fixed
+128-slot pool capped at 192 MiB per account. Concurrent edits cannot overwrite a
+live image, public clients cannot enumerate profile-media directories, and
+browser requests cannot create objects outside that bound. Before uploads, the
+server compares the pool with the authoritative Firestore profile and removes
+unreferenced live objects older than a 24-hour draft grace period. Object-version
+and soft-delete scans are strictly bounded; retained soft-deleted generations
+continue to count toward the account quota until the bucket retention period
+expires. Discarded draft media is also removed during normal edit, clear, and
+delete flows.
 
 ## GitHub developer activity
 
@@ -214,8 +228,9 @@ It intentionally omits the Socialize marketing site, public signup, multi-tenant
 ## Deploy the managed app on Vercel
 
 Import the repository in Vercel and keep the Root Directory at the repository
-root. Vercel detects Next.js automatically, so the default `npm run build`
-command and output settings are sufficient.
+root. The checked-in `vercel.json` selects Next.js, installs with `npm ci`, and
+runs `npm run build:vercel`, which validates the production environment before
+building.
 
 Add all values from `.env.example` in **Project Settings → Environment
 Variables**. Apply them to Production, Preview, and Development as needed, then
@@ -223,7 +238,7 @@ redeploy. After the first deployment:
 
 1. Add the Vercel production hostname and any preview hostname you use to
    Firebase Authentication → Authorized domains.
-2. Set `NEXT_PUBLIC_SITE_URL` to the production `https://` URL so canonical,
+2. Set `NEXT_PUBLIC_SITE_URL=https://www.socialize.you` so canonical,
    Open Graph, sitemap, and auth-action links use the correct origin.
 3. Keep Firebase rule deployment separate: Vercel deploys the Next.js app;
    `firebase deploy --only firestore:rules,firestore:indexes,storage` deploys the
@@ -234,6 +249,11 @@ redeploy. After the first deployment:
 5. If public GitHub activity will be enabled, optionally add the server-only
    `GITHUB_TOKEN` for higher API limits. Do not prefix it with `NEXT_PUBLIC_`, and
    do not grant the token private-repository access.
+6. Configure Vercel Firewall rate limits for the public `/api` routes, verify
+   production App Check traffic and enforcement, then set
+   `VERCEL_FIREWALL_CONFIGURED=true` and `FIREBASE_APP_CHECK_ENFORCED=true`.
+7. Run `npm run prod:check` from a trusted network to validate required values
+   and confirm that every configured contact domain publishes MX records.
 
 For the stripped edition, import the same GitHub repository as a second Vercel
 project and set its Root Directory to `self-hosted-template`.
@@ -245,7 +265,7 @@ recorded:
 
 - [ ] Run a clean-clone install, `npm run lint`, and `npm run build` for the
   hosted app and the equivalent checks for the self-hosted template.
-- [ ] Set `NEXT_PUBLIC_SITE_URL=https://socialize.you`, verify HTTPS and the
+- [ ] Set `NEXT_PUBLIC_SITE_URL=https://www.socialize.you`, verify HTTPS and the
   intended www redirect, then test canonical URLs and social sharing previews.
 - [ ] Add every production and preview domain to Firebase Authentication
   authorized domains, and deploy Firestore rules, indexes, and Storage rules
@@ -254,14 +274,16 @@ recorded:
   limits, account and email-verification behavior, moderation review, backups,
   and incident handling.
 - [ ] Add a least-privilege `FIREBASE_SERVICE_ACCOUNT_JSON` runtime secret and
-  verify trusted click, report, and GitHub-cache writes without exposing a
-  browser-write rule.
-- [ ] Send and receive a test message from every published address:
-  support@socialize.you, security@socialize.you, privacy@socialize.you,
-  safety@socialize.you, legal@socialize.you, and sponsors@socialize.you.
-- [ ] Replace policy drafts with approved, accurate Terms, Privacy, Cookies,
-  acceptable-use, and security information that identifies the service operator,
-  contact details, retention, and reporting process.
+  verify trusted click, report, GitHub-cache, account-cleanup, and media
+  operations without exposing a browser-write rule.
+- [ ] Configure Firebase and Vercel spend alerts, then verify the per-account
+  media pool and WAF limits with production monitoring.
+- [ ] Configure and send/receive a test message through every published
+  `NEXT_PUBLIC_*_EMAIL` address. Do not deploy addresses on domains without
+  working mail delivery.
+- [ ] Set every `NEXT_PUBLIC_LEGAL_*` production value, have the rendered Terms,
+  Privacy, Cookies, acceptable-use, and security pages reviewed for the operator
+  and jurisdiction, and verify the contact, retention, and reporting processes.
 - [ ] Test sign-up, sign-in, password reset, OAuth, email verification,
   publishing, unpublishing, exports, deletion, uploads, and a public profile in
   a signed-out browser on desktop and mobile.
@@ -323,7 +345,11 @@ Pass Firebase public configuration through your deployment environment. Do not b
   Check, distributed rate limits, moderation tooling, and emulator coverage for
   every rules branch.
 
-The included legal pages are product-specific starter drafts, not legal advice. Review them for your operating entity, jurisdiction, retention schedule, subprocessors, and support contact before launch.
+The legal pages read their operator, address, governing law, venue, liability cap,
+and effective date from required `NEXT_PUBLIC_LEGAL_*` production settings. The
+production build validator refuses to deploy placeholder values. Configuration is
+not a substitute for review by qualified counsel for your operating entity,
+jurisdiction, retention schedule, subprocessors, and support process.
 
 ## Community and project governance
 

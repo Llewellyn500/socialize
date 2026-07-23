@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal-page";
+import { contactConfig, mailto } from "@/lib/contact-config";
 
 export const metadata: Metadata = {
   title: "Acceptable Use Policy",
   description:
-    "Draft rules for content, links, behavior, automation, and abuse on the hosted Socialize service.",
+    "Rules for content, links, behavior, automation, and abuse on the hosted Socialize service.",
   alternates: { canonical: "/acceptable-use" },
 };
 
@@ -200,8 +201,12 @@ const sections: LegalSection[] = [
           law or reasonably necessary to protect users and investigate abuse.
         </p>
         <p>
-          The final policy must define a workable appeal process, response targets,
-          and record-retention schedule before public moderation begins.
+          An account owner may appeal an enforcement decision within 30 days by
+          emailing <a href={mailto(contactConfig.safety)}>{contactConfig.safety}</a>.
+          Include the profile URL, decision being appealed, and relevant context.
+          We aim to acknowledge appeals within seven calendar days and retain the
+          moderation record only as long as needed for safety, legal, and repeat-
+          abuse review.
         </p>
       </>
     ),
@@ -214,13 +219,13 @@ const sections: LegalSection[] = [
         <p>
           Use the report route for the affected handle, for example
           <Link href="/report/example"> /report/example</Link>, or email
-          <a href="mailto:safety@socialize.you"> safety@socialize.you</a>. Include
+          <a href={mailto(contactConfig.safety)}> {contactConfig.safety}</a>. Include
           the profile URL, specific link or content, reason for the report, and any
           supporting context that can be shared safely.
         </p>
         <p>
           Send vulnerabilities privately to
-          <a href="mailto:security@socialize.you"> security@socialize.you</a> instead
+          <a href={mailto(contactConfig.security)}> {contactConfig.security}</a> instead
           of the abuse queue. For immediate danger, contact the emergency service
           or appropriate authority in your location first.
         </p>
@@ -238,9 +243,9 @@ const sections: LegalSection[] = [
 export default function AcceptableUsePage() {
   return (
     <LegalPage
-      contactEmail="safety@socialize.you"
+      contactEmail={contactConfig.safety}
       sections={sections}
-      summary="These draft rules protect people from harmful links, impersonation, security abuse, privacy violations, and infrastructure misuse."
+      summary="These rules protect people from harmful links, impersonation, security abuse, privacy violations, and infrastructure misuse."
       title="Acceptable Use Policy"
       related={[
         {

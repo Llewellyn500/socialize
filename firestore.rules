@@ -376,11 +376,80 @@ service cloud.firestore {
     }
 
     function canPublishProfile() {
-      return request.auth.token.email_verified == true;
+      return request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && hasCompleteTermsRecord(
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        );
+    }
+
+    function hasNoTermsRecord(data) {
+      return !data.keys().hasAny(['termsAcceptedAt', 'termsVersion']);
+    }
+
+    function hasCompleteTermsRecord(data) {
+      return data.keys().hasAll(['termsAcceptedAt', 'termsVersion'])
+        && data.termsAcceptedAt is timestamp
+        && data.termsVersion is string
+        && data.termsVersion.size() >= 1
+        && data.termsVersion.size() <= 40;
+    }
+
+    function validNewTermsRecord(data) {
+      return hasCompleteTermsRecord(data)
+        && data.termsAcceptedAt == request.time;
+    }
+
+    function validTermsTransition() {
+      return (
+          hasNoTermsRecord(resource.data)
+          && (
+            hasNoTermsRecord(request.resource.data)
+            || validNewTermsRecord(request.resource.data)
+          )
+        )
+        || (
+          hasCompleteTermsRecord(resource.data)
+          && hasCompleteTermsRecord(request.resource.data)
+          && request.resource.data.termsAcceptedAt == resource.data.termsAcceptedAt
+          && request.resource.data.termsVersion == resource.data.termsVersion
+        );
+    }
+
+    function validUser() {
+      return request.resource.data.keys().hasOnly([
+          'email', 'displayName', 'githubLogin', 'profileHandle',
+          'developerActivity', 'termsAcceptedAt', 'termsVersion', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll(['updatedAt'])
+        && (!('email' in request.resource.data)
+          || request.resource.data.email == null
+          || (request.resource.data.email is string
+            && request.resource.data.email.size() <= 320))
+        && (!('displayName' in request.resource.data)
+          || request.resource.data.displayName == null
+          || (request.resource.data.displayName is string
+            && request.resource.data.displayName.size() <= 100))
+        && (!('githubLogin' in request.resource.data)
+          || validGitHubUsername(request.resource.data.githubLogin))
+        && (!('profileHandle' in request.resource.data)
+          || validHandle(request.resource.data.profileHandle))
+        && (!('developerActivity' in request.resource.data)
+          || validDeveloperActivity(request.resource.data.developerActivity))
+        && request.resource.data.updatedAt == request.time;
     }
 
     match /users/{uid} {
-      allow read, create, update, delete: if owns(uid);
+      allow read: if owns(uid);
+      allow create: if owns(uid)
+        && validUser()
+        && validNewTermsRecord(request.resource.data);
+      allow update: if owns(uid)
+        && validUser()
+        && validTermsTransition();
+      // Account deletion runs through the recently-reauthenticated server
+      // workflow so immutable acceptance records cannot be deleted/recreated.
+      allow delete: if false;
     }
 
     match /profiles/{uid} {
@@ -409,18 +478,6 @@ service cloud.firestore {
       allow read, create, update, delete: if false;
     }
 
-    function validStatsPayload() {
-      return request.resource.data.keys().hasOnly([
-          'handle', 'totalClicks', 'links', 'socials', 'updatedAt'
-        ])
-        && validHandle(request.resource.data.handle)
-        && request.resource.data.totalClicks is int
-        && request.resource.data.totalClicks >= 0
-        && request.resource.data.links is map
-        && request.resource.data.socials is map
-        && request.resource.data.updatedAt == request.time;
-    }
-
     match /profileStats/{uid} {
       allow read: if owns(uid);
       // Click aggregation is server-owned. Public SDK writes made analytics
@@ -429,47 +486,12 @@ service cloud.firestore {
       allow delete: if owns(uid);
     }
 
-    function validContributionCache(usernameKey) {
-      return request.resource.data.keys().hasOnly([
-          'username', 'days', 'availableYears', 'updatedAt', 'version', 'source', 'syncedYears'
-        ])
-        && request.resource.data.username is string
-        && request.resource.data.username == usernameKey
-        && validGitHubUsername(request.resource.data.username)
-        && request.resource.data.days is map
-        && request.resource.data.days.keys().size() <= 5500
-        && request.resource.data.availableYears is list
-        && request.resource.data.availableYears.size() <= 15
-        && request.resource.data.syncedYears is list
-        && request.resource.data.syncedYears.size() <= 15
-        && request.resource.data.updatedAt is timestamp
-        && request.resource.data.version is int
-        && request.resource.data.version >= 1
-        && request.resource.data.source in ['profile', 'github', 'events'];
-    }
-
     // Public GitHub contribution day map. Cache writes must come from a
     // trusted backend; browser/API-key writes let anyone poison public data.
     match /githubContributionCaches/{usernameKey} {
       allow read: if true;
       allow create, update: if false;
       allow delete: if false;
-    }
-
-    function validLanguageCache(usernameKey) {
-      return request.resource.data.keys().hasOnly([
-          'username', 'byYear', 'syncedYears', 'updatedAt', 'version'
-        ])
-        && request.resource.data.username is string
-        && request.resource.data.username == usernameKey
-        && validGitHubUsername(request.resource.data.username)
-        && request.resource.data.byYear is map
-        && request.resource.data.byYear.keys().size() <= 15
-        && request.resource.data.syncedYears is list
-        && request.resource.data.syncedYears.size() <= 15
-        && request.resource.data.updatedAt is timestamp
-        && request.resource.data.version is int
-        && request.resource.data.version >= 1;
     }
 
     // Year-scoped language mixes for public GitHub activity. As above, only a

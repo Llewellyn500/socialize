@@ -85,7 +85,13 @@ export async function captureGitHubLoginFromCredential(result: UserCredential) {
   if (info?.providerId !== "github.com") return null;
   const login = sanitizeGitHubLogin(info.username ?? undefined);
   if (!login) return null;
-  await persistGitHubLogin(result.user.uid, login);
+  try {
+    await persistGitHubLogin(result.user.uid, login);
+  } catch {
+    // Login and account linking must not fail because optional provider
+    // metadata could not be cached. resolveGitHubLogin can recover it later
+    // from the linked provider ID after onboarding is complete.
+  }
   return login;
 }
 

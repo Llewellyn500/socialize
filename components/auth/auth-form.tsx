@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   getAdditionalUserInfo,
   GithubAuthProvider,
   GoogleAuthProvider,
@@ -15,7 +16,12 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/firestore";
 import { FaGithub, FaGoogle } from "react-icons/fa";
 import {
   FiAlertCircle,
@@ -33,21 +39,49 @@ import styles from "./auth.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
 type ProviderName = "google" | "github";
-const TERMS_VERSION = "2026-07-11";
+const TERMS_VERSION =
+  process.env.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE?.trim() || "2026-07-23";
 
 async function recordTermsAcceptance(user: User) {
   if (!db) return;
-  await setDoc(
-    doc(db, "users", user.uid),
-    {
-      email: user.email,
-      displayName: user.displayName,
-      termsAcceptedAt: serverTimestamp(),
-      termsVersion: TERMS_VERSION,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+  const userRef = doc(db, "users", user.uid);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(userRef);
+    if (
+      snapshot.exists() &&
+      snapshot.data().termsAcceptedAt &&
+      snapshot.data().termsVersion
+    ) {
+      return;
+    }
+    transaction.set(
+      userRef,
+      {
+        email: user.email,
+        displayName: user.displayName,
+        termsAcceptedAt: serverTimestamp(),
+        termsVersion: TERMS_VERSION,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+}
+
+async function removeUnacceptedAccount(user: User) {
+  try {
+    await deleteUser(user);
+  } catch {
+    if (auth) await signOut(auth).catch(() => undefined);
+  }
+}
+
+async function hasRecordedTermsAcceptance(user: User) {
+  if (!db) return false;
+  const snapshot = await getDoc(doc(db, "users", user.uid));
+  if (!snapshot.exists()) return false;
+  const data = snapshot.data();
+  return Boolean(data.termsAcceptedAt && data.termsVersion);
 }
 
 async function getPostAuthRoute(user: User) {
@@ -81,6 +115,9 @@ export function AuthForm({
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingLink, setPendingLink] = useState<PendingProviderLink | null>(null);
+  const [pendingEmailPassword, setPendingEmailPassword] = useState<{
+    password: string;
+  } | null>(null);
 
   const isBusy = pendingAction !== null;
   const isReady = isFirebaseConfigured && Boolean(auth);
@@ -130,7 +167,12 @@ export function AuthForm({
         await updateProfile(credential.user, {
           displayName: displayName.trim(),
         });
-        await recordTermsAcceptance(credential.user);
+        try {
+          await recordTermsAcceptance(credential.user);
+        } catch (acceptanceError) {
+          await removeUnacceptedAccount(credential.user);
+          throw acceptanceError;
+        }
         try {
           await sendEmailVerification(credential.user, {
             url: `${window.location.origin}/verify-email`,
@@ -147,12 +189,12 @@ export function AuthForm({
         email.trim(),
         password,
       );
-      const route = await getPostAuthRoute(credential.user);
-      router.push(returnTo && route === "/dashboard" ? returnTo : route);
+      await finishLinkedSignIn(credential.user);
     } catch (authError) {
-      const linkPrompt = await readPendingProviderLink(authError);
+      const linkPrompt = await readPendingProviderLink(authError, email);
       if (linkPrompt) {
         setPendingLink(linkPrompt);
+        setPendingEmailPassword(isSignUp ? { password } : null);
         setError(null);
       } else {
         setError(getFirebaseAuthError(authError));
@@ -163,6 +205,21 @@ export function AuthForm({
   }
 
   async function finishLinkedSignIn(user: User) {
+    if (isSignUp) {
+      if (!acceptedTerms) {
+        await signOut(auth!);
+        setError("Accept the Terms and Privacy Policy before creating an account.");
+        return;
+      }
+      await recordTermsAcceptance(user);
+    } else if (!(await hasRecordedTermsAcceptance(user))) {
+      await signOut(auth!);
+      router.push(
+        "/sign-up?notice=Finish creating your account by accepting the Terms and Privacy Policy.",
+      );
+      return;
+    }
+
     const route = await getPostAuthRoute(user);
     router.push(returnTo && route === "/dashboard" ? returnTo : route);
   }
@@ -197,14 +254,34 @@ export function AuthForm({
       const result = await signInWithPopup(firebaseAuth, provider);
       const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
       if (isNewUser && !isSignUp) {
-        await signOut(firebaseAuth);
+        await removeUnacceptedAccount(result.user);
         router.push("/sign-up?notice=Create your account there so you can accept the Terms and Privacy Policy.");
+        return;
+      }
+      // Establish the immutable acceptance record before adding optional
+      // provider metadata to a newly created user document.
+      if (isNewUser || isSignUp) {
+        try {
+          await recordTermsAcceptance(result.user);
+        } catch (acceptanceError) {
+          if (isNewUser) await removeUnacceptedAccount(result.user);
+          throw acceptanceError;
+        }
+      }
+      if (
+        !isNewUser &&
+        !isSignUp &&
+        !(await hasRecordedTermsAcceptance(result.user))
+      ) {
+        await signOut(firebaseAuth);
+        router.push(
+          "/sign-up?notice=Finish creating your account by accepting the Terms and Privacy Policy.",
+        );
         return;
       }
       if (providerName === "github") {
         await captureGitHubLoginFromCredential(result);
       }
-      if (isNewUser || isSignUp) await recordTermsAcceptance(result.user);
       if (isNewUser && !result.user.emailVerified) {
         try {
           await sendEmailVerification(result.user, {
@@ -214,12 +291,12 @@ export function AuthForm({
           // The verification screen includes a resend action if delivery fails.
         }
       }
-      const route = await getPostAuthRoute(result.user);
-      router.push(returnTo && route === "/dashboard" ? returnTo : route);
+      await finishLinkedSignIn(result.user);
     } catch (authError) {
       const linkPrompt = await readPendingProviderLink(authError);
       if (linkPrompt) {
         setPendingLink(linkPrompt);
+        setPendingEmailPassword(null);
         setError(null);
       } else {
         setError(getFirebaseAuthError(authError));
@@ -267,17 +344,20 @@ export function AuthForm({
       {pendingLink ? (
         <LinkAccountPrompt
           pendingLink={pendingLink}
-          emailPassword={
-            isSignUp
-              ? { email: email.trim(), password }
-              : undefined
-          }
-          onComplete={() => {
-            setPendingLink(null);
+          emailPassword={pendingEmailPassword ?? undefined}
+          onComplete={async () => {
             const currentUser = auth?.currentUser;
-            if (currentUser) void finishLinkedSignIn(currentUser);
+            if (!currentUser) {
+              throw new Error("Sign-in did not complete.");
+            }
+            await finishLinkedSignIn(currentUser);
+            setPendingLink(null);
+            setPendingEmailPassword(null);
           }}
-          onCancel={() => setPendingLink(null)}
+          onCancel={() => {
+            setPendingLink(null);
+            setPendingEmailPassword(null);
+          }}
         />
       ) : (
         <>

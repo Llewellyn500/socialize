@@ -2,23 +2,33 @@
   "name": "socialize",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.3",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:production": "npm run validate:env:public && next build",
+    "build:vercel": "npm run validate:env:vercel && next build",
     "brand:assets": "node scripts/generate-brand-assets.mjs",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate:env": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted",
+    "validate:env:production": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted --production",
+    "validate:env:public": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted --production --public",
+    "validate:env:runtime": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted --production --runtime",
+    "validate:env:vercel": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted --network",
+    "prod:check": "node --env-file-if-exists=.env.local scripts/validate-production-env.mjs hosted --production --vercel --network"
   },
   "dependencies": {
     "firebase": "^12.16.0",
-    "next": "^15.5.20",
+    "next": "15.5.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-icons": "^5.4.0"
+    "react-icons": "^5.4.0",
+    "sharp": "0.35.0"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -29,6 +39,7 @@
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "8.5.16"
+    "postcss": "8.5.16",
+    "sharp": "0.35.0"
   }
 }

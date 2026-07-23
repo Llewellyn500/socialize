@@ -11,9 +11,14 @@ import styles from "./dashboard-app.module.css";
 type DeleteAccountPanelProps = {
   user: User | null;
   handle: string;
+  disabled?: boolean;
 };
 
-export function DeleteAccountPanel({ user, handle }: DeleteAccountPanelProps) {
+export function DeleteAccountPanel({
+  user,
+  handle,
+  disabled = false,
+}: DeleteAccountPanelProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmHandle, setConfirmHandle] = useState("");
@@ -36,6 +41,10 @@ export function DeleteAccountPanel({ user, handle }: DeleteAccountPanelProps) {
       setError("Sign in before deleting an account.");
       return;
     }
+    if (disabled) {
+      setError("Wait for image uploads to finish before deleting your account.");
+      return;
+    }
     if (!exported) {
       setError("Export your profile first, then confirm deletion.");
       return;
@@ -49,7 +58,6 @@ export function DeleteAccountPanel({ user, handle }: DeleteAccountPanelProps) {
     setError(null);
     try {
       await deleteAccount(user, {
-        handle,
         password: needsPassword ? password : undefined,
       });
       router.replace("/sign-in?deleted=1");
@@ -74,6 +82,7 @@ export function DeleteAccountPanel({ user, handle }: DeleteAccountPanelProps) {
         <button
           type="button"
           className={styles.dangerButton}
+          disabled={disabled}
           onClick={() => {
             setOpen(true);
             setError(null);
@@ -148,7 +157,7 @@ export function DeleteAccountPanel({ user, handle }: DeleteAccountPanelProps) {
             </button>
             <button
               className={styles.dangerButton}
-              disabled={busy || !exported || !confirmationMatches}
+              disabled={disabled || busy || !exported || !confirmationMatches}
               type="submit"
             >
               <FiTrash2 aria-hidden="true" />

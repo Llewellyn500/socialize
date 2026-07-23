@@ -3,7 +3,7 @@ import { AnalyticsConsent } from "@/components/analytics/analytics-consent";
 import { SiteCursor } from "@/components/site-cursor";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.socialize.you";
 const analyticsMeasurementId =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
   process.env.NEXT_PUBLIC_MEASURING_ID;

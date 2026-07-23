@@ -101,6 +101,20 @@ async function accessToken(account: ServiceAccount) {
 }
 
 /**
+ * Returns a short-lived service-account access token for server-only Firebase
+ * maintenance tasks. Never call this from a client component or expose the
+ * returned value in an API response.
+ */
+export async function firebaseAdminAccessToken() {
+  const account = serviceAccount();
+  return account ? accessToken(account) : null;
+}
+
+export function firebaseAdminStorageBucket() {
+  return process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() || "";
+}
+
+/**
  * Sends a Firestore REST request with a server-only service account. This is
  * deliberately separate from browser Firebase credentials: use it only for
  * writes that must not be exposed through client security rules.

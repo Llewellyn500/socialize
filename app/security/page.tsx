@@ -14,6 +14,8 @@ import {
   ServiceShell,
   serviceContentStyles as styles,
 } from "@/components/service-content";
+import { contactConfig, mailto } from "@/lib/contact-config";
+import { legalConfig } from "@/lib/legal-config";
 
 export const metadata: Metadata = {
   title: "Security",
@@ -28,7 +30,7 @@ const pageNav = [
   { href: "#self-hosters", label: "Self-hosters" },
   { href: "#report", label: "Report a vulnerability" },
   { href: "#scope", label: "Research scope" },
-  { href: "#safe-harbor", label: "Safe harbor draft" },
+  { href: "#safe-harbor", label: "Safe harbor" },
   { href: "#incidents", label: "Incidents" },
 ];
 
@@ -42,7 +44,7 @@ export default function SecurityPage() {
         tone="ink"
         actions={
           <>
-            <PageAction href="mailto:security@socialize.you?subject=Private%20Socialize%20security%20report">
+            <PageAction href={mailto(contactConfig.security, "Private Socialize security report")}>
               Email a private report
             </PageAction>
             <PageAction href="/self-host#operate" secondary>
@@ -60,11 +62,12 @@ export default function SecurityPage() {
       />
 
       <PageLayout nav={pageNav}>
-        <Notice title="Pre-launch security statement" tone="warning">
+        <Notice title="Deployment-specific security statement" tone="warning">
           <p>
-            This page describes the intended launch posture and disclosure process.
-            Every claim must be verified against the deployed backend project,
-            hosting configuration, domain, logs, and incident process before launch.
+            This page describes the controls shipped in this repository. Operators
+            must verify every claim against the deployed backend project, hosting
+            configuration, domain, logs, and incident process after each material
+            production change.
           </p>
         </Notice>
 
@@ -194,7 +197,7 @@ export default function SecurityPage() {
           lead="Give us enough detail to reproduce the issue without increasing harm."
         >
           <p>
-            Email <a href="mailto:security@socialize.you?subject=Private%20Socialize%20security%20report">security@socialize.you</a>
+            Email <a href={mailto(contactConfig.security, "Private Socialize security report")}>{contactConfig.security}</a>
             with a clear subject. Do not open a public issue for an unpatched
             vulnerability. If ordinary email is unsuitable, ask for an encrypted
             reporting channel before sending sensitive evidence.
@@ -257,8 +260,8 @@ export default function SecurityPage() {
 
         <ContentSection
           id="safe-harbor"
-          title="Safe harbor draft"
-          lead="This language requires counsel review before it can function as a formal research promise."
+          title="Safe harbor"
+          lead="Good-faith research within these boundaries is welcomed and treated as authorized."
         >
           <p>
             When research follows this policy, is carried out in good faith, avoids
@@ -274,9 +277,10 @@ export default function SecurityPage() {
             confirmed vulnerability before public disclosure.
           </p>
           <p>
-            This draft cannot authorize activity against third parties, excuse
-            violations of law, or bind law-enforcement authorities. The legal
-            operator and final safe-harbor terms must be identified before launch.
+            This policy cannot authorize activity against third parties, excuse
+            violations of law, or bind law-enforcement authorities. It is offered
+            by {legalConfig.operatorName} for testing of the managed Socialize
+            service only.
           </p>
         </ContentSection>
 
@@ -300,12 +304,12 @@ export default function SecurityPage() {
           <ResourceLinks
             links={[
               {
-                href: "mailto:security@socialize.you?subject=Private%20Socialize%20security%20report",
+                href: mailto(contactConfig.security, "Private Socialize security report"),
                 title: "Private vulnerability report",
                 description: "Technical security weaknesses and exposed credentials.",
               },
               {
-                href: "mailto:safety@socialize.you?subject=Urgent%20Socialize%20abuse%20report",
+                href: mailto(contactConfig.safety, "Urgent Socialize abuse report"),
                 title: "Urgent hosted-profile abuse",
                 description: "Phishing, malware, threats, impersonation, or privacy harm.",
               },
@@ -325,7 +329,7 @@ export default function SecurityPage() {
         copy="Send it privately, minimize the data you touch, and give the project enough detail to reproduce it."
         links={[
           {
-            href: "mailto:security@socialize.you?subject=Private%20Socialize%20security%20report",
+            href: mailto(contactConfig.security, "Private Socialize security report"),
             label: "Email security",
           },
           { href: "/acceptable-use", label: "Read the abuse rules" },

@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   const { handle } = await params;
   const normalized = handle.toLowerCase();
   const profile = await loadPublicProfileServer(normalized);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://socialize.you";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.socialize.you";
 
   if (!profile) {
     return {
@@ -26,7 +26,6 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
     profile.role?.trim() ||
     `View @${profile.handle}'s developer profile on Socialize.`;
   const ogImage =
-    profile.ogImageUrl ||
     `${siteUrl.replace(/\/$/, "")}/${profile.handle}/opengraph-image`;
 
   return {

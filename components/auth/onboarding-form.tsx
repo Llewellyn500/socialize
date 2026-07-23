@@ -451,7 +451,7 @@ export function OnboardingForm() {
                 <p className={styles.hint}>
                   {avatarFileName
                     ? avatarFileName
-                    : "Optional. JPEG, PNG, WebP, or GIF up to 5 MB."}
+                    : "Optional. JPEG, PNG, WebP, or GIF smaller than 5 MB."}
                 </p>
               </div>
             </div>

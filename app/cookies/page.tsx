@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, type LegalSection } from "@/components/legal-page";
+import { contactConfig, mailto } from "@/lib/contact-config";
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
   description:
-    "Draft explanation of cookies and browser storage used by Socialize for authentication, security, preferences, and optional analytics.",
+    "Explanation of cookies and browser storage used by Socialize for authentication, security, preferences, and optional analytics.",
   alternates: { canonical: "/cookies" },
 };
 
@@ -24,8 +25,8 @@ const sections: LegalSection[] = [
         <p>
           Signed-in areas use browser storage required by account sign-in
           to maintain a session, complete OAuth flows, prevent abuse, and remember
-          limited product preferences. The production deployment must be scanned
-          before launch and after material provider changes to verify this policy.
+          limited product preferences. The production deployment is reviewed after
+          material provider changes to keep this policy accurate.
         </p>
       </>
     ),
@@ -162,7 +163,7 @@ const sections: LegalSection[] = [
         </p>
         <p>
           Questions or requests can be sent to
-          <a href="mailto:privacy@socialize.you"> privacy@socialize.you</a>.
+          <a href={mailto(contactConfig.privacy)}> {contactConfig.privacy}</a>.
         </p>
       </>
     ),
@@ -191,10 +192,10 @@ const sections: LegalSection[] = [
     content: (
       <>
         <p>
-          Before approval, the operator should run a production browser-storage and
-          network scan while signed out, signing in with each provider, editing a
-          profile, and signing out. Provider names, storage purposes, and lifetimes
-          should be added here if the scan finds persistent identifiers.
+          The operator reviews production browser storage and network requests while
+          signed out, signing in with each provider, editing a profile, and signing
+          out. This policy is updated if that review finds an additional persistent
+          identifier or purpose.
         </p>
         <p>
           Material changes will be posted with a new update date. Where law requires
@@ -209,9 +210,9 @@ const sections: LegalSection[] = [
 export default function CookiesPage() {
   return (
     <LegalPage
-      contactEmail="privacy@socialize.you"
+      contactEmail={contactConfig.privacy}
       sections={sections}
-      summary="This draft describes browser storage used for sign-in, security, preferences, and consented Google Analytics, with no advertising trackers at launch."
+      summary="This describes browser storage used for sign-in, security, preferences, and consented Google Analytics, with no advertising trackers at launch."
       title="Cookie Policy"
       related={[
         {

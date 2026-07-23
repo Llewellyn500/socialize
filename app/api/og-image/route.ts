@@ -7,7 +7,7 @@ import {
   requestRateLimitHeaders,
 } from "@/lib/request-safety";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const OG_RATE_LIMIT = {
   namespace: "og-image",

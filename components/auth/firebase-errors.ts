@@ -62,7 +62,10 @@ export function getFirebaseAuthError(error: unknown) {
           error.message.startsWith("Type @") ||
           error.message.startsWith("Export your profile") ||
           error.message.startsWith("Sign out") ||
-          error.message.startsWith("Sign in")
+          error.message.startsWith("Sign in") ||
+          error.message.startsWith("Confirm your identity") ||
+          error.message.startsWith("Account deletion") ||
+          error.message.startsWith("We could not delete")
         ) {
           return error.message;
         }

@@ -848,7 +848,7 @@ function MediaControls({
           <div className={styles.linkMediaActions}>
             <label className={styles.linkMediaUpload}>
               <input
-                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,.svg"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 disabled={!canUpload || uploading}
                 id={inputId}
                 type="file"
