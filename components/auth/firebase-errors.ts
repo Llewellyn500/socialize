@@ -34,6 +34,24 @@ export function getFirebaseAuthError(error: unknown) {
       return "That sign-in method is not enabled yet.";
     case "auth/unauthorized-domain":
       return "This domain is not authorized for sign-in yet.";
+    case "auth/app-not-authorized":
+      return "This preview URL is blocked by the Firebase browser API key. Add it to that key's Website restrictions, then redeploy.";
+    case "auth/invalid-api-key":
+      return "Firebase rejected this deployment's browser API key. Check the Vercel Preview value and redeploy.";
+    case "auth/invalid-app-id":
+      return "This deployment's Firebase app ID does not match its API key. Check the Vercel Firebase values and redeploy.";
+    case "auth/invalid-app-credential":
+    case "auth/missing-app-credential":
+    case "auth/captcha-check-failed":
+    case "auth/recaptcha-not-enabled":
+    case "auth/missing-recaptcha-token":
+    case "auth/invalid-recaptcha-token":
+      return "Firebase rejected the App Check or reCAPTCHA token. Add this exact preview hostname to the reCAPTCHA Enterprise key, then retry.";
+    case "appCheck/recaptcha-error":
+    case "appCheck/fetch-status-error":
+    case "appCheck/throttled":
+    case "appCheck/initial-throttle":
+      return "App Check could not verify this preview. Confirm the reCAPTCHA Enterprise key allows this exact hostname, then retry.";
     case "auth/too-many-requests":
       return "Too many attempts were made. Wait a few minutes before trying again.";
     case "auth/network-request-failed":
@@ -78,6 +96,9 @@ export function getFirebaseAuthError(error: unknown) {
         if (/Unsupported field value: undefined/i.test(error.message)) {
           return "The profile data was rejected. Check the fields and try again.";
         }
+      }
+      if (code.startsWith("auth/") || code.startsWith("appCheck/")) {
+        return `Authentication failed (${code}). Check the Firebase and App Check configuration for this deployment.`;
       }
       return "Something went wrong. Try again.";
   }
