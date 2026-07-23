@@ -22,20 +22,21 @@ export function DeleteAccountPanel({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmHandle, setConfirmHandle] = useState("");
+  const [password, setPassword] = useState("");
   const [exported, setExported] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const usesOauthReauth = useMemo(
-    () =>
-      Boolean(
-        user?.providerData.some(
-          (entry) =>
-            entry.providerId === "google.com" || entry.providerId === "github.com",
-        ),
-      ),
+  const providerIds = useMemo(
+    () => user?.providerData.map((entry) => entry.providerId) ?? [],
     [user],
   );
+  const usesOauthReauth = providerIds.some(
+    (id) => id === "google.com" || id === "github.com",
+  );
+  // ponytail: password only when there is no OAuth to re-confirm with
+  const needsPassword =
+    !usesOauthReauth && providerIds.includes("password");
 
   const confirmationMatches =
     confirmHandle.trim().replace(/^@/, "").toLowerCase() ===
@@ -59,11 +60,17 @@ export function DeleteAccountPanel({
       setError(`Type @${handle} exactly to confirm.`);
       return;
     }
+    if (needsPassword && !password) {
+      setError("Enter your password to confirm account deletion.");
+      return;
+    }
 
     setBusy(true);
     setError(null);
     try {
-      await deleteAccount(user);
+      await deleteAccount(user, {
+        password: needsPassword ? password : undefined,
+      });
       router.replace("/sign-in?deleted=1");
     } catch (deleteError) {
       setError(getFirebaseAuthError(deleteError));
@@ -123,6 +130,19 @@ export function DeleteAccountPanel({
             />
           </label>
 
+          {needsPassword ? (
+            <label className={styles.deleteAccountField}>
+              <span>Password</span>
+              <input
+                autoComplete="current-password"
+                disabled={busy}
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+          ) : null}
+
           {usesOauthReauth ? (
             <p className={styles.deleteAccountHint}>
               You will re-confirm with Google or GitHub before deletion finishes.
@@ -142,6 +162,7 @@ export function DeleteAccountPanel({
               onClick={() => {
                 setOpen(false);
                 setConfirmHandle("");
+                setPassword("");
                 setError(null);
               }}
             >
@@ -149,7 +170,13 @@ export function DeleteAccountPanel({
             </button>
             <button
               className={styles.dangerButton}
-              disabled={disabled || busy || !exported || !confirmationMatches}
+              disabled={
+                disabled ||
+                busy ||
+                !exported ||
+                !confirmationMatches ||
+                (needsPassword && !password)
+              }
               type="submit"
             >
               <FiTrash2 aria-hidden="true" />

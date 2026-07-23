@@ -16,18 +16,11 @@ function authTimeFromVerifiedToken(idToken: string) {
   try {
     const payload = idToken.split(".")[1];
     if (!payload) return null;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const bytes = Uint8Array.from(atob(padded), (character) =>
-      character.charCodeAt(0),
-    );
     const decoded = JSON.parse(
-      new TextDecoder().decode(bytes),
+      Buffer.from(payload, "base64url").toString("utf8"),
     ) as { auth_time?: unknown };
-    return typeof decoded.auth_time === "number" &&
-      Number.isInteger(decoded.auth_time)
-      ? decoded.auth_time
-      : null;
+    const authTime = Number(decoded.auth_time);
+    return Number.isFinite(authTime) ? Math.trunc(authTime) : null;
   } catch {
     return null;
   }
