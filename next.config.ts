@@ -15,6 +15,7 @@ const contentSecurityPolicy = [
   [
     "script-src 'self' 'unsafe-inline'",
     isDevelopment ? "'unsafe-eval'" : "",
+    "https://apis.google.com",
     "https://www.googletagmanager.com",
     "https://www.gstatic.com",
     "https://www.google.com",
