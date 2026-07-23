@@ -214,13 +214,14 @@ export function isValidGitHubUsername(value: string) {
   return GITHUB_USERNAME_PATTERN.test(value);
 }
 
-function githubHeaders() {
+function githubHeaders(authorize = true) {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "Socialize-GitHub-Activity/1.0",
     "X-GitHub-Api-Version": GITHUB_API_VERSION,
   };
-  const token = process.env.GITHUB_TOKEN?.trim();
+  // ponytail: bad/expired GITHUB_TOKEN returns 401; callers retry without auth
+  const token = authorize ? process.env.GITHUB_TOKEN?.trim() : "";
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
@@ -245,12 +246,11 @@ function retryAfterSeconds(response: Response) {
   return 60;
 }
 
-async function requestGitHub(path: string): Promise<GitHubRequestResult> {
-  let response: Response;
+async function fetchGitHubResponse(path: string, authorize: boolean) {
   try {
-    response = await fetch(`${GITHUB_API_BASE}${path}`, {
+    return await fetch(`${GITHUB_API_BASE}${path}`, {
       cache: "no-store",
-      headers: githubHeaders(),
+      headers: githubHeaders(authorize),
       signal: AbortSignal.timeout(8_000),
     });
   } catch {
@@ -258,6 +258,13 @@ async function requestGitHub(path: string): Promise<GitHubRequestResult> {
       502,
       "GitHub did not respond to the activity request.",
     );
+  }
+}
+
+async function requestGitHub(path: string): Promise<GitHubRequestResult> {
+  let response = await fetchGitHubResponse(path, true);
+  if (response.status === 401 && process.env.GITHUB_TOKEN?.trim()) {
+    response = await fetchGitHubResponse(path, false);
   }
 
   if (response.status === 403 || response.status === 429) {
