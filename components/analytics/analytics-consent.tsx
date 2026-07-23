@@ -34,18 +34,6 @@ export function AnalyticsConsent({ measurementId }: { measurementId?: string }) 
     setChoice(nextChoice);
   }
 
-  function reopenPreferences() {
-    Reflect.set(window, `ga-disable-${measurementId}`, true);
-    window.gtag?.("consent", "update", {
-      analytics_storage: "denied",
-      ad_storage: "denied",
-      ad_user_data: "denied",
-      ad_personalization: "denied",
-    });
-    window.localStorage.removeItem(STORAGE_KEY);
-    setChoice(null);
-  }
-
   return (
     <>
       {choice === "granted" ? <GoogleAnalytics measurementId={measurementId} /> : null}
@@ -69,15 +57,7 @@ export function AnalyticsConsent({ measurementId }: { measurementId?: string }) 
             <button className="is-primary" type="button" onClick={() => choose("granted")}>Allow analytics</button>
           </div>
         </aside>
-      ) : (
-        <button
-          className="analytics-preferences"
-          type="button"
-          onClick={reopenPreferences}
-        >
-          Privacy choices
-        </button>
-      )}
+      ) : null}
     </>
   );
 }
