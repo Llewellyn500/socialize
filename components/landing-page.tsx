@@ -148,10 +148,8 @@ export function LandingPage() {
             </h1>
             <div className="hero-bottom">
               <p>
-                Publish a sharp developer profile in minutes, or take the code and
-                run it yourself. Your projects, writing, and socials without the
-                creator-economy clutter. Free to use, with no trial, credit card,
-                or feature gate.
+                A free developer profile for your projects, writing, and links —
+                or self-host the code when you want full control.
               </p>
               <div className="hero-actions">
                 <Link className="button button--signal" href="/sign-up">
