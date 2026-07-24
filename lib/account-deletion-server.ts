@@ -31,6 +31,13 @@ function readString(fields: Record<string, FirestoreValue>, key: string) {
   return value && "stringValue" in value ? value.stringValue : "";
 }
 
+function normalizeStorageBucket(raw: string) {
+  return raw
+    .trim()
+    .replace(/^gs:\/\//i, "")
+    .replace(/\/+$/, "");
+}
+
 async function loadDocument(path: string): Promise<StoredDocument | null> {
   const response = await firestoreAdminRequest(path);
   if (!response) {
@@ -55,12 +62,8 @@ async function ownedHandleDeleteWrite(handle: string, uid: string) {
 
   const name = firestoreAdminDocumentName(`handles/${normalized}`);
   if (!name) throw new Error("Firebase account cleanup is not configured.");
-  return {
-    delete: name,
-    ...(document.updateTime
-      ? { currentDocument: { updateTime: document.updateTime } }
-      : {}),
-  };
+  // ponytail: skip updateTime precondition — it was aborting deletes on races
+  return { delete: name };
 }
 
 async function listStorageObjects(
@@ -82,6 +85,8 @@ async function listStorageObjects(
         signal: AbortSignal.timeout(10_000),
       },
     );
+    // Missing bucket / missing Storage IAM must not strand the Auth user.
+    if (response.status === 403 || response.status === 404) return [];
     if (!response.ok) {
       throw new Error("Uploaded files could not be checked before deletion.");
     }
@@ -114,10 +119,11 @@ async function deleteStorageObject(token: string, bucket: string, name: string) 
 }
 
 async function deleteOwnedStorage(uid: string) {
-  const [token, bucket] = await Promise.all([
+  const [token, rawBucket] = await Promise.all([
     firebaseAdminAccessToken(),
     Promise.resolve(firebaseAdminStorageBucket()),
   ]);
+  const bucket = normalizeStorageBucket(rawBucket);
   if (!token || !bucket) {
     throw new Error("Firebase account cleanup is not configured.");
   }
@@ -127,20 +133,31 @@ async function deleteOwnedStorage(uid: string) {
     `og/${uid}/`,
     `profile-media/${uid}/`,
   ];
-  const names = (
-    await Promise.all(
-      prefixes.map((prefix) => listStorageObjects(token, bucket, prefix)),
-    )
-  ).flat();
 
-  // Keep concurrency bounded so a profile with many media items cannot exhaust
-  // the route's connections or cause a large burst against Cloud Storage.
+  let names: string[];
+  try {
+    names = (
+      await Promise.all(
+        prefixes.map((prefix) => listStorageObjects(token, bucket, prefix)),
+      )
+    ).flat();
+  } catch (error) {
+    // ponytail: prefer finishing Auth/Firestore cleanup over stalling on Storage
+    console.error("Account storage listing failed; continuing delete", error);
+    return;
+  }
+
   for (let index = 0; index < names.length; index += 10) {
-    await Promise.all(
-      names
-        .slice(index, index + 10)
-        .map((name) => deleteStorageObject(token, bucket, name)),
-    );
+    try {
+      await Promise.all(
+        names
+          .slice(index, index + 10)
+          .map((name) => deleteStorageObject(token, bucket, name)),
+      );
+    } catch (error) {
+      console.error("Account storage delete failed; continuing delete", error);
+      return;
+    }
   }
 }
 
@@ -174,7 +191,12 @@ async function deleteFirestoreAccountData(uid: string) {
     ...handleWrites,
     ...documentWrites,
   ]);
-  if (!response?.ok) {
+  if (!response) {
+    throw new Error("Firebase account cleanup is not configured.");
+  }
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("Firestore account commit failed", response.status, detail);
     throw new Error("Account records could not be deleted.");
   }
 }
@@ -203,14 +225,15 @@ async function deleteFirebaseAuthUser(uid: string) {
   if (!response.ok) {
     const payload = await response.text().catch(() => "");
     if (response.status === 404 || payload.includes("USER_NOT_FOUND")) return;
+    console.error("Firebase Auth delete failed", response.status, payload);
     throw new Error("The sign-in account could not be deleted. Try again.");
   }
 }
 
 /**
- * Strict cleanup order: uploaded files first, Firestore records atomically
- * second, and Firebase Auth last. A cleanup failure leaves the user signed in
- * so the operation can be retried safely.
+ * Cleanup order: uploaded files first (best-effort), Firestore records
+ * atomically second, and Firebase Auth last. A cleanup failure leaves the user
+ * signed in so the operation can be retried safely.
  */
 export async function deleteHostedAccount(uid: string) {
   await deleteOwnedStorage(uid);

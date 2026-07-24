@@ -37,12 +37,13 @@ export async function DELETE(request: Request) {
     );
   } catch (error) {
     console.error("Hosted account deletion failed", error);
-    const configurationFailure =
-      error instanceof Error && error.message.includes("not configured");
+    const message = error instanceof Error ? error.message : "";
+    const configurationFailure = message.includes("not configured");
     return response(
       configurationFailure
         ? "Account deletion is temporarily unavailable. Contact support if this continues."
-        : "We could not delete every account record. Your sign-in remains active so you can retry.",
+        : message ||
+            "We could not delete every account record. Your sign-in remains active so you can retry.",
       configurationFailure ? 503 : 502,
     );
   }
