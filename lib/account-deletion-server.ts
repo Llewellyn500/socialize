@@ -201,42 +201,12 @@ async function deleteFirestoreAccountData(uid: string) {
   }
 }
 
-async function deleteFirebaseAuthUser(uid: string) {
-  const [token, projectId] = await Promise.all([
-    firebaseAdminAccessToken(),
-    Promise.resolve(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() || ""),
-  ]);
-  if (!token || !projectId) {
-    throw new Error("Firebase account cleanup is not configured.");
-  }
-  const response = await fetch(
-    "https://identitytoolkit.googleapis.com/v1/accounts:delete",
-    {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ localId: uid, targetProjectId: projectId }),
-      signal: AbortSignal.timeout(10_000),
-    },
-  );
-  if (!response.ok) {
-    const payload = await response.text().catch(() => "");
-    if (response.status === 404 || payload.includes("USER_NOT_FOUND")) return;
-    console.error("Firebase Auth delete failed", response.status, payload);
-    throw new Error("The sign-in account could not be deleted. Try again.");
-  }
-}
-
 /**
- * Cleanup order: uploaded files first (best-effort), Firestore records
- * atomically second, and Firebase Auth last. A cleanup failure leaves the user
- * signed in so the operation can be retried safely.
+ * Cleanup order: uploaded files first (best-effort), then Firestore records.
+ * Firebase Auth is removed client-side with deleteUser() after reauth — the
+ * service account often lacks firebaseauth.users.delete (INSUFFICIENT_PERMISSION).
  */
 export async function deleteHostedAccount(uid: string) {
   await deleteOwnedStorage(uid);
   await deleteFirestoreAccountData(uid);
-  await deleteFirebaseAuthUser(uid);
 }

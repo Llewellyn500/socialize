@@ -1,4 +1,5 @@
 import {
+  deleteUser,
   EmailAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
@@ -93,7 +94,6 @@ export async function deleteAccount(
     // ignore
   }
 
-  // The trusted route removed the Auth user. Clear the now-invalid local
-  // session without making account cleanup depend on another network call.
-  await auth.signOut().catch(() => undefined);
+  // ponytail: Auth delete via user credential — admin token lacks users.delete
+  await deleteUser(reauthenticated);
 }
