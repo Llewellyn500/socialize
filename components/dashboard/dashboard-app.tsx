@@ -1169,7 +1169,7 @@ export function DashboardApp() {
                     <div className={styles.filePickerCopy}>
                       <label className={styles.fileButton}>
                         <input
-                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
                           disabled={!user || uploadingAvatar}
                           type="file"
                           onChange={(event) => {

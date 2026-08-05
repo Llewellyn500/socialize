@@ -13,6 +13,7 @@ import {
   PROFILE_MEDIA_MAX_DELETE_ITEMS,
   PROFILE_MEDIA_MAX_FILE_BYTES,
   ProfileMediaServerError,
+  profileMediaContentTypeFromFile,
   storeProfileMedia,
   type ProfileMediaDeleteItem,
 } from "@/lib/profile-media-server";
@@ -194,10 +195,10 @@ export async function POST(request: Request) {
       !(file instanceof File) ||
       file.size < 1 ||
       file.size >= PROFILE_MEDIA_MAX_FILE_BYTES ||
-      !isProfileMediaContentType(file.type)
+      !isProfileMediaContentType(profileMediaContentTypeFromFile(file))
     ) {
       return errorResponse(
-        "Use a JPEG, PNG, WebP, or GIF image smaller than 3 MB.",
+        "Use a JPEG, PNG, WebP, GIF, or HEIC image smaller than 3 MB.",
         400,
         headers,
       );

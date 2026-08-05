@@ -40,6 +40,7 @@ import styles from "./auth.module.css";
 
 type AuthMode = "sign-in" | "sign-up";
 type ProviderName = "google" | "github";
+type PendingSignUpAction = ProviderName | "email";
 
 const TERMS_VERSION =
   process.env.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE?.trim() || "2026-07-23";
@@ -113,6 +114,9 @@ export function AuthForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsDraft, setTermsDraft] = useState(false);
+  const [pendingTermsAction, setPendingTermsAction] =
+    useState<PendingSignUpAction | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +128,7 @@ export function AuthForm({
   const isBusy = pendingAction !== null;
   const isReady = isFirebaseConfigured && Boolean(auth);
 
-  function validateSignUp() {
+  function validateSignUpFields() {
     if (displayName.trim().length < 2) {
       return "Enter the name you want people to see on your profile.";
     }
@@ -134,33 +138,71 @@ export function AuthForm({
     if (password !== confirmPassword) {
       return "The passwords do not match.";
     }
-    if (!acceptedTerms) {
-      return "Accept the Terms and Privacy Policy before creating an account.";
-    }
     return null;
+  }
+
+  function openTermsPrompt(action: PendingSignUpAction) {
+    setError(null);
+    setTermsDraft(acceptedTerms);
+    setPendingTermsAction(action);
+  }
+
+  function closeTermsPrompt() {
+    if (isBusy) return;
+    setPendingTermsAction(null);
+  }
+
+  async function confirmTermsAndContinue() {
+    if (!termsDraft) {
+      setError("Accept the Terms and Privacy Policy before creating an account.");
+      return;
+    }
+    const action = pendingTermsAction;
+    setAcceptedTerms(true);
+    setPendingTermsAction(null);
+    if (!action) return;
+    if (action === "email") await submitEmailAuth(true);
+    else await handleProvider(action, true);
   }
 
   async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
+    if (!auth) {
+      setError("Accounts are not configured for this deployment.");
+      return;
+    }
+
+    if (isSignUp) {
+      const validationError = validateSignUpFields();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+      if (!acceptedTerms) {
+        openTermsPrompt("email");
+        return;
+      }
+    }
+
+    await submitEmailAuth(acceptedTerms);
+  }
+
+  async function submitEmailAuth(termsAcceptedForAttempt: boolean) {
     const firebaseAuth = auth;
     if (!firebaseAuth) {
       setError("Accounts are not configured for this deployment.");
       return;
     }
 
-    if (isSignUp) {
-      const validationError = validateSignUp();
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
-    }
-
     setPendingAction("email");
     try {
       if (isSignUp) {
+        if (!termsAcceptedForAttempt) {
+          setError("Accept the Terms and Privacy Policy before creating an account.");
+          return;
+        }
         const credential = await createUserWithEmailAndPassword(
           firebaseAuth,
           email.trim(),
@@ -295,7 +337,10 @@ export function AuthForm({
     await finishLinkedSignIn(result.user, termsAcceptedForAttempt);
   }
 
-  async function handleProvider(providerName: ProviderName) {
+  async function handleProvider(
+    providerName: ProviderName,
+    termsAcceptedForAttempt = acceptedTerms,
+  ) {
     setError(null);
 
     const firebaseAuth = auth;
@@ -303,8 +348,8 @@ export function AuthForm({
       setError("Accounts are not configured for this deployment.");
       return;
     }
-    if (isSignUp && !acceptedTerms) {
-      setError("Accept the Terms and Privacy Policy before creating an account.");
+    if (isSignUp && !termsAcceptedForAttempt) {
+      openTermsPrompt(providerName);
       return;
     }
 
@@ -324,7 +369,7 @@ export function AuthForm({
 
       // ponytail: popup avoids third-party cookie break on redirect across authDomain
       const result = await signInWithPopup(firebaseAuth, provider);
-      await completeProviderSignIn(result, providerName, acceptedTerms);
+      await completeProviderSignIn(result, providerName, termsAcceptedForAttempt);
     } catch (authError) {
       await showProviderError(authError);
     } finally {
@@ -392,7 +437,7 @@ export function AuthForm({
           className={styles.providerButton}
           type="button"
           disabled={!isReady || isBusy}
-          onClick={() => handleProvider("google")}
+          onClick={() => void handleProvider("google")}
         >
           {pendingAction === "google" ? (
             <span className={styles.spinner} aria-hidden="true" />
@@ -405,7 +450,7 @@ export function AuthForm({
           className={styles.providerButton}
           type="button"
           disabled={!isReady || isBusy}
-          onClick={() => handleProvider("github")}
+          onClick={() => void handleProvider("github")}
         >
           {pendingAction === "github" ? (
             <span className={styles.spinner} aria-hidden="true" />
@@ -518,21 +563,6 @@ export function AuthForm({
           </div>
         ) : null}
 
-        {isSignUp ? (
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              disabled={isBusy}
-              onChange={(event) => setAcceptedTerms(event.target.checked)}
-            />
-            <span>
-              I agree to the <Link href="/terms">Terms</Link> and acknowledge the{" "}
-              <Link href="/privacy">Privacy Policy</Link>.
-            </span>
-          </label>
-        ) : null}
-
         <button
           className={styles.primaryButton}
           type="submit"
@@ -559,6 +589,68 @@ export function AuthForm({
       </p>
         </>
       )}
+
+      {pendingTermsAction ? (
+        <div className={styles.termsDialog} role="presentation">
+          <button
+            type="button"
+            className={styles.termsBackdrop}
+            aria-label="Close terms prompt"
+            disabled={isBusy}
+            onClick={closeTermsPrompt}
+          />
+          <div
+            className={styles.termsPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terms-prompt-title"
+          >
+            <h3 id="terms-prompt-title">Accept the terms to continue</h3>
+            <p>
+              Before creating your account
+              {pendingTermsAction === "google"
+                ? " with Google"
+                : pendingTermsAction === "github"
+                  ? " with GitHub"
+                  : " with email"}
+              , confirm you agree to the service rules.
+            </p>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={termsDraft}
+                disabled={isBusy}
+                onChange={(event) => setTermsDraft(event.target.checked)}
+              />
+              <span>
+                I agree to the <Link href="/terms">Terms</Link> and acknowledge
+                the <Link href="/privacy">Privacy Policy</Link>.
+              </span>
+            </label>
+            <div className={styles.termsActions}>
+              <button
+                type="button"
+                className={styles.textButton}
+                disabled={isBusy}
+                onClick={closeTermsPrompt}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                disabled={isBusy || !termsDraft}
+                onClick={() => void confirmTermsAndContinue()}
+              >
+                {isBusy ? (
+                  <span className={styles.spinner} aria-hidden="true" />
+                ) : null}
+                Accept and continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -18,6 +18,24 @@ const PROFILE_MEDIA_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
+]);
+const PROFILE_MEDIA_STORED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+const HEIC_BRANDS = new Set([
+  "heic",
+  "heix",
+  "hevc",
+  "hevx",
+  "heim",
+  "heis",
+  "hevm",
+  "hevs",
 ]);
 const PROFILE_MEDIA_ITEM_ID = /^[A-Za-z0-9_-]{1,80}$/;
 const PROFILE_MEDIA_UID = /^[A-Za-z0-9:_-]{1,128}$/;
@@ -90,11 +108,20 @@ export function isProfileMediaDestination(
 
 export function normalizedProfileMediaContentType(value: string) {
   const normalized = value.trim().toLowerCase();
-  return normalized === "image/jpg" ? "image/jpeg" : normalized;
+  if (normalized === "image/jpg") return "image/jpeg";
+  if (normalized === "image/heif") return "image/heic";
+  return normalized;
 }
 
 export function isProfileMediaContentType(value: string) {
   return PROFILE_MEDIA_TYPES.has(value.trim().toLowerCase());
+}
+
+export function profileMediaContentTypeFromFile(file: File) {
+  const fromType = normalizedProfileMediaContentType(file.type);
+  if (isProfileMediaContentType(fromType)) return fromType;
+  if (/\.hei[cf]$/i.test(file.name)) return "image/heic";
+  return fromType;
 }
 
 function assertUid(uid: string) {
@@ -486,7 +513,7 @@ function occupiedSlots(uid: string, objects: PoolObject[]) {
 
 async function detectedImageContentType(file: File) {
   const bytes = new Uint8Array(
-    await file.slice(0, Math.min(file.size, 16)).arrayBuffer(),
+    await file.slice(0, Math.min(file.size, 64)).arrayBuffer(),
   );
   if (
     bytes.length >= 3 &&
@@ -533,7 +560,52 @@ async function detectedImageContentType(file: File) {
   ) {
     return "image/webp";
   }
+  if (
+    bytes.length >= 12 &&
+    bytes[4] === 0x66 &&
+    bytes[5] === 0x74 &&
+    bytes[6] === 0x79 &&
+    bytes[7] === 0x70
+  ) {
+    const brands = String.fromCharCode(...bytes.slice(8, bytes.length));
+    if ([...HEIC_BRANDS].some((brand) => brands.toLowerCase().includes(brand))) {
+      return "image/heic";
+    }
+  }
   return null;
+}
+
+async function normalizeProfileMediaFile(file: File) {
+  const claimed = profileMediaContentTypeFromFile(file);
+  const detected = await detectedImageContentType(file);
+  if (!detected) {
+    throw new TypeError("The uploaded bytes do not match the image type.");
+  }
+  if (detected === "image/heic") {
+    // ponytail: sharp prebuilds skip HEVC; heic-convert covers Apple camera rolls
+    const convert = (await import("heic-convert")).default;
+    const output = await convert({
+      buffer: Buffer.from(await file.arrayBuffer()),
+      format: "JPEG",
+      quality: 0.9,
+    });
+    const bytes = Buffer.from(output);
+    if (bytes.byteLength < 1 || bytes.byteLength >= PROFILE_MEDIA_MAX_FILE_BYTES) {
+      throw new TypeError("Invalid profile media file.");
+    }
+    const name = file.name.replace(/\.hei[cf]$/i, ".jpg") || "avatar.jpg";
+    return {
+      file: new File([bytes], name, { type: "image/jpeg" }),
+      contentType: "image/jpeg" as const,
+    };
+  }
+  if (detected !== claimed) {
+    throw new TypeError("The uploaded bytes do not match the image type.");
+  }
+  if (!PROFILE_MEDIA_STORED_TYPES.has(claimed)) {
+    throw new TypeError("Invalid profile media file.");
+  }
+  return { file, contentType: claimed };
 }
 
 async function createPoolObject(
@@ -681,17 +753,16 @@ export async function storeProfileMedia(
   if (!isProfileMediaDestination(scope, itemId)) {
     throw new TypeError("Invalid profile media destination.");
   }
-  const contentType = normalizedProfileMediaContentType(file.type);
-  if (
-    !isProfileMediaContentType(file.type) ||
-    file.size < 1 ||
-    file.size >= PROFILE_MEDIA_MAX_FILE_BYTES
-  ) {
+  if (file.size < 1 || file.size >= PROFILE_MEDIA_MAX_FILE_BYTES) {
     throw new TypeError("Invalid profile media file.");
   }
-  if ((await detectedImageContentType(file)) !== contentType) {
-    throw new TypeError("The uploaded bytes do not match the image type.");
+  const claimed = profileMediaContentTypeFromFile(file);
+  if (!isProfileMediaContentType(claimed)) {
+    throw new TypeError("Invalid profile media file.");
   }
+  const normalized = await normalizeProfileMediaFile(file);
+  file = normalized.file;
+  const contentType = normalized.contentType;
 
   const { token, bucket } = await storageCredentials();
   let inventory = await listPoolInventory(token, bucket, uid);

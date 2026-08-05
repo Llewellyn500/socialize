@@ -2,12 +2,13 @@ import { deleteObject, ref } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { uploadProfileMedia } from "@/lib/profile-media-upload";
 
-const ACCEPTED_TYPES = /^image\/(jpeg|jpg|png|webp|gif)$/i;
+const ACCEPTED_TYPES = /^image\/(jpeg|jpg|png|webp|gif|heic|heif)$/i;
 const MAX_BYTES = 3 * 1024 * 1024;
 
 export function validateAvatarFile(file: File) {
-  if (!ACCEPTED_TYPES.test(file.type)) {
-    throw new Error("Use a JPEG, PNG, WebP, or GIF image.");
+  const type = file.type || (/\.hei[cf]$/i.test(file.name) ? "image/heic" : "");
+  if (!ACCEPTED_TYPES.test(type)) {
+    throw new Error("Use a JPEG, PNG, WebP, GIF, or HEIC image.");
   }
   if (file.size >= MAX_BYTES) {
     throw new Error("Avatar images must be smaller than 3 MB.");

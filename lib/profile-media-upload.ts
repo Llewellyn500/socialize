@@ -1,6 +1,6 @@
 import { auth, getLimitedUseAppCheckToken } from "@/lib/firebase";
 
-const ACCEPTED_TYPES = /^image\/(jpeg|jpg|png|webp|gif)$/i;
+const ACCEPTED_TYPES = /^image\/(jpeg|jpg|png|webp|gif|heic|heif)$/i;
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_DELETE_BATCH = 64;
 
@@ -13,14 +13,16 @@ export type ProfileMediaDeletion = {
 
 function resolveMediaContentType(file: File) {
   if (file.type === "image/jpg") return "image/jpeg";
+  if (file.type === "image/heif") return "image/heic";
   if (file.type && ACCEPTED_TYPES.test(file.type)) return file.type;
+  if (/\.hei[cf]$/i.test(file.name)) return "image/heic";
   return file.type;
 }
 
 export function validateProfileMediaFile(file: File) {
   const contentType = resolveMediaContentType(file);
   if (!ACCEPTED_TYPES.test(contentType)) {
-    throw new Error("Use a JPEG, PNG, WebP, or GIF image.");
+    throw new Error("Use a JPEG, PNG, WebP, GIF, or HEIC image.");
   }
   if (file.size >= MAX_BYTES) {
     throw new Error("Link and heading images must be smaller than 3 MB.");

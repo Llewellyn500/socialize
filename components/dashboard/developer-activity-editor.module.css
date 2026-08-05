@@ -18,6 +18,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .integrationHeading h2,
@@ -25,6 +26,8 @@
 .featureHeading h2,
 .featureHeading p {
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .integrationHeading h2,
@@ -65,6 +68,7 @@
 }
 
 .masterToggle {
+  flex: 0 0 auto;
   margin-left: auto;
   padding: 0.55rem 0.7rem;
   border: 1px solid rgba(25, 26, 24, 0.2);

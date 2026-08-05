@@ -462,6 +462,66 @@
   text-underline-offset: 0.2em;
 }
 
+.termsDialog {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.termsBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(17, 16, 20, 0.55);
+  cursor: pointer;
+}
+
+.termsPanel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 26rem);
+  padding: 1.35rem 1.25rem 1.25rem;
+  border: 1px solid rgba(24, 25, 23, 0.18);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.termsPanel h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.termsPanel > p {
+  margin: 0;
+  color: rgba(24, 25, 23, 0.68);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.termsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
+
+.termsActions .primaryButton {
+  min-height: 2.6rem;
+  width: auto;
+  padding-inline: 1rem;
+}
+
 .notice {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -863,6 +923,16 @@
 :global(html:not([data-app-theme="light"])) .characterCount,
 :global(html:not([data-app-theme="light"])) .fieldHint,
 :global(html:not([data-app-theme="light"])) .checkboxLabel {
+  color: rgba(247, 243, 251, 0.68);
+}
+
+:global(html:not([data-app-theme="light"])) .termsPanel {
+  border-color: rgba(247, 243, 251, 0.18);
+  background: #17151c;
+  color: #f7f3fb;
+}
+
+:global(html:not([data-app-theme="light"])) .termsPanel > p {
   color: rgba(247, 243, 251, 0.68);
 }
 

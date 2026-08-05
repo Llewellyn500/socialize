@@ -15,6 +15,7 @@ const links = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const close = () => setOpen(false);
 
   return (
     <header className="site-header">
@@ -50,19 +51,27 @@ export function SiteHeader() {
           {open ? <FiX /> : <FiMenu />}
         </button>
       </div>
+      {open ? (
+        <button
+          type="button"
+          className="mobile-nav-backdrop"
+          aria-label="Close navigation"
+          onClick={close}
+        />
+      ) : null}
       <div
         id="mobile-navigation"
         className={`mobile-nav ${open ? "is-open" : ""}`}
       >
         {links.map((link) => (
-          <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
+          <Link key={link.href} href={link.href} onClick={close}>
             {link.label}
           </Link>
         ))}
-        <Link href="/sign-in" onClick={() => setOpen(false)}>
+        <Link href="/sign-in" onClick={close}>
           Sign in
         </Link>
-        <Link href="/sign-up" onClick={() => setOpen(false)}>
+        <Link href="/sign-up" onClick={close}>
           Create your free page
         </Link>
       </div>

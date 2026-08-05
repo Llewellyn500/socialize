@@ -1,6 +1,6 @@
 .shell {
   min-height: 100dvh;
-  overflow: clip;
+  max-width: 100%;
   background: var(--cream);
   color: var(--ink);
 }
@@ -29,7 +29,7 @@
 .hero {
   display: grid;
   min-height: 560px;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.72fr);
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.72fr);
   border-block: 1px solid var(--line);
   background: var(--paper);
 }
@@ -65,22 +65,23 @@
 }
 
 .heroCopy h1 {
-  max-width: 11ch;
+  max-width: min(11ch, 100%);
   margin: clamp(4rem, 10vw, 8rem) 0 1.5rem;
   font-size: clamp(3.6rem, 7vw, 5.9rem);
   font-weight: 550;
   letter-spacing: -0.04em;
   line-height: 0.92;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
 .heroCopy > p {
-  max-width: 65ch;
+  max-width: min(65ch, 100%);
   margin: 0;
   color: rgba(24, 25, 23, 0.72);
   font-size: clamp(1rem, 1.4vw, 1.18rem);
   line-height: 1.7;
+  overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 
@@ -190,6 +191,7 @@
 .pageLayout {
   display: grid;
   width: min(100%, var(--container));
+  max-width: 100%;
   grid-template-columns: 240px minmax(0, 1fr);
   gap: clamp(3rem, 7vw, 8rem);
   margin: 0 auto;
@@ -200,6 +202,8 @@
   align-self: start;
   position: sticky;
   top: 2rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .pageNav > p {
@@ -235,10 +239,10 @@
 
 .contentSection {
   display: grid;
-  grid-template-columns: minmax(190px, 0.62fr) minmax(0, 1.38fr);
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
   gap: clamp(2rem, 5vw, 5rem);
   padding: clamp(3rem, 6vw, 5.5rem) 0;
-  scroll-margin-top: 1.5rem;
+  scroll-margin-top: 5.5rem;
   border-top: 1px solid var(--line);
 }
 
@@ -253,6 +257,7 @@
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.02;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
@@ -262,12 +267,14 @@
   color: rgba(24, 25, 23, 0.61);
   font-size: 0.9rem;
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 
 .sectionContent {
   min-width: 0;
   max-width: 76ch;
   color: rgba(24, 25, 23, 0.76);
+  overflow-wrap: anywhere;
 }
 
 .sectionContent > :first-child {
@@ -281,6 +288,7 @@
 .sectionContent p,
 .sectionContent li {
   line-height: 1.75;
+  overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 
@@ -514,6 +522,7 @@
 
 .resourceLinks > a span {
   display: grid;
+  min-width: 0;
   gap: 0.28rem;
 }
 
@@ -615,20 +624,22 @@
 }
 
 .actionBand h2 {
-  max-width: 15ch;
+  max-width: min(15ch, 100%);
   margin: 0;
   font-size: clamp(2.4rem, 5vw, 5rem);
   font-weight: 550;
   letter-spacing: -0.04em;
   line-height: 0.96;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
 .actionBand p {
-  max-width: 58ch;
+  max-width: min(58ch, 100%);
   margin: 1.2rem 0 0;
   color: rgba(238, 234, 221, 0.64);
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 
 .actionBandLinks {
@@ -649,7 +660,14 @@
 
 @media (max-width: 1050px) {
   .hero {
-    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.7fr);
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .heroAside {
+    min-height: 290px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .contentSection {
@@ -662,19 +680,8 @@
 }
 
 @media (max-width: 820px) {
-  .hero {
-    min-height: 0;
-    grid-template-columns: 1fr;
-  }
-
   .heroCopy {
     min-height: 520px;
-  }
-
-  .heroAside {
-    min-height: 290px;
-    border-top: 1px solid var(--line);
-    border-left: 0;
   }
 
   .pageLayout {
@@ -687,7 +694,9 @@
 
   .pageNav nav {
     display: flex;
+    max-width: 100%;
     overflow-x: auto;
+    overscroll-behavior-inline: contain;
     border-bottom: 1px solid var(--line);
   }
 
