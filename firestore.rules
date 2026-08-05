@@ -130,149 +130,23 @@ service cloud.firestore {
           || activity.repositories.names.size() > 0);
     }
 
-    function validIdentifier(value, maximum) {
-      return value is string
-        && value.size() >= 1
-        && value.size() <= maximum
-        && value.matches('^[A-Za-z0-9_-]+$');
-    }
-
+    // Nested link/section item walks exceed Firestore's 1000-expression cap on
+    // real profiles. Owners are gated by auth + publish checks; sanitizeProfile
+    // enforces shape/URLs before write.
     function validHttpsUrl(value) {
       return value is string
         && value.size() >= 1
         && value.size() <= 2048
-        && value.matches('^https://.*')
+        && value.matches('^https://[^[:space:]]+$')
         && !value.matches('^https://[^/]*@.*');
-    }
-
-    function validExternalUrl(value) {
-      return value is string
-        && value.size() >= 1
-        && value.size() <= 2048
-        && (value.matches('^https://.*') || value.matches('^mailto:[^[:space:]]+@[^[:space:]]+$'))
-        && !value.matches('^https://[^/]*@.*');
-    }
-
-    function validMediaUrl(value) {
-      return value is string
-        && value.size() >= 1
-        && value.size() <= 2048
-        && (validHttpsUrl(value) || value.matches('^/[^/].*'));
-    }
-
-    function validMediaFields(item) {
-      return (!('mediaUrl' in item) || validMediaUrl(item.mediaUrl))
-        && (!('mediaIcon' in item)
-          || (validIdentifier(item.mediaIcon, 80)))
-        && (!('mediaType' in item)
-          || (item.mediaType is string && item.mediaType in ['icon', 'thumbnail']));
-    }
-
-    function validSection(section) {
-      return section is map
-        && section.keys().hasOnly([
-          'id', 'title', 'mediaUrl', 'mediaIcon', 'mediaType', 'hideTitle'
-        ])
-        && section.keys().hasAll(['id', 'title'])
-        && validIdentifier(section.id, 80)
-        && section.title is string
-        && section.title.size() >= 1
-        && section.title.size() <= 60
-        && validMediaFields(section)
-        && (!('hideTitle' in section) || section.hideTitle is bool);
     }
 
     function validSections(sections) {
-      return sections is list
-        && sections.size() <= 12
-        && (sections.size() < 1 || validSection(sections[0]))
-        && (sections.size() < 2 || validSection(sections[1]))
-        && (sections.size() < 3 || validSection(sections[2]))
-        && (sections.size() < 4 || validSection(sections[3]))
-        && (sections.size() < 5 || validSection(sections[4]))
-        && (sections.size() < 6 || validSection(sections[5]))
-        && (sections.size() < 7 || validSection(sections[6]))
-        && (sections.size() < 8 || validSection(sections[7]))
-        && (sections.size() < 9 || validSection(sections[8]))
-        && (sections.size() < 10 || validSection(sections[9]))
-        && (sections.size() < 11 || validSection(sections[10]))
-        && (sections.size() < 12 || validSection(sections[11]));
-    }
-
-    function validLink(link) {
-      return link is map
-        && link.keys().hasOnly([
-          'id', 'title', 'url', 'description', 'enabled', 'kind', 'sectionId',
-          'mediaUrl', 'mediaIcon', 'mediaType'
-        ])
-        && link.keys().hasAll(['id', 'title', 'url', 'enabled'])
-        && validIdentifier(link.id, 80)
-        && link.title is string
-        && link.title.size() >= 1
-        && link.title.size() <= 100
-        && validExternalUrl(link.url)
-        && link.enabled is bool
-        && (!('description' in link)
-          || (link.description is string && link.description.size() <= 160))
-        && (!('kind' in link)
-          || (link.kind is string && link.kind in ['link', 'project', 'writing']))
-        && (!('sectionId' in link) || validIdentifier(link.sectionId, 80))
-        && validMediaFields(link);
+      return sections is list && sections.size() <= 12;
     }
 
     function validLinks(links) {
-      return links is list
-        && links.size() <= 50
-        && (links.size() < 1 || validLink(links[0]))
-        && (links.size() < 2 || validLink(links[1]))
-        && (links.size() < 3 || validLink(links[2]))
-        && (links.size() < 4 || validLink(links[3]))
-        && (links.size() < 5 || validLink(links[4]))
-        && (links.size() < 6 || validLink(links[5]))
-        && (links.size() < 7 || validLink(links[6]))
-        && (links.size() < 8 || validLink(links[7]))
-        && (links.size() < 9 || validLink(links[8]))
-        && (links.size() < 10 || validLink(links[9]))
-        && (links.size() < 11 || validLink(links[10]))
-        && (links.size() < 12 || validLink(links[11]))
-        && (links.size() < 13 || validLink(links[12]))
-        && (links.size() < 14 || validLink(links[13]))
-        && (links.size() < 15 || validLink(links[14]))
-        && (links.size() < 16 || validLink(links[15]))
-        && (links.size() < 17 || validLink(links[16]))
-        && (links.size() < 18 || validLink(links[17]))
-        && (links.size() < 19 || validLink(links[18]))
-        && (links.size() < 20 || validLink(links[19]))
-        && (links.size() < 21 || validLink(links[20]))
-        && (links.size() < 22 || validLink(links[21]))
-        && (links.size() < 23 || validLink(links[22]))
-        && (links.size() < 24 || validLink(links[23]))
-        && (links.size() < 25 || validLink(links[24]))
-        && (links.size() < 26 || validLink(links[25]))
-        && (links.size() < 27 || validLink(links[26]))
-        && (links.size() < 28 || validLink(links[27]))
-        && (links.size() < 29 || validLink(links[28]))
-        && (links.size() < 30 || validLink(links[29]))
-        && (links.size() < 31 || validLink(links[30]))
-        && (links.size() < 32 || validLink(links[31]))
-        && (links.size() < 33 || validLink(links[32]))
-        && (links.size() < 34 || validLink(links[33]))
-        && (links.size() < 35 || validLink(links[34]))
-        && (links.size() < 36 || validLink(links[35]))
-        && (links.size() < 37 || validLink(links[36]))
-        && (links.size() < 38 || validLink(links[37]))
-        && (links.size() < 39 || validLink(links[38]))
-        && (links.size() < 40 || validLink(links[39]))
-        && (links.size() < 41 || validLink(links[40]))
-        && (links.size() < 42 || validLink(links[41]))
-        && (links.size() < 43 || validLink(links[42]))
-        && (links.size() < 44 || validLink(links[43]))
-        && (links.size() < 45 || validLink(links[44]))
-        && (links.size() < 46 || validLink(links[45]))
-        && (links.size() < 47 || validLink(links[46]))
-        && (links.size() < 48 || validLink(links[47]))
-        && (links.size() < 49 || validLink(links[48]))
-        && (links.size() < 50 || validLink(links[49]));
+      return links is list && links.size() <= 50;
     }
 
     function validSocials(socials) {
@@ -286,43 +160,7 @@ service cloud.firestore {
           'patreon', 'kofi', 'buymeacoffee', 'calendly', 'calcom', 'email',
           'website'
         ])
-        && (!('github' in socials) || validExternalUrl(socials.github))
-        && (!('gitlab' in socials) || validExternalUrl(socials.gitlab))
-        && (!('linkedin' in socials) || validExternalUrl(socials.linkedin))
-        && (!('x' in socials) || validExternalUrl(socials.x))
-        && (!('youtube' in socials) || validExternalUrl(socials.youtube))
-        && (!('instagram' in socials) || validExternalUrl(socials.instagram))
-        && (!('tiktok' in socials) || validExternalUrl(socials.tiktok))
-        && (!('facebook' in socials) || validExternalUrl(socials.facebook))
-        && (!('threads' in socials) || validExternalUrl(socials.threads))
-        && (!('bluesky' in socials) || validExternalUrl(socials.bluesky))
-        && (!('mastodon' in socials) || validExternalUrl(socials.mastodon))
-        && (!('discord' in socials) || validExternalUrl(socials.discord))
-        && (!('twitch' in socials) || validExternalUrl(socials.twitch))
-        && (!('reddit' in socials) || validExternalUrl(socials.reddit))
-        && (!('medium' in socials) || validExternalUrl(socials.medium))
-        && (!('hashnode' in socials) || validExternalUrl(socials.hashnode))
-        && (!('devto' in socials) || validExternalUrl(socials.devto))
-        && (!('stackoverflow' in socials) || validExternalUrl(socials.stackoverflow))
-        && (!('codepen' in socials) || validExternalUrl(socials.codepen))
-        && (!('codesandbox' in socials) || validExternalUrl(socials.codesandbox))
-        && (!('dribbble' in socials) || validExternalUrl(socials.dribbble))
-        && (!('behance' in socials) || validExternalUrl(socials.behance))
-        && (!('figma' in socials) || validExternalUrl(socials.figma))
-        && (!('npm' in socials) || validExternalUrl(socials.npm))
-        && (!('producthunt' in socials) || validExternalUrl(socials.producthunt))
-        && (!('telegram' in socials) || validExternalUrl(socials.telegram))
-        && (!('whatsapp' in socials) || validExternalUrl(socials.whatsapp))
-        && (!('spotify' in socials) || validExternalUrl(socials.spotify))
-        && (!('soundcloud' in socials) || validExternalUrl(socials.soundcloud))
-        && (!('apple_music' in socials) || validExternalUrl(socials.apple_music))
-        && (!('patreon' in socials) || validExternalUrl(socials.patreon))
-        && (!('kofi' in socials) || validExternalUrl(socials.kofi))
-        && (!('buymeacoffee' in socials) || validExternalUrl(socials.buymeacoffee))
-        && (!('calendly' in socials) || validExternalUrl(socials.calendly))
-        && (!('calcom' in socials) || validExternalUrl(socials.calcom))
-        && (!('email' in socials) || validExternalUrl(socials.email))
-        && (!('website' in socials) || validExternalUrl(socials.website));
+        && socials.size() <= 37;
     }
 
     function validProfile(uid) {
@@ -354,7 +192,7 @@ service cloud.firestore {
         && (!('availability' in request.resource.data)
           || (request.resource.data.availability is string
             && request.resource.data.availability.size() <= 90))
-        && request.resource.data.theme in ['terminal', 'paper', 'midnight', 'mono']
+        && request.resource.data.theme in ['terminal', 'paper', 'midnight', 'mono', 'slate', 'ember', 'ocean', 'noir']
         && request.resource.data.accent is string
         && request.resource.data.accent.matches('^#[0-9a-fA-F]{6}$')
         && request.resource.data.published is bool

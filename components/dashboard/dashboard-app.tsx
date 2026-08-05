@@ -109,6 +109,10 @@ const themeOptions: { id: ProfileTheme; label: string; className: string }[] = [
   { id: "terminal", label: "Terminal", className: styles.themeTerminal },
   { id: "midnight", label: "Midnight", className: styles.themeMidnight },
   { id: "mono", label: "Mono", className: styles.themeMono },
+  { id: "slate", label: "Slate", className: styles.themeSlate },
+  { id: "ember", label: "Ember", className: styles.themeEmber },
+  { id: "ocean", label: "Ocean", className: styles.themeOcean },
+  { id: "noir", label: "Noir", className: styles.themeNoir },
 ];
 
 const LINKEDIN_LINK_TITLE = "LinkedIn";

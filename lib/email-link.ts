@@ -39,6 +39,10 @@ export function coerceExternalUrl(value: string) {
   if (/^http:\/\//i.test(trimmed)) {
     return `https://${trimmed.slice("http://".length)}`;
   }
+  // `https:example.com` is a valid URL() input but fails Firestore `^https://`
+  if (/^https:/i.test(trimmed)) {
+    return `https://${trimmed.slice("https:".length).replace(/^\/+/, "")}`;
+  }
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
 
   return `https://${trimmed}`;

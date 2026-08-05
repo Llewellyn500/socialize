@@ -10,7 +10,22 @@ import { sanitizeSocials, type SocialKey } from "@/lib/socials";
 export type { SocialKey } from "@/lib/socials";
 export { isSocialKey, SOCIAL_KEYS, socialLabel } from "@/lib/socials";
 
-export type ProfileTheme = "terminal" | "paper" | "midnight" | "mono";
+export const PROFILE_THEMES = [
+  "paper",
+  "terminal",
+  "midnight",
+  "mono",
+  "slate",
+  "ember",
+  "ocean",
+  "noir",
+] as const;
+
+export type ProfileTheme = (typeof PROFILE_THEMES)[number];
+
+export function isProfileTheme(value: string): value is ProfileTheme {
+  return (PROFILE_THEMES as readonly string[]).includes(value);
+}
 export type ProfileMediaType = "icon" | "thumbnail";
 
 export type ProfileSection = {
@@ -219,7 +234,14 @@ export function isValidHandle(value: string) {
 export function isSafeExternalUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "mailto:";
+    if (url.protocol === "mailto:") return true;
+    // URL() treats `https:host` as https, but rules require a real `https://` form.
+    return (
+      url.protocol === "https:" &&
+      /^https:\/\//i.test(value) &&
+      !url.username &&
+      !url.password
+    );
   } catch {
     return false;
   }
@@ -233,6 +255,9 @@ export function coerceProfileMediaUrl(value: string) {
   if (/^https:\/\//i.test(trimmed)) return trimmed;
   if (/^http:\/\//i.test(trimmed)) {
     return `https://${trimmed.slice("http://".length)}`;
+  }
+  if (/^https:/i.test(trimmed)) {
+    return `https://${trimmed.slice("https:".length).replace(/^\/+/, "")}`;
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
@@ -615,7 +640,7 @@ export function sanitizeProfile(profile: ProfileConfig): ProfileConfig {
     ...(ogImageUrl ? { ogImageUrl } : {}),
     ...(location ? { location } : {}),
     ...(availability ? { availability } : {}),
-    theme: profile.theme,
+    theme: isProfileTheme(profile.theme) ? profile.theme : "paper",
     accent: /^#[0-9a-f]{6}$/i.test(profile.accent) ? profile.accent : "#8a2be2",
     published: profile.published,
     socials: sanitizeSocials(profile.socials),

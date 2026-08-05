@@ -121,13 +121,28 @@ export function displaySocialValue(key: SocialKey, value: string) {
   return value;
 }
 
+function isAllowedSocialUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === "mailto:") return true;
+    return (
+      url.protocol === "https:" &&
+      /^https:\/\//i.test(value) &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function sanitizeSocials(socials: Partial<Record<string, string>>) {
   const next: Partial<Record<SocialKey, string>> = {};
   for (const key of SOCIAL_KEYS) {
     const raw = socials[key];
     if (typeof raw !== "string") continue;
     const value = coerceExternalUrl(normalizeSocialValue(key, raw)).slice(0, 2048);
-    if (!value) continue;
+    if (!value || !isAllowedSocialUrl(value)) continue;
     next[key] = value;
   }
   return next;

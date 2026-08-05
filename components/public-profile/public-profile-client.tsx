@@ -12,7 +12,14 @@ import { ProfileLoadingState } from "./profile-loading-state";
 import { TerminalTyping } from "./terminal-typing";
 import styles from "./public-profile.module.css";
 
-const darkThemes = new Set<ProfileTheme>(["terminal", "midnight"]);
+const darkThemes = new Set<ProfileTheme>([
+  "terminal",
+  "midnight",
+  "slate",
+  "ember",
+  "ocean",
+  "noir",
+]);
 const MIN_LOADING_MS = 1200;
 
 type LoadPhase = "loading" | "ready";

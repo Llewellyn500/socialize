@@ -41,6 +41,10 @@ const themes: { id: ProfileTheme; label: string; color: string }[] = [
   { id: "terminal", label: "Terminal", color: "#b7ff4a" },
   { id: "midnight", label: "Midnight", color: "#f5cc5b" },
   { id: "mono", label: "Mono", color: "#111111" },
+  { id: "slate", label: "Slate", color: "#7aa2ff" },
+  { id: "ember", label: "Ember", color: "#ff7a45" },
+  { id: "ocean", label: "Ocean", color: "#3dd6c6" },
+  { id: "noir", label: "Noir", color: "#e8e8e8" },
 ];
 
 export function LandingPage() {

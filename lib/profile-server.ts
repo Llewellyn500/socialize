@@ -1,5 +1,9 @@
 import { cache } from "react";
-import { normalizeHandle, type ProfileConfig } from "@/lib/profile";
+import {
+  isProfileTheme,
+  normalizeHandle,
+  type ProfileConfig,
+} from "@/lib/profile";
 import { firestoreAdminRequest } from "@/lib/firebase-admin-rest";
 
 type FirestoreValue =
@@ -70,7 +74,14 @@ export const loadPublicProfileServer = cache(async (
   const accent = readString(profileFields, "accent");
   const profileHandle = readString(profileFields, "handle") || normalized;
 
-  if (!displayName || role === undefined || bio === undefined || !theme || !accent) {
+  if (
+    !displayName ||
+    role === undefined ||
+    bio === undefined ||
+    !theme ||
+    !isProfileTheme(theme) ||
+    !accent
+  ) {
     return null;
   }
 
@@ -82,7 +93,7 @@ export const loadPublicProfileServer = cache(async (
     avatarUrl: readString(profileFields, "avatarUrl"),
     location: readString(profileFields, "location"),
     availability: readString(profileFields, "availability"),
-    theme: theme as ProfileConfig["theme"],
+    theme,
     accent,
     published: true,
     socials: {},

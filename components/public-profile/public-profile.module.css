@@ -306,6 +306,190 @@
   content: "";
 }
 
+/* ── Slate: cool graphite desk, soft blue bloom ── */
+.shell[data-theme="slate"] {
+  --page-bg: #12151a;
+  --page-fg: #d7deea;
+  --page-muted: rgba(215, 222, 234, 0.48);
+  --page-line: rgba(215, 222, 234, 0.12);
+  --page-topbar: rgba(18, 21, 26, 0.9);
+}
+
+.shell[data-theme="slate"] .atmosphereGlow {
+  background:
+    radial-gradient(ellipse 55% 42% at 14% 12%, rgba(90, 130, 190, 0.2), transparent 62%),
+    radial-gradient(ellipse 48% 38% at 86% 82%, color-mix(in srgb, var(--page-accent) 12%, transparent), transparent 58%),
+    linear-gradient(165deg, #12151a 0%, #181d26 50%, #101318 100%);
+}
+
+.shell[data-theme="slate"] .atmosphereTexture {
+  background:
+    linear-gradient(rgba(215, 222, 234, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 222, 234, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.7;
+}
+
+.shell[data-theme="slate"] .atmosphereDetail::before {
+  position: absolute;
+  top: -16%;
+  left: -10%;
+  width: 48vw;
+  height: 48vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(100, 140, 210, 0.16), transparent 68%);
+  content: "";
+}
+
+.shell[data-theme="slate"] .atmosphereDetail::after {
+  position: absolute;
+  right: -8%;
+  bottom: -12%;
+  width: 36vw;
+  height: 36vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--page-accent) 10%, transparent), transparent 68%);
+  content: "";
+}
+
+/* ── Ember: warm forge desk, soft heat bloom ── */
+.shell[data-theme="ember"] {
+  --page-bg: #140e0c;
+  --page-fg: #f2d2bc;
+  --page-muted: rgba(242, 210, 188, 0.48);
+  --page-line: rgba(242, 210, 188, 0.12);
+  --page-topbar: rgba(20, 14, 12, 0.9);
+}
+
+.shell[data-theme="ember"] .atmosphereGlow {
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 88%, rgba(255, 110, 50, 0.16), transparent 60%),
+    radial-gradient(ellipse 40% 32% at 78% 18%, rgba(180, 70, 30, 0.12), transparent 62%),
+    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(40, 18, 10, 0.9), transparent 58%),
+    linear-gradient(180deg, #1a110e 0%, #140e0c 48%, #0f0a08 100%);
+}
+
+.shell[data-theme="ember"] .atmosphereTexture {
+  background: repeating-linear-gradient(
+    125deg,
+    transparent 0 11px,
+    rgba(255, 140, 80, 0.03) 11px 12px
+  );
+  opacity: 0.55;
+}
+
+.shell[data-theme="ember"] .atmosphereDetail::before {
+  position: absolute;
+  bottom: -20%;
+  left: 10%;
+  width: 55vw;
+  height: 40vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 100, 40, 0.18), transparent 68%);
+  content: "";
+}
+
+.shell[data-theme="ember"] .atmosphereDetail::after {
+  position: absolute;
+  top: 8%;
+  right: 8%;
+  width: 18vmin;
+  height: 18vmin;
+  border-radius: 50%;
+  border: 1px solid rgba(242, 210, 188, 0.12);
+  content: "";
+}
+
+/* ── Ocean: deep water field, teal bloom ── */
+.shell[data-theme="ocean"] {
+  --page-bg: #061416;
+  --page-fg: #c8ebe4;
+  --page-muted: rgba(200, 235, 228, 0.48);
+  --page-line: rgba(200, 235, 228, 0.12);
+  --page-topbar: rgba(6, 20, 22, 0.9);
+}
+
+.shell[data-theme="ocean"] .atmosphereGlow {
+  background:
+    radial-gradient(ellipse 60% 48% at 18% 20%, rgba(40, 160, 150, 0.18), transparent 62%),
+    radial-gradient(ellipse 50% 40% at 84% 78%, rgba(20, 90, 120, 0.2), transparent 58%),
+    linear-gradient(165deg, #061416 0%, #0a1c20 48%, #041012 100%);
+}
+
+.shell[data-theme="ocean"] .atmosphereTexture {
+  background:
+    radial-gradient(1.2px 1.2px at 18% 24%, rgba(200, 235, 228, 0.35), transparent),
+    radial-gradient(1px 1px at 42% 58%, rgba(200, 235, 228, 0.22), transparent),
+    radial-gradient(1.5px 1.5px at 72% 18%, rgba(200, 235, 228, 0.28), transparent),
+    radial-gradient(1px 1px at 88% 66%, rgba(200, 235, 228, 0.2), transparent);
+  opacity: 0.65;
+}
+
+.shell[data-theme="ocean"] .atmosphereDetail::before {
+  position: absolute;
+  top: -14%;
+  right: -12%;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(50, 180, 170, 0.16), transparent 68%);
+  content: "";
+}
+
+.shell[data-theme="ocean"] .atmosphereDetail::after {
+  position: absolute;
+  bottom: -18%;
+  left: -8%;
+  width: 46vw;
+  height: 46vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--page-accent) 12%, transparent), transparent 68%);
+  content: "";
+}
+
+/* ── Noir: cinema black, high-contrast grain ── */
+.shell[data-theme="noir"] {
+  --page-bg: #050505;
+  --page-fg: #f2f2f2;
+  --page-muted: rgba(242, 242, 242, 0.48);
+  --page-line: rgba(242, 242, 242, 0.12);
+  --page-topbar: rgba(5, 5, 5, 0.92);
+}
+
+.shell[data-theme="noir"] .atmosphereGlow {
+  background:
+    radial-gradient(ellipse 45% 35% at 50% 0%, color-mix(in srgb, var(--page-accent) 10%, transparent), transparent 65%),
+    radial-gradient(ellipse 40% 30% at 100% 100%, rgba(255, 255, 255, 0.04), transparent 60%),
+    #050505;
+}
+
+.shell[data-theme="noir"] .atmosphereTexture {
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  opacity: 0.38;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+.shell[data-theme="noir"] .atmosphereDetail::before {
+  position: absolute;
+  inset: 0;
+  border: 12px solid rgba(242, 242, 242, 0.04);
+  box-sizing: border-box;
+  content: "";
+}
+
+.shell[data-theme="noir"] .atmosphereDetail::after {
+  position: absolute;
+  top: 12%;
+  left: 8%;
+  width: 22vmin;
+  height: 22vmin;
+  border: 1px solid rgba(242, 242, 242, 0.08);
+  content: "";
+}
+
 .topbar {
   position: fixed;
   z-index: 5;
@@ -338,7 +522,11 @@
 }
 
 .shell[data-theme="terminal"] .topbar a:last-child,
-.shell[data-theme="midnight"] .topbar a:last-child {
+.shell[data-theme="midnight"] .topbar a:last-child,
+.shell[data-theme="slate"] .topbar a:last-child,
+.shell[data-theme="ember"] .topbar a:last-child,
+.shell[data-theme="ocean"] .topbar a:last-child,
+.shell[data-theme="noir"] .topbar a:last-child {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -370,6 +558,15 @@
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
 }
 
+.shell[data-theme="slate"] .frame,
+.shell[data-theme="ember"] .frame,
+.shell[data-theme="ocean"] .frame,
+.shell[data-theme="noir"] .frame {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 40px 110px rgba(0, 0, 0, 0.55);
+}
+
 .frame article {
   min-height: 760px;
 }
@@ -383,7 +580,11 @@
 }
 
 .shell[data-theme="terminal"] .report,
-.shell[data-theme="midnight"] .report {
+.shell[data-theme="midnight"] .report,
+.shell[data-theme="slate"] .report,
+.shell[data-theme="ember"] .report,
+.shell[data-theme="ocean"] .report,
+.shell[data-theme="noir"] .report {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -597,6 +798,49 @@
   50% { opacity: 0.08; }
 }
 
+@keyframes noirGrainDrift {
+  0% { transform: translate3d(0, 0, 0); opacity: 0.34; }
+  20% { transform: translate3d(-1.8%, 1.2%, 0); opacity: 0.42; }
+  45% { transform: translate3d(1.4%, -1.6%, 0); opacity: 0.36; }
+  70% { transform: translate3d(-0.8%, -1%, 0); opacity: 0.44; }
+  100% { transform: translate3d(0, 0, 0); opacity: 0.34; }
+}
+
+@keyframes noirSquareDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translate3d(3%, 4%, 0) rotate(3deg); opacity: 1; }
+}
+
+@keyframes noirGlowBreath {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.03); filter: brightness(1.06); }
+}
+
+@keyframes emberHeatScroll {
+  from { background-position: 0 0; }
+  to { background-position: 48px -36px; }
+}
+
+@keyframes emberEmberFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.75; }
+  50% { transform: translate3d(3%, -4%, 0) scale(1.08); opacity: 1; }
+}
+
+@keyframes slateGridDrift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 56px 56px, 56px 56px; }
+}
+
+@keyframes oceanSpeckDrift {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.55; }
+  50% { transform: translate3d(1.5%, -2%, 0); opacity: 0.85; }
+}
+
+@keyframes vignettePulse {
+  0%, 100% { opacity: 0.92; }
+  50% { opacity: 1; }
+}
+
 @keyframes terminalFrameGlow {
   0%, 100% {
     box-shadow:
@@ -689,6 +933,77 @@ html:not([data-reduce-motion]) .shell[data-theme="mono"] .atmosphereDetail::afte
 html:not([data-reduce-motion]) .shell[data-theme="mono"] .atmosphereDetail::before {
   animation: monoFrameBreath 20s ease-in-out infinite;
   animation-delay: -10s;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="slate"] .atmosphereGlow {
+  animation: midnightStarShimmer 16s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="slate"] .atmosphereTexture {
+  animation: slateGridDrift 42s linear infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="slate"] .atmosphereDetail::before {
+  animation: midnightAuroraFloat 26s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="slate"] .atmosphereDetail::after {
+  animation: midnightMoonDrift 22s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ember"] .atmosphereGlow {
+  animation: crtHum 9s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ember"] .atmosphereTexture {
+  animation: emberHeatScroll 28s linear infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ember"] .atmosphereDetail::before {
+  animation: emberEmberFloat 18s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ember"] .atmosphereDetail::after {
+  animation: monoSquarePulse 24s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ocean"] .atmosphereGlow {
+  animation: midnightStarShimmer 16s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ocean"] .atmosphereTexture {
+  animation: oceanSpeckDrift 20s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ocean"] .atmosphereDetail::before {
+  animation: midnightAuroraFloat 30s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="ocean"] .atmosphereDetail::after {
+  animation: midnightMoonDrift 24s ease-in-out infinite;
+  animation-delay: -9s;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="noir"] .atmosphereGlow {
+  animation: noirGlowBreath 18s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="noir"] .atmosphereTexture {
+  animation: noirGrainDrift 12s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="noir"] .atmosphereDetail::before {
+  animation: monoFrameBreath 20s ease-in-out infinite;
+  animation-delay: -8s;
+}
+
+html:not([data-reduce-motion]) .shell[data-theme="noir"] .atmosphereDetail::after {
+  animation: noirSquareDrift 26s ease-in-out infinite;
+}
+
+html:not([data-reduce-motion]) .shell .atmosphereVignette {
+  animation: vignettePulse 16s ease-in-out infinite;
 }
 
 @media (max-width: 640px) {
